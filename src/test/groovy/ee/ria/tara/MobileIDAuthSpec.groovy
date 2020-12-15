@@ -179,6 +179,7 @@ class MobileIDAuthSpec extends TaraSpecification {
 
     @Unroll
     @Feature("MID_AUTH_STATUS_CHECK_ENDPOINT")
+    @Feature("MID_AUTH_PENDING")
     def "poll mobile-ID authentication session"() {
         expect:
         Steps.initAuthenticationSession(flow)
@@ -209,6 +210,7 @@ class MobileIDAuthSpec extends TaraSpecification {
 
     @Unroll
     @Feature("MID_AUTH_STATUS_CHECK_ENDPOINT")
+    @Feature("MID_AUTH_SUCCESS")
     def "poll mobile-ID authentication with session complete"() {
         expect:
         Steps.initAuthenticationSession(flow)
@@ -256,6 +258,7 @@ class MobileIDAuthSpec extends TaraSpecification {
 
     @Unroll
     @Feature("MID_AUTH_STATUS_CHECK_ENDPOINT")
+    @Feature("MID_AUTH_CANCELED")
     def "cancel mobile-ID authentication"() {
         expect:
         Steps.initAuthenticationSession(flow)
@@ -264,7 +267,7 @@ class MobileIDAuthSpec extends TaraSpecification {
         assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
         Response response = Requests.followRedirectWithSessionId(flow, REQUEST_TYPE_POST, flow.loginService.fullMidCancelUrl)
         assertEquals("Correct HTTP status code is returned", 302, response.statusCode())
-        assertThat(response.getHeader("location"), Matchers.startsWith(flow.loginService.initUrl + "?login_challenge="))
+        assertThat(response.getHeader("location"), Matchers.startsWith(flow.loginService.initUrl + "?login_challenge=" + flow.loginChallenge))
     }
 
     @Unroll

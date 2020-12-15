@@ -23,6 +23,7 @@ class Steps {
         Response initSession = followRedirect(flow, response)
         String authCookie = initSession.getCookie("oauth2_authentication_csrf")
         Utils.setParameter(flow.oidcService.cookies,"oauth2_authentication_csrf", authCookie)
+        flow.setLoginChallenge(Utils.getParamValueFromResponseHeader(initSession, "login_challenge"))
         return initSession
     }
 

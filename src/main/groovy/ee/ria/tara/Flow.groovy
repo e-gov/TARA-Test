@@ -11,6 +11,7 @@ class Flow {
     OidcClient oidcClient
     CookieFilter cookieFilter
     String sessionId
+    String loginChallenge
 
     Flow(Properties properties) {
         this.properties = properties
