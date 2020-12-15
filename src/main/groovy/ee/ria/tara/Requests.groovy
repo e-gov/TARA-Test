@@ -167,4 +167,22 @@ class Requests {
                 .then()
                 .extract().response()
     }
+
+    @Step("Post request with headers, cookies and params")
+    static Response postRequestWithHeadersCookiesAndParams(Flow flow , String url
+                                                    , Map<String, String> headers
+                                                    , Map<String, String> cookies
+                                                    , Map<String, String> formParams) {
+        return given()
+                .filter(flow.cookieFilter)
+                .filter(new AllureRestAssured())
+                .cookies(cookies)
+                .headers(headers)
+                .formParams(formParams)
+                .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
+                .when()
+                .post(url)
+                .then()
+                .extract().response()
+    }
 }

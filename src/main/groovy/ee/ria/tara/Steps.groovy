@@ -41,7 +41,7 @@ class Steps {
         if (!(idCode instanceof Wildcard)) {
             Utils.setParameter(formParamsMap, "idCode", idCode)
         }
-        if (!(idCode instanceof Wildcard)) {
+        if (!(telephoneNumber instanceof Wildcard)) {
             Utils.setParameter(formParamsMap, "telephoneNumber", telephoneNumber)
         }
         HashMap<String, String> cookieMap = (HashMap)Collections.emptyMap()

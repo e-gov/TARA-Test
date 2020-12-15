@@ -3,6 +3,7 @@ package ee.ria.tara
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
+import spock.lang.Ignore
 import spock.lang.Unroll
 import org.hamcrest.Matchers
 
@@ -27,6 +28,62 @@ class MobileIDAuthSpec extends TaraSpecification {
         assertEquals("Correct Content-Type is returned", "text/html;charset=UTF-8", initMidAuthenticationSession.getContentType())
         String controlCode = initMidAuthenticationSession.body().htmlPath().getString("**.find { p -> p.@class == 'control-code' }.text()")
         assertEquals("Verification code exists", 4, controlCode.size())
+    }
+
+    @Feature("MID_INIT_ENDPOINT")
+    def "initialize mobile-ID authentication with invalid method get"() {
+        expect:
+        Steps.initAuthenticationSession(flow)
+        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
+        def map1 = Utils.setParameter(paramsMap, "idCode", "60001017716")
+        def map2 = Utils.setParameter(paramsMap, "telephoneNumber", "69100366")
+        HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
+        def map3 = Utils.setParameter(cookieMap, "SESSION", flow.sessionId)
+        HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
+        Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullMidInitUrl, cookieMap, paramsMap, additionalParamsMap)
+        assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
+        assertThat(response.body().jsonPath().get("message").toString(), Matchers.equalTo("Request method 'GET' not supported"))
+    }
+
+    @Ignore
+    // https://jira.ria.ee/browse/TARA2-80
+    @Feature("MID_INIT_ENDPOINT")
+    def "initialize mobile-ID authentication with unsupported Content-Type"() {
+        expect:
+        Steps.initAuthenticationSession(flow)
+        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
+        def map1 = Utils.setParameter(paramsMap, "idCode", "60001017716")
+        def map2 = Utils.setParameter(paramsMap, "telephoneNumber", "69100366")
+        HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
+        def map3 = Utils.setParameter(cookieMap, "SESSION", flow.sessionId)
+        HashMap<String, String> headersMap = (HashMap) Collections.emptyMap()
+        def map4 = Utils.setParameter(headersMap, "Content-Type", "application/xml")
+        Response response = Requests.postRequestWithHeadersCookiesAndParams(flow, flow.loginService.fullMidInitUrl, headersMap, cookieMap, paramsMap)
+        assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
+        assertThat(response.body().jsonPath().get("message").toString(), Matchers.equalTo("Invalid content type"))
+    }
+
+    @Unroll
+    @Feature("MID_INIT_ENDPOINT")
+    def "initialize mobile-ID authentication with invalid params: #label"() {
+        expect:
+        LinkedHashMap<String, String> additionalParamsMap = (LinkedHashMap) Collections.emptyMap()
+        def map1 = Utils.setParameter(additionalParamsMap, additionalParameterName, additionalParameterValue)
+        Steps.initAuthenticationSession(flow)
+        Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, idCode, phoneNo, additionalParamsMap)
+        assertEquals("Correct HTTP status code is returned", 400, initMidAuthenticationSession.statusCode())
+        assertThat(initMidAuthenticationSession.body().jsonPath().get("message"), Matchers.startsWith(errorMessage))
+
+        where:
+        phoneNo        | idCode         | additionalParameterName | additionalParameterValue | label                                 || errorMessage
+        "00000266"     | "60001019938"  | _                       | _                        | "invalid idCode checksum"             || "Isikukood ei ole korrektne."
+        "+37200000266" | "60001019939"  | _                       | _                        | "invalid telephone number"            || "Telefoninumber ei ole korrektne."
+        _              | _              | _                       | _                        | "missing telephone number and idCode" || "Telefoninumber ei ole korrektne.; Isikukood ei ole korrektne."
+        "00000266"     | _              | _                       | _                        | "missing idCode"                      || "Isikukood ei ole korrektne."
+        _              | "60001019939"  | _                       | _                        | "missing telephone number"            || "Telefoninumber ei ole korrektne."
+        "00000266"     | "600010199399" | _                       | _                        | "too long idCode"                     || "Isikukood ei ole korrektne."
+        "00000266"     | "6000"         | _                       | _                        | "too short idCode"                    || "Isikukood ei ole korrektne."
+        "abcd"         | "ABCD"         | _                       | _                        | "invalid telephone number and idCode" || "Isikukood ei ole korrektne."
     }
 
 
