@@ -94,6 +94,22 @@ class Requests {
                 .extract().response()
     }
 
+    @Step("Follow redirect request with session id and cookies")
+    static Response followRedirectWithSessionIdAndCookies(Flow flow,String requestType, String location, Map cookies) {
+        return given()
+                .filter(flow.cookieFilter)
+                .filter(new AllureRestAssured())
+                .cookie("SESSION", flow.sessionId)
+                .cookies(cookies)
+                .relaxedHTTPSValidation()
+                .when()
+                .redirects().follow(false)
+                .request(requestType, location)
+                .then()
+                .log().cookies()
+                .extract().response()
+    }
+
     @Step("Follow redirect with cookie request")
     static Response followRedirectWithCookie(Flow flow, String location, Map myCookies) {
         return given()

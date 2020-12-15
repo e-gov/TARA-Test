@@ -37,7 +37,7 @@ class Steps {
     static Response initMidAuthSession(Flow flow, String sessionId
                                        , Object idCode, Object telephoneNumber
                                        , Map additionalParamsMap = Collections.emptyMap()) {
-        HashMap<String, String> formParamsMap = (HashMap)Collections.emptyMap()
+        LinkedHashMap<String, String> formParamsMap = (LinkedHashMap)Collections.emptyMap()
         if (!(idCode instanceof Wildcard)) {
             Utils.setParameter(formParamsMap, "idCode", idCode)
         }
