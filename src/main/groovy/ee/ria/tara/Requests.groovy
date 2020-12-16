@@ -11,12 +11,12 @@ import static io.restassured.config.EncoderConfig.encoderConfig
 class Requests {
 
     @Step("Init auth request")
-    static Response initAuthRequest(Flow flow) {
+    static Response initAuthRequest(Flow flow, String scopeList = "openid") {
         Response response =
                 given()
                         .filter(flow.cookieFilter)
                         .filter(new AllureRestAssured())
-                        .queryParam("scope", "openid")
+                        .queryParam("scope", scopeList)
                         .queryParam("ui_locales", "et")
                         .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
                         .when()
@@ -72,7 +72,7 @@ class Requests {
                 .relaxedHTTPSValidation()
                 .when()
                 .redirects().follow(false)
-                .urlEncodingEnabled(false)
+                .urlEncodingEnabled(true)
                 .get(location)
                 .then()
                 .log().cookies()
@@ -86,6 +86,7 @@ class Requests {
                 .filter(new AllureRestAssured())
                 .cookie("SESSION", flow.sessionId)
                 .relaxedHTTPSValidation()
+                .baseUri(flow.loginService.baseUrl)
                 .when()
                 .redirects().follow(false)
                 .request(requestType, location)
@@ -101,7 +102,8 @@ class Requests {
                 .filter(new AllureRestAssured())
                 .cookie("SESSION", flow.sessionId)
                 .cookies(cookies)
-                .relaxedHTTPSValidation()
+                .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
+                .baseUri(flow.loginService.baseUrl)
                 .when()
                 .redirects().follow(false)
                 .request(requestType, location)

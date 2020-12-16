@@ -3,13 +3,8 @@ package ee.ria.tara
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
-import spock.lang.Ignore
 import spock.lang.Unroll
 import org.hamcrest.Matchers
-import org.apache.commons.lang.RandomStringUtils
-
-import static org.junit.Assert.assertEquals
-import static org.junit.Assert.assertThat
 
 class HeartBeatSpec extends TaraSpecification {
     Flow flow = new Flow(props)

@@ -11,8 +11,8 @@ class Steps {
     static String REQUEST_TYPE_GET = "get"
 
     @Step("Create client authentication session")
-    static Response createAuthenticationSession(Flow flow) {
-        Response initAuthResponse = Requests.initAuthRequest(flow)
+    static Response createAuthenticationSession(Flow flow, String scopeList = "openid") {
+        Response initAuthResponse = Requests.initAuthRequest(flow, scopeList)
         String taraClientCookie = initAuthResponse.getCookie("TARAClient")
         Utils.setParameter(flow.oidcClient.cookies,"TARAClient", taraClientCookie)
         return initAuthResponse
@@ -104,14 +104,14 @@ class Steps {
     }
 
     @Step("Init person authentication session")
-    static void initAuthenticationSession(Flow flow) {
-        Response initOIDCServiceSession = createSession(flow)
+    static void initAuthenticationSession(Flow flow, String scopeList = "openid") {
+        Response initOIDCServiceSession = createSession(flow, scopeList)
         Response initLoginSession = createLoginSession(flow, initOIDCServiceSession)
         assertEquals("Correct HTTP status code is returned", 200, initLoginSession.statusCode())
     }
 
-    static Response createSession(Flow flow) {
-        Response initClientAuthenticationSession = createAuthenticationSession(flow)
+    static Response createSession(Flow flow, String scopeList = "openid") {
+        Response initClientAuthenticationSession = createAuthenticationSession(flow, scopeList)
         assertEquals("Correct HTTP status code is returned", 302, initClientAuthenticationSession.statusCode())
         Response initOIDCServiceSession = createOIDCSession(flow, initClientAuthenticationSession)
         assertEquals("Correct HTTP status code is returned", 302, initOIDCServiceSession.statusCode())
