@@ -186,6 +186,24 @@ class Requests {
                 .extract().response()
     }
 
+    // TODO remove method?
+    @Step("Post request with params")
+    static Response postRequestWithParams(Flow flow , String url
+                                                    , Map<String, String> formParams
+                                                    , Map<String, String> additionalFormParams) {
+        return given()
+                .filter(flow.cookieFilter)
+                .filter(new AllureRestAssured())
+                .formParams(formParams)
+                .formParams(additionalFormParams)
+                .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
+                .baseUri(flow.loginService.baseUrl)
+                .when()
+                .post(url)
+                .then()
+                .extract().response()
+    }
+
     @Step("Post request with headers, cookies and params")
     static Response postRequestWithHeadersCookiesAndParams(Flow flow , String url
                                                     , Map<String, String> headers
