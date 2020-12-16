@@ -60,7 +60,7 @@ class Steps {
                 break
             }
             ++counter
-            sleep(1000L)
+            sleep(2000L)
         }
         return response
     }

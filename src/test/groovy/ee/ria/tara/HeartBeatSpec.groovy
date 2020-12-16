@@ -15,7 +15,7 @@ class HeartBeatSpec extends TaraSpecification {
 
 
     @Unroll
-    @Feature("HEALTH_MONITORING_ENDPOINTT")
+    @Feature("HEALTH_MONITORING_ENDPOINT")
     @Feature("HEALTH_MONITORING_ENDPOINT_DEPENDENCIES")
     def "Verify heartbeat response elements"() {
         expect:
