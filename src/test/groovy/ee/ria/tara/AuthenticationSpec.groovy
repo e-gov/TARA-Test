@@ -35,7 +35,7 @@ class AuthenticationSpec extends TaraSpecification {
         assertEquals("Correct HTTP status code is returned", 200, midInit.statusCode())
         Response midPollResult = Steps.pollMidResponse(flow)
         assertEquals("Correct HTTP status code is returned", 200, midPollResult.statusCode())
-        Response acceptResponse = Requests.followRedirectWithSessionId(flow, REQUEST_TYPE_POST, flow.loginService.fullauthAcceptUrl)
+        Response acceptResponse = Requests.followRedirectWithSessionId(flow, REQUEST_TYPE_POST, flow.loginService.fullAuthAcceptUrl)
         assertEquals("Correct HTTP status code is returned", 302, acceptResponse.statusCode())
 
         Response oidcServiceResponse = Steps.getOAuthCookies(flow, acceptResponse)

@@ -201,4 +201,16 @@ class Requests {
                 .then()
                 .extract().response()
     }
+
+    @Step("Get heartbeat")
+    static Response getHeartbeat(Flow flow) {
+        return given()
+                .filter(new AllureRestAssured())
+                .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
+                .when()
+                .get(flow.loginService.fullHeartbeatUrl)
+                .then()
+                .statusCode(200)
+                .extract().response()
+    }
 }

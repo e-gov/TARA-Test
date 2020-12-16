@@ -30,15 +30,17 @@ class LoginService {
     String midInitUrl
     String midPollUrl
     String midCancelUrl
-    String authAcceptUrlUrl
+    String authAcceptUrl
     String consentUrl
+    String heartbeatUrl
 
     @Lazy fullInitUrl = "${protocol}://${host}${portCheck()}${initUrl}"
     @Lazy fullMidInitUrl = "${protocol}://${host}${portCheck()}${midInitUrl}"
     @Lazy fullMidPollUrl = "${protocol}://${host}${portCheck()}${midPollUrl}"
     @Lazy fullMidCancelUrl = "${protocol}://${host}${portCheck()}${midCancelUrl}"
-    @Lazy fullauthAcceptUrl = "${protocol}://${host}${portCheck()}${authAcceptUrlUrl}"
+    @Lazy fullAuthAcceptUrl = "${protocol}://${host}${portCheck()}${authAcceptUrl}"
     @Lazy fullConsentUrl = "${protocol}://${host}${portCheck()}${consentUrl}"
+    @Lazy fullHeartbeatUrl = "${protocol}://${host}${portCheck()}${heartbeatUrl}"
 
     LoginService(Properties properties) {
         this.host = properties."loginservice.host"
@@ -48,8 +50,9 @@ class LoginService {
         this.midInitUrl = properties."loginservice.midInitUrl"
         this.midPollUrl = properties."loginservice.midPollUrl"
         this.midCancelUrl = properties."loginservice.midCancelUrl"
-        this.authAcceptUrlUrl = properties."loginservice.authAcceptUrl"
+        this.authAcceptUrl = properties."loginservice.authAcceptUrl"
         this.consentUrl = properties."loginservice.consentUrl"
+        this.heartbeatUrl = properties."loginservice.heartbeatUrl"
     }
     private String portCheck() {
         if (port != null && port.isInteger()) {

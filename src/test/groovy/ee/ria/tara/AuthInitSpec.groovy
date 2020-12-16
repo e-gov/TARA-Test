@@ -101,4 +101,42 @@ class AuthInitSpec extends TaraSpecification {
         "login_challenge" | "+372& (aa" | _                 | _           | "invalid symbols in login_challenge" || "authInit.loginChallenge: only characters and numbers allowed"
         _                 | _           | "login_challenge" | "+372"      | "invalid symbols in login_challenge" || "authInit.loginChallenge: only characters and numbers allowed"
     }
+
+    @Unroll
+    @Feature("AUTH_INIT_ENDPOINT")
+    def "initialize authentication session ru"() {
+        expect:
+        LinkedHashMap<String, String> localeMap = (LinkedHashMap) Collections.emptyMap()
+        def map1 = Utils.setParameter(localeMap, "lang", "ru")
+        Response initOIDCServiceSession = Steps.createSession(flow)
+        Response response = Steps.initLoginSession(flow, initOIDCServiceSession, localeMap)
+        assertEquals("Correct HTTP status code is returned", 200, response.statusCode())
+        assertEquals("Correct content type", "text/html;charset=UTF-8", response.getContentType())
+        String sessionCookie = response.getCookie("SESSION")
+        String sessionHeader = response.getHeader("Set-Cookie")
+        assertEquals("Correct header attribute Set-Cookie", "SESSION=${sessionCookie}; Path=/; Secure; HttpOnly; SameSite=Strict".toString(), sessionHeader)
+        assertEquals("Correct header attribute Content-Language", "ru", response.getHeader("Content-Language"))
+        XmlPath xmlPath = new XmlPath(CompatibilityMode.HTML, response.body().toString())
+        int count = response.body().htmlPath().getInt("**.find { a -> a.text() == 'Вернуться к поставщику услуг' }.size()")
+        assertTrue("Link in Russian exists", count > 0)
+    }
+
+    @Unroll
+    @Feature("AUTH_INIT_ENDPOINT")
+    def "initialize authentication session en"() {
+        expect:
+        LinkedHashMap<String, String> localeMap = (LinkedHashMap) Collections.emptyMap()
+        def map1 = Utils.setParameter(localeMap, "lang", "en")
+        Response initOIDCServiceSession = Steps.createSession(flow)
+        Response response = Steps.initLoginSession(flow, initOIDCServiceSession, localeMap)
+        assertEquals("Correct HTTP status code is returned", 200, response.statusCode())
+        assertEquals("Correct content type", "text/html;charset=UTF-8", response.getContentType())
+        String sessionCookie = response.getCookie("SESSION")
+        String sessionHeader = response.getHeader("Set-Cookie")
+        assertEquals("Correct header attribute Set-Cookie", "SESSION=${sessionCookie}; Path=/; Secure; HttpOnly; SameSite=Strict".toString(), sessionHeader)
+        assertEquals("Correct header attribute Content-Language", "en", response.getHeader("Content-Language"))
+        XmlPath xmlPath = new XmlPath(CompatibilityMode.HTML, response.body().toString())
+        int count = response.body().htmlPath().getInt("**.find { a -> a.text() == 'Return to service provider' }.size()")
+        assertTrue("Link in Russian exists", count > 0)
+    }
 }
