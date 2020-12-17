@@ -31,6 +31,7 @@ class LoginService {
     String midPollUrl
     String midCancelUrl
     String authAcceptUrl
+    String authRejectUrl
     String consentUrl
     String heartbeatUrl
     String authLegalInitUrl
@@ -42,6 +43,7 @@ class LoginService {
     @Lazy fullMidPollUrl = "${protocol}://${host}${portCheck()}${midPollUrl}"
     @Lazy fullMidCancelUrl = "${protocol}://${host}${portCheck()}${midCancelUrl}"
     @Lazy fullAuthAcceptUrl = "${protocol}://${host}${portCheck()}${authAcceptUrl}"
+    @Lazy fullAuthRejectUrl = "${protocol}://${host}${portCheck()}${authRejectUrl}"
     @Lazy fullConsentUrl = "${protocol}://${host}${portCheck()}${consentUrl}"
     @Lazy fullHeartbeatUrl = "${protocol}://${host}${portCheck()}${heartbeatUrl}"
     @Lazy fullAuthLegalInitUrl = "${protocol}://${host}${portCheck()}${authLegalInitUrl}"
@@ -58,6 +60,7 @@ class LoginService {
         this.midPollUrl = properties."loginservice.midPollUrl"
         this.midCancelUrl = properties."loginservice.midCancelUrl"
         this.authAcceptUrl = properties."loginservice.authAcceptUrl"
+        this.authRejectUrl = properties."loginservice.authRejectUrl"
         this.consentUrl = properties."loginservice.consentUrl"
         this.heartbeatUrl = properties."loginservice.heartbeatUrl"
         this.authLegalInitUrl = properties."loginservice.authLegalInitUrl"
@@ -82,6 +85,7 @@ class OidcService {
     HashMap <String, String> cookies
 
     @Lazy fullAuthenticationRequestUrl = "${protocol}://${host}${portCheck()}${authenticationRequestUrl}"
+    @Lazy baseUrl = "${protocol}://${host}${portCheck()}"
 
     OidcService(Properties properties) {
         this.host = properties."oidcservice.host"

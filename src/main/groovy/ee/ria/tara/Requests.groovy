@@ -85,7 +85,7 @@ class Requests {
                 .filter(flow.cookieFilter)
                 .filter(new AllureRestAssured())
                 .cookie("SESSION", flow.sessionId)
-                .relaxedHTTPSValidation()
+                .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
                 .baseUri(flow.loginService.baseUrl)
                 .when()
                 .redirects().follow(false)
@@ -135,6 +135,28 @@ class Requests {
                                                    , Map<String, String> additionalQueryParams) {
         return given()
                 .filter(flow.cookieFilter)
+                .cookies(cookies)
+                .queryParams(queryParams)
+                .queryParams(additionalQueryParams)
+                .filter(new AllureRestAssured())
+                .relaxedHTTPSValidation()
+                .when()
+                .redirects().follow(false)
+                .urlEncodingEnabled(false)
+                .get(url)
+                .then()
+                .log().cookies()
+                .extract().response()
+    }
+
+    @Step("Get request with sessionID, cookies and params")
+    static Response getRequestWithSessionIDCookiesAndParams(Flow flow , String url
+                                                   , Map<String, String> cookies
+                                                   , Map<String, String> queryParams
+                                                   , Map<String, String> additionalQueryParams) {
+        return given()
+                .filter(flow.cookieFilter)
+                .cookie("SESSION", flow.sessionId)
                 .cookies(cookies)
                 .queryParams(queryParams)
                 .queryParams(additionalQueryParams)

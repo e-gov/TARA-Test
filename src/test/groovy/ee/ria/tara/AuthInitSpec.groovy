@@ -3,6 +3,7 @@ package ee.ria.tara
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
+import org.apache.commons.lang.RandomStringUtils
 import org.hamcrest.Matchers
 import org.spockframework.lang.Wildcard
 import spock.lang.Unroll
@@ -100,6 +101,7 @@ class AuthInitSpec extends TaraSpecification {
         "login_challenge" | _           | _                 | _           | "empty login_challenge value"        || "authInit.loginChallenge: only characters and numbers allowed"
         "login_challenge" | "+372& (aa" | _                 | _           | "invalid symbols in login_challenge" || "authInit.loginChallenge: only characters and numbers allowed"
         _                 | _           | "login_challenge" | "+372"      | "invalid symbols in login_challenge" || "authInit.loginChallenge: only characters and numbers allowed"
+        "login_challenge" | RandomStringUtils.random(51, true, true) | _ | _ | "too long login_challenge"        || "authInit.loginChallenge: size must be between 0 and 50"
     }
 
     @Unroll

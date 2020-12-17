@@ -19,6 +19,7 @@ class AuthInitLegalPersonSpec extends TaraSpecification {
 
     @Unroll
     @Feature("LEGAL_PERSON_INIT_START_ENDPOINT")
+    @Feature("AUTH_REDIRECT_TO_LEGALPERSON_INIT")
     def "request initialize legal person authentication"() {
         expect:
         Response initClientAuthenticationSession = Steps.initAuthenticationSession(flow, "openid legalperson")

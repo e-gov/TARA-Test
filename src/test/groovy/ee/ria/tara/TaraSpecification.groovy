@@ -19,6 +19,7 @@ class TaraSpecification extends Specification {
     Properties props = new Properties()
     static String REQUEST_TYPE_POST = "post"
     static String REQUEST_TYPE_GET = "get"
+    static String REJECT_ERROR_CODE = "user_cancel"
 
     def setupSpec() {
         InitializationService.initialize()
