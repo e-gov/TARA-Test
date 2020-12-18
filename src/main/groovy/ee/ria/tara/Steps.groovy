@@ -110,6 +110,20 @@ class Steps {
         assertEquals("Correct HTTP status code is returned", 200, initLoginSession.statusCode())
     }
 
+    @Step("authenticate with mobile_ID")
+    static Response authWithMobileID(Flow flow) {
+        Response initClientAuthenticationSession = initAuthenticationSession(flow)
+        Response initMidAuthenticationSession = initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", Collections.emptyMap())
+        assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
+        Response pollResponse = pollMidResponse(flow)
+        assertEquals("Correct HTTP status code is returned", 200, pollResponse.statusCode())
+        Response acceptResponse = Requests.followRedirectWithSessionId(flow, REQUEST_TYPE_POST, flow.loginService.fullAuthAcceptUrl)
+        assertEquals("Correct HTTP status code is returned", 302, acceptResponse.statusCode())
+        Response oidcServiceResponse = getOAuthCookies(flow, acceptResponse)
+        assertEquals("Correct HTTP status code is returned", 302, oidcServiceResponse.statusCode())
+        return oidcServiceResponse
+    }
+
     static Response createSession(Flow flow, String scopeList = "openid") {
         Response initClientAuthenticationSession = createAuthenticationSession(flow, scopeList)
         assertEquals("Correct HTTP status code is returned", 302, initClientAuthenticationSession.statusCode())

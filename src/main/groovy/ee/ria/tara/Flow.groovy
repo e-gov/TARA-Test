@@ -33,6 +33,7 @@ class LoginService {
     String authAcceptUrl
     String authRejectUrl
     String consentUrl
+    String consentConfirmUrl
     String heartbeatUrl
     String authLegalInitUrl
     String authLegalPersonUrl
@@ -45,6 +46,7 @@ class LoginService {
     @Lazy fullAuthAcceptUrl = "${protocol}://${host}${portCheck()}${authAcceptUrl}"
     @Lazy fullAuthRejectUrl = "${protocol}://${host}${portCheck()}${authRejectUrl}"
     @Lazy fullConsentUrl = "${protocol}://${host}${portCheck()}${consentUrl}"
+    @Lazy fullConsenConfirmUrl = "${protocol}://${host}${portCheck()}${consentConfirmUrl}"
     @Lazy fullHeartbeatUrl = "${protocol}://${host}${portCheck()}${heartbeatUrl}"
     @Lazy fullAuthLegalInitUrl = "${protocol}://${host}${portCheck()}${authLegalInitUrl}"
     @Lazy fullAuthLegalPersonUrl = "${protocol}://${host}${portCheck()}${authLegalPersonUrl}"
@@ -62,6 +64,7 @@ class LoginService {
         this.authAcceptUrl = properties."loginservice.authAcceptUrl"
         this.authRejectUrl = properties."loginservice.authRejectUrl"
         this.consentUrl = properties."loginservice.consentUrl"
+        this.consentConfirmUrl = properties."loginservice.consentConfirmUrl"
         this.heartbeatUrl = properties."loginservice.heartbeatUrl"
         this.authLegalInitUrl = properties."loginservice.authLegalInitUrl"
         this.authLegalPersonUrl = properties."loginservice.authLegalPersonUrl"
