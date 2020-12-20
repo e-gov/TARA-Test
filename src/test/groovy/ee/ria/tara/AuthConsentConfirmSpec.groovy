@@ -9,6 +9,7 @@ import spock.lang.Ignore
 import spock.lang.Unroll
 
 import static org.hamcrest.Matchers.equalTo
+import static org.hamcrest.Matchers.startsWith
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertThat
 
@@ -71,22 +72,28 @@ class AuthConsentConfirmSpec extends TaraSpecification {
 
     @Unroll
     @Feature("USER_CONSENT_ENDPOINT")
-    def "Consent with authentication results. Too long login_challenge"() {
+    def "Consent with authentication results. #label"() {
         expect:
         Response initResponse = Steps.authWithMobileID(flow)
         String location = initResponse.getHeader("location")
-        HashMap<String, String> cookiesMap = (HashMap)Collections.emptyMap()
+        HashMap<String, String> cookiesMap = (HashMap) Collections.emptyMap()
         def map1 = Utils.setParameter(cookiesMap, "SESSION", flow.sessionId)
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(paramsMap, "login_challenge", RandomStringUtils.random(51, true, true))
+        def map2 = Utils.setParameter(paramsMap, paramName, paramValue)
         Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullConsentUrl, cookiesMap, paramsMap, Collections.emptyMap())
 
-        assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
+        assertEquals("Correct HTTP status code is returned", statusCode, response.statusCode())
         // TODO "application/json;charset=UTF-8"
         assertEquals("Correct Content-Type is returned", "application/json", response.getContentType())
-        assertThat(response.body().jsonPath().get("message").toString(), equalTo("Request method 'POST' not supported"))
+        assertThat(response.body().jsonPath().get("message").toString(), startsWith(errorMessage))
+
+        where:
+        paramName           | paramValue                               | additionalParamName | additionalParamValue | label                                                      || statusCode || errorMessage
+        _                   | _                                        | _                   | _                    | "Missing parameter consent_challenge"                      || 400        || "Required String parameter 'consent_challenge' is not present"
+        "consent_challenge" | _                                        | _                   | _                    | "Empty parameter consent_challenge value"                  || 400        || "authConsent.consentChallenge: only characters and numbers allowed"
+        "consent_challenge" | RandomStringUtils.random(51, true, true) | _                   | _                    | "Too long consent_challenge"                               || 400        || "authConsent.consentChallenge: size must be between 0 and 50"
+        "consent_challenge" | RandomStringUtils.random(50, true, true) | _                   | _                    | "Correct consent_challenge length"                         || 400        || "a'la consent with ID not found"
+        "consent_challenge" | "342%26abz"                              | _                   | _                    | "Invalid symbols in the consent_challenge parameter value" || 400        || "authConsent.consentChallenge: only characters and numbers allowed"
     }
-
-
 
 }
