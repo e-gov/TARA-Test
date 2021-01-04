@@ -94,14 +94,14 @@ class AuthInitSpec extends TaraSpecification {
         assertThat(initResponse.body().jsonPath().get("message"), Matchers.startsWith(errorMessage))
 
         where:
-        paramName1        | paramValue1 | paramName2        | paramValue2 | label                                || errorMessage
-        "lang"            | "zu"        | "login_challenge" | "default"   | "invalid language code"              || "authInit.language: supported values are: 'et', 'en', 'ru'"
-        "login_challenge" | "12345"     | _                 | _           | "invalid symbols in login_challenge" || " TODO"
-        _                 | _           | _                 | _           | "login_challenge param is missing"   || "Required String parameter 'login_challenge' is not present"
-        "login_challenge" | _           | _                 | _           | "empty login_challenge value"        || "authInit.loginChallenge: only characters and numbers allowed"
-        "login_challenge" | "+372& (aa" | _                 | _           | "invalid symbols in login_challenge" || "authInit.loginChallenge: only characters and numbers allowed"
-        _                 | _           | "login_challenge" | "+372"      | "invalid symbols in login_challenge" || "authInit.loginChallenge: only characters and numbers allowed"
-        "login_challenge" | RandomStringUtils.random(51, true, true) | _ | _ | "too long login_challenge"        || "authInit.loginChallenge: size must be between 0 and 50"
+        paramName1        | paramValue1 | paramName2        | paramValue2 | label                                   || errorMessage
+        "lang"            | "zu"        | "login_challenge" | "default"   | "invalid language code"                 || "authInit.language: supported values are: 'et', 'en', 'ru'"
+        "login_challenge" | "12345"     | _                 | _           | "not existing login_challenge value"    || "Unable to located the requested resource TODO"
+        _                 | _           | _                 | _           | "login_challenge param is missing"      || "Required String parameter 'login_challenge' is not present"
+        "login_challenge" | _           | _                 | _           | "empty login_challenge value"           || "authInit.loginChallenge: only characters and numbers allowed"
+        "login_challenge" | "+372& (aa" | _                 | _           | "invalid symbols &( in login_challenge" || "authInit.loginChallenge: only characters and numbers allowed"
+        _                 | _           | "login_challenge" | "+372"      | "invalid symbols + in login_challenge"  || "authInit.loginChallenge: only characters and numbers allowed"
+        "login_challenge" | RandomStringUtils.random(51, true, true) | _ | _ | "too long login_challenge"           || "authInit.loginChallenge: size must be between 0 and 50"
     }
 
     @Unroll
