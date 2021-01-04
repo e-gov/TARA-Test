@@ -30,6 +30,7 @@ class LoginService {
     String midInitUrl
     String midPollUrl
     String midCancelUrl
+    String idCardInitUrl
     String authAcceptUrl
     String authRejectUrl
     String consentUrl
@@ -43,6 +44,7 @@ class LoginService {
     @Lazy fullMidInitUrl = "${protocol}://${host}${portCheck()}${midInitUrl}"
     @Lazy fullMidPollUrl = "${protocol}://${host}${portCheck()}${midPollUrl}"
     @Lazy fullMidCancelUrl = "${protocol}://${host}${portCheck()}${midCancelUrl}"
+    @Lazy fullIdCardInitUrl = "${protocol}://${host}${portCheck()}${idCardInitUrl}"
     @Lazy fullAuthAcceptUrl = "${protocol}://${host}${portCheck()}${authAcceptUrl}"
     @Lazy fullAuthRejectUrl = "${protocol}://${host}${portCheck()}${authRejectUrl}"
     @Lazy fullConsentUrl = "${protocol}://${host}${portCheck()}${consentUrl}"
@@ -61,6 +63,7 @@ class LoginService {
         this.midInitUrl = properties."loginservice.midInitUrl"
         this.midPollUrl = properties."loginservice.midPollUrl"
         this.midCancelUrl = properties."loginservice.midCancelUrl"
+        this.idCardInitUrl = properties."loginservice.idCardInitUrl"
         this.authAcceptUrl = properties."loginservice.authAcceptUrl"
         this.authRejectUrl = properties."loginservice.authRejectUrl"
         this.consentUrl = properties."loginservice.consentUrl"

@@ -255,4 +255,21 @@ class Requests {
                 .statusCode(200)
                 .extract().response()
     }
+
+    @Step("Get request with ID-Card authentication")
+    static Response idCardAuthentication(Flow flow , Map<String, String> headers) {
+        return given()
+                .filter(flow.cookieFilter)
+                .headers(headers)
+                .cookie(flow.sessionId)
+                .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
+                .filter(new AllureRestAssured())
+                .redirects().follow(false)
+                .urlEncodingEnabled(false)
+                .get(flow.loginService.fullIdCardInitUrl)
+                .then()
+                .log().cookies()
+                .extract().response()
+    }
+
 }

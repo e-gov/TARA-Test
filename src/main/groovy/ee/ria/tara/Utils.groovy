@@ -78,4 +78,8 @@ class Utils {
     static String encodeUrl(String inputString) {
         return URLEncoder.encode(inputString, "UTF-8")
     }
+
+    static String getCertificateAsString(String filename) {
+        return new File(filename).readLines().join()
+    }
 }
