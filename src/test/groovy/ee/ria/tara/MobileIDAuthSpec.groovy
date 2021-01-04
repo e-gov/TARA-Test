@@ -224,24 +224,6 @@ class MobileIDAuthSpec extends TaraSpecification {
         assertEquals("Correct Mobile-ID status", "COMPLETED", response.body().jsonPath().get("status"))
     }
 
-    @Ignore //TARA2-80
-    @Unroll
-    @Feature("MID_AUTH_STATUS_CHECK_ENDPOINT")
-    def "poll mobile-ID authentication with multiple session ID's"() {
-        expect:
-        Steps.initAuthenticationSession(flow)
-        HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
-        Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", additionalParamsMap)
-        assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
-        HashMap<String, String> cookiesMap = (HashMap)Collections.emptyMap()
-        def map1 = Utils.setParameter(cookiesMap, "SESSION", "S12345")
-        Response response = Requests.followRedirectWithSessionIdAndCookies(flow, REQUEST_TYPE_GET, flow.loginService.fullMidPollUrl, cookiesMap)
-        assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
-        // TODO
-        // assertEquals("Correct Content-Type is returned", "application/json", response.getContentType())
-        // assertEquals("Correct error message is returned", "Teie sessiooni ei leitud! Sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"))
-    }
-
     @Ignore // TARA2-80
     @Unroll
     @Feature("MID_AUTH_STATUS_CHECK_ENDPOINT")
@@ -285,24 +267,6 @@ class MobileIDAuthSpec extends TaraSpecification {
         // TODO "application/json;charset=UTF-8"
         assertEquals("Correct Content-Type is returned", "application/json", response.getContentType())
         assertEquals("Correct error message is returned", "Teie sessiooni ei leitud! Sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"))
-    }
-
-    @Ignore //TARA2-80
-    @Unroll
-    @Feature("MID_AUTH_STATUS_CHECK_ENDPOINT")
-    def "cancel mobile-ID authentication with multiple session ID's"() {
-        expect:
-        Steps.initAuthenticationSession(flow)
-        HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
-        Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", additionalParamsMap)
-        assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
-        HashMap<String, String> cookiesMap = (HashMap)Collections.emptyMap()
-        def map1 = Utils.setParameter(cookiesMap, "SESSION", "S12345")
-        Response response = Requests.followRedirectWithSessionIdAndCookies(flow, REQUEST_TYPE_POST, flow.loginService.fullMidCancelUrl, cookiesMap)
-        assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
-       // TODO
-       // assertEquals("Correct Content-Type is returned", "application/json", response.getContentType())
-       // assertEquals("Correct error message is returned", "Teie sessiooni ei leitud! Sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"))
     }
 
     @Ignore //TARA2-80
