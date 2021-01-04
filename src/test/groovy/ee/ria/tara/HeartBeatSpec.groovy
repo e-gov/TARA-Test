@@ -6,6 +6,9 @@ import io.restassured.response.Response
 import spock.lang.Unroll
 import org.hamcrest.Matchers
 
+import java.time.Duration
+import static org.junit.Assert.assertTrue
+
 class HeartBeatSpec extends TaraSpecification {
     Flow flow = new Flow(props)
 
@@ -21,8 +24,8 @@ class HeartBeatSpec extends TaraSpecification {
         expect:
         Response heartBeat = Requests.getHeartbeat(flow)
         heartBeat.then()
-                .body("status", Matchers.notNullValue())
-                .body("name", Matchers.notNullValue())
+                .body("status", Matchers.oneOf("UP", "DOWN"))
+                .body("name", Matchers.equalTo("tara-login-server"))
                 .body("version", Matchers.notNullValue())
                 .body("commitId", Matchers.notNullValue())
                 .body("commitBranch", Matchers.notNullValue())
@@ -31,11 +34,14 @@ class HeartBeatSpec extends TaraSpecification {
                 .body("currentTime", Matchers.notNullValue())
                 .body("upTime", Matchers.notNullValue())
                 .body("dependencies[0].name", Matchers.is("oidcServer"))
-                .body("dependencies[0].status", Matchers.is("UP"))
-                .body("dependencies[1].name", Matchers.is("hazelcast"))
-                .body("dependencies[1].status", Matchers.is("UP"))
-                .body("dependencies[2].name", Matchers.is("truststore"))
-                .body("dependencies[2].status", Matchers.is("UP"))
+                .body("dependencies[0].status", Matchers.oneOf("UP", "DOWN"))
+                .body("dependencies[1].name", Matchers.is("truststore"))
+                .body("dependencies[1].status",  Matchers.oneOf("UP", "DOWN"))
+        //        .body("dependencies[2].name", Matchers.is("ignite"))
+        //        .body("dependencies[2].status",  Matchers.oneOf("UP", "DOWN"))
                 .contentType("application/json")
+        String duration = heartBeat.body().jsonPath().get("upTime")
+        Duration upTime = Duration.parse(duration)
+        assertTrue("Correct upTime value exists", upTime.getSeconds() > 5)
     }
 }
