@@ -117,25 +117,6 @@ class AuthenticationSpec extends TaraSpecification {
         assertEquals("Correct error message is returned", "Teie sessiooni ei leitud! Sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"))
     }
 
-    @Ignore // TARA2-82
-    @Unroll
-    @Feature("AUTH_ACCEPT_LOGIN_ENDPOINT")
-    def "request accept authentication with  multiple session ID's"() {
-        expect:
-        Response initClientAuthenticationSession = Steps.initAuthenticationSession(flow)
-        Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
-        Response pollResponse = Steps.pollMidResponse(flow)
-        assertEquals("Correct HTTP status code is returned", 200, pollResponse.statusCode())
-        HashMap<String, String> cookiesMap = (HashMap)Collections.emptyMap()
-        def map1 = Utils.setParameter(cookiesMap, "SESSION", "S12345")
-        Response response = Requests.followRedirectWithSessionIdAndCookies(flow, REQUEST_TYPE_POST, flow.loginService.fullAuthAcceptUrl, cookiesMap)
-        assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
-        // TODO "application/json;charset=UTF-8"
-        assertEquals("Correct Content-Type is returned", "application/json", response.getContentType())
-        assertEquals("Correct error message is returned", "Teie sessiooni ei leitud! Sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"))
-    }
-
     @Ignore // TARA2-104
     @Unroll
     @Feature("AUTH_REJECT_LOGIN_ENDPOINT")
@@ -208,29 +189,7 @@ class AuthenticationSpec extends TaraSpecification {
         assertEquals("Correct Content-Type is returned", "application/json", response.getContentType())
         assertEquals("Correct error message is returned", "Teie sessiooni ei leitud! Sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"))
     }
-
-    @Ignore // TARA2-104
-    @Unroll
-    @Feature("AUTH_REJECT_LOGIN_ENDPOINT")
-    def "request reject authentication with multiple session ID's"() {
-        expect:
-        Response initClientAuthenticationSession = Steps.initAuthenticationSession(flow)
-        Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
-        Response pollResponse = Steps.pollMidResponse(flow)
-        assertEquals("Correct HTTP status code is returned", 200, pollResponse.statusCode())
-
-        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        def map1 = Utils.setParameter(paramsMap, "error_code", REJECT_ERROR_CODE)
-        HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
-        def map3 = Utils.setParameter(cookieMap, "SESSION", "S67890123456")
-        Response response = Requests.getRequestWithSessionIDCookiesAndParams(flow, flow.loginService.fullAuthRejectUrl, cookieMap, paramsMap, Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
-        // TODO "application/json;charset=UTF-8"
-        assertEquals("Correct Content-Type is returned", "application/json", response.getContentType())
-        assertEquals("Correct error message is returned", "Error text here", response.body().jsonPath().get("message"))
-    }
-
+    
     @Ignore // TARA2-104
     @Unroll
     @Feature("AUTH_REJECT_LOGIN_ENDPOINT")
