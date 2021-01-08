@@ -1,7 +1,9 @@
 package ee.ria.tara
 
+import com.nimbusds.jose.jwk.JWKSet
 import groovy.transform.Canonical
 import io.restassured.filter.cookie.CookieFilter
+import io.restassured.path.json.JsonPath
 
 @Canonical
 class Flow {
@@ -12,6 +14,11 @@ class Flow {
     CookieFilter cookieFilter
     String sessionId
     String loginChallenge
+
+    String state
+    String nonce
+    JWKSet jwkSet
+    JsonPath openIdServiceConfiguration
 
     Flow(Properties properties) {
         this.properties = properties
@@ -88,16 +95,21 @@ class OidcService {
     String port
     String protocol
     String authenticationRequestUrl
+    String jwksUrl
+    String configurationUrl
     HashMap <String, String> cookies
 
     @Lazy fullAuthenticationRequestUrl = "${protocol}://${host}${portCheck()}${authenticationRequestUrl}"
-    @Lazy baseUrl = "${protocol}://${host}${portCheck()}"
+    @Lazy fullJwksUrl = "${protocol}://${host}${portCheck()}${jwksUrl}"
+    @Lazy fullConfigurationUrl = "${protocol}://${host}${portCheck()}${configurationUrl}"
 
     OidcService(Properties properties) {
         this.host = properties."oidcservice.host"
         this.port = properties."oidcservice.port"
         this.protocol = properties."oidcservice.protocol"
         this.authenticationRequestUrl = properties."oidcservice.authenticationRequestUrl"
+        this.jwksUrl = properties."oidcservice.jwksUrl"
+        this.configurationUrl = properties."oidcservice.configurationUrl"
         this.cookies = new HashMap<String, String>()
     }
     private String portCheck() {

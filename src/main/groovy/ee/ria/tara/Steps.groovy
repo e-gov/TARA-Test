@@ -1,9 +1,17 @@
 package ee.ria.tara
 
+import io.qameta.allure.Allure
 import io.qameta.allure.Step
 import io.restassured.response.Response
 import org.spockframework.lang.Wildcard
+import com.nimbusds.jose.JOSEException
+import com.nimbusds.jwt.SignedJWT
+import java.text.ParseException
+import com.fasterxml.jackson.databind.ObjectMapper
 
+import static org.hamcrest.CoreMatchers.equalTo
+import static org.hamcrest.CoreMatchers.is
+import static org.hamcrest.MatcherAssert.assertThat
 import static org.junit.Assert.assertEquals
 
 class Steps {
@@ -15,6 +23,8 @@ class Steps {
         Response initAuthResponse = Requests.initAuthRequest(flow, scopeList)
         String taraClientCookie = initAuthResponse.getCookie("TARAClient")
         Utils.setParameter(flow.oidcClient.cookies,"TARAClient", taraClientCookie)
+        flow.state = Utils.getParamValueFromResponseHeader(initAuthResponse, "state")
+        flow.nonce = Utils.getParamValueFromResponseHeader(initAuthResponse, "nonce")
         return initAuthResponse
     }
 
@@ -110,7 +120,7 @@ class Steps {
         assertEquals("Correct HTTP status code is returned", 200, initLoginSession.statusCode())
     }
 
-    @Step("authenticate with mobile_ID")
+    @Step("authenticate with mobile-ID")
     static Response authWithMobileID(Flow flow) {
         Response initClientAuthenticationSession = initAuthenticationSession(flow)
         Response initMidAuthenticationSession = initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", Collections.emptyMap())
@@ -130,5 +140,47 @@ class Steps {
         Response initOIDCServiceSession = createOIDCSession(flow, initClientAuthenticationSession)
         assertEquals("Correct HTTP status code is returned", 302, initOIDCServiceSession.statusCode())
         return initOIDCServiceSession
+    }
+
+    @Step("get webtoken from OIDC service")
+    static Response getWebTokenFromOidcService(Flow flow, Response response) {
+        Response oidcServiceResponse2 = followRedirectWithCookies(flow, response, flow.oidcService.cookies)
+        assertEquals("Correct HTTP status code is returned", 302, oidcServiceResponse2.statusCode())
+        Response webTokenResponse = followRedirectWithCookies(flow, oidcServiceResponse2, flow.oidcClient.cookies)
+        assertEquals("Correct HTTP status code is returned", 200, webTokenResponse.statusCode())
+        return webTokenResponse
+    }
+
+    @Step("verify token")
+    static SignedJWT verifyTokenAndReturnSignedJwtObject(Flow flow, String token) throws ParseException, JOSEException, IOException {
+        SignedJWT signedJWT = SignedJWT.parse(token)
+        //TODO: single attachment
+        addJsonAttachment("Header", signedJWT.getHeader().toString())
+        addJsonAttachment("Payload", signedJWT.getJWTClaimsSet().toString())
+        try {
+            Allure.link("View Token in jwt.io", new io.qameta.allure.model.Link().toString(),
+                    "https://jwt.io/#debugger-io?token=" + token)
+        } catch (Exception e) {
+            //NullPointerException when running test from IntelliJ
+        }
+        assertThat("Token Signature is not valid!", OpenIdUtils.isTokenSignatureValid(flow.jwkSet, signedJWT), is(true))
+        assertThat(signedJWT.getJWTClaimsSet().getAudience().get(0), equalTo(flow.oidcClient.clientId))
+        assertThat(signedJWT.getJWTClaimsSet().getIssuer(), equalTo(flow.openIdServiceConfiguration.get("issuer")))
+        Date date = new Date()
+        assertThat("Expected current: " + date + " to be before exp: " + signedJWT.getJWTClaimsSet().getExpirationTime(), date.before(signedJWT.getJWTClaimsSet().getExpirationTime()), is(true))
+        // TODO Etapp 4
+        // assertThat("Expected current: " + date + " to be after nbf: " + signedJWT.getJWTClaimsSet().getNotBeforeTime(), date.after(signedJWT.getJWTClaimsSet().getNotBeforeTime()), is(true))
+        assertThat(signedJWT.getJWTClaimsSet().getStringClaim("state"), equalTo(flow.getState()))
+        if (!flow.getNonce().isEmpty()) {
+            assertThat(signedJWT.getJWTClaimsSet().getStringClaim("nonce"), equalTo(flow.getNonce()))
+        }
+        return signedJWT
+    }
+
+    private static void addJsonAttachment(String name, String json) throws IOException {
+        ObjectMapper mapper = new ObjectMapper()
+        Object jsonObject = mapper.readValue(json, Object.class)
+        String prettyJson = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(jsonObject)
+        Allure.addAttachment(name, "application/json", prettyJson, "json")
     }
 }

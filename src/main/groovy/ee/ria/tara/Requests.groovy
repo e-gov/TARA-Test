@@ -3,6 +3,7 @@ package ee.ria.tara
 import io.qameta.allure.Step
 import io.qameta.allure.restassured.AllureRestAssured
 import io.restassured.RestAssured
+import io.restassured.path.json.JsonPath
 import io.restassured.response.Response
 
 import static io.restassured.RestAssured.given
@@ -270,6 +271,30 @@ class Requests {
                 .then()
                 .log().cookies()
                 .extract().response()
+    }
+
+    @Step("Download openid service configuration")
+    static JsonPath getOpenidConfiguration(String url) {
+        return given()
+                .filter(new AllureRestAssured())
+                .relaxedHTTPSValidation()
+                .when()
+                .get(url)
+                .then()
+                .statusCode(200)
+                .extract().body().jsonPath()
+    }
+
+    @Step("Download openid service JWKS")
+    static InputStream getOpenidJwks(String url) {
+        return given()
+                .filter(new AllureRestAssured())
+                .relaxedHTTPSValidation()
+                .when()
+                .get(url)
+                .then()
+                .statusCode(200)
+                .extract().body().asInputStream()
     }
 
 }
