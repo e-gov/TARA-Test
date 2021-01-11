@@ -37,6 +37,15 @@ class Steps {
         return initSession
     }
 
+    @Step("Create authentication session in oidc service with parameters")
+    static Response createOIDCSessionWithParameters(Flow flow, Map<String, String> paramsMap) {
+        Response initSession = Requests.getRequestWithParams(flow , flow.oidcService.fullAuthenticationRequestUrl, paramsMap, Collections.emptyMap())
+        String authCookie = initSession.getCookie("oauth2_authentication_csrf")
+        Utils.setParameter(flow.oidcService.cookies,"oauth2_authentication_csrf", authCookie)
+        flow.setLoginChallenge(Utils.getParamValueFromResponseHeader(initSession, "login_challenge"))
+        return initSession
+    }
+
     @Step("Create login session")
     static Response createLoginSession(Flow flow, Response response) {
         Response initLogin = followRedirect(flow, response)
@@ -114,10 +123,11 @@ class Steps {
     }
 
     @Step("Init person authentication session")
-    static void initAuthenticationSession(Flow flow, String scopeList = "openid") {
+    static Response initAuthenticationSession(Flow flow, String scopeList = "openid") {
         Response initOIDCServiceSession = createSession(flow, scopeList)
         Response initLoginSession = createLoginSession(flow, initOIDCServiceSession)
         assertEquals("Correct HTTP status code is returned", 200, initLoginSession.statusCode())
+        return initLoginSession
     }
 
     @Step("authenticate with mobile-ID")
