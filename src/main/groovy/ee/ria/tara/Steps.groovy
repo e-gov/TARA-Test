@@ -130,10 +130,16 @@ class Steps {
         return initLoginSession
     }
 
-    @Step("authenticate with mobile-ID")
-    static Response authWithMobileID(Flow flow) {
+    @Step("init auth session and authenticate with mobile-ID")
+    static Response initAuthSessionAndAuthWithMobileID(Flow flow) {
         Response initClientAuthenticationSession = initAuthenticationSession(flow)
-        Response initMidAuthenticationSession = initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", Collections.emptyMap())
+        Response oidcServiceResponse = authWithMobileID(flow)
+        return oidcServiceResponse
+    }
+
+    @Step("authenticate with mobile-ID")
+    static Response authWithMobileID(Flow flow, String idCode = "60001017716", String telephoneNumber = "69100366") {
+        Response initMidAuthenticationSession = initMidAuthSession(flow, flow.sessionId, idCode, telephoneNumber, Collections.emptyMap())
         assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
         Response pollResponse = pollMidResponse(flow)
         assertEquals("Correct HTTP status code is returned", 200, pollResponse.statusCode())
@@ -142,6 +148,16 @@ class Steps {
         Response oidcServiceResponse = getOAuthCookies(flow, acceptResponse)
         assertEquals("Correct HTTP status code is returned", 302, oidcServiceResponse.statusCode())
         return oidcServiceResponse
+    }
+
+    @Step("Consent confirm")
+    static Response consentConfirmation(Flow flow, boolean consentGiven) {
+        HashMap<String, String> cookiesMap = (HashMap) Collections.emptyMap()
+        Utils.setParameter(cookiesMap, "SESSION", flow.sessionId)
+        HashMap<String, String> formParamsMap = (HashMap) Collections.emptyMap()
+        Utils.setParameter(formParamsMap, "consent_given", consentGiven)
+        Response consentConfirmResponse = Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullConsentConfirmUrl, cookiesMap, formParamsMap, Collections.emptyMap())
+        return consentConfirmResponse
     }
 
     static Response createSession(Flow flow, String scopeList = "openid") {

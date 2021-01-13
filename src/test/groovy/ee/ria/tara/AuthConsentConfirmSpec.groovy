@@ -24,7 +24,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
     @Feature("USER_CONSENT_ENDPOINT")
     def "Consent with authentication results"() {
         expect:
-        Response initResponse = Steps.authWithMobileID(flow)
+        Response initResponse = Steps.initAuthSessionAndAuthWithMobileID(flow)
         Response response = Steps.followRedirectWithSessionId(flow, initResponse)
         assertEquals("Correct HTTP status code is returned", 302, response.statusCode())
         assertThat(response.getHeader("location"), Matchers.startsWith(flow.oidcService.fullAuthenticationRequestUrl))
@@ -34,7 +34,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
     @Feature("USER_CONSENT_ENDPOINT")
     def "Consent with authentication results. Invalid session ID"() {
         expect:
-        Response initResponse = Steps.authWithMobileID(flow)
+        Response initResponse = Steps.initAuthSessionAndAuthWithMobileID(flow)
         flow.setSessionId("1234567")
         Response response = Steps.followRedirectWithSessionId(flow, initResponse)
         assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
@@ -48,7 +48,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
     @Feature("USER_CONSENT_ENDPOINT")
     def "Consent with authentication results. Invalid method post"() {
         expect:
-        Response initResponse = Steps.authWithMobileID(flow)
+        Response initResponse = Steps.initAuthSessionAndAuthWithMobileID(flow)
         String location = initResponse.getHeader("location")
         Response response = Requests.followRedirectWithSessionId(flow, REQUEST_TYPE_POST, location)
         assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
@@ -62,7 +62,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
     @Feature("USER_CONSENT_ENDPOINT")
     def "Consent with authentication results. Missing session ID"() {
         expect:
-        Response initResponse = Steps.authWithMobileID(flow)
+        Response initResponse = Steps.initAuthSessionAndAuthWithMobileID(flow)
         Response response = Steps.followRedirect(flow, initResponse)
         assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
         // TODO "application/json;charset=UTF-8"
@@ -74,7 +74,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
     @Feature("USER_CONSENT_ENDPOINT")
     def "Consent with authentication results. #label"() {
         expect:
-        Response initResponse = Steps.authWithMobileID(flow)
+        Response initResponse = Steps.initAuthSessionAndAuthWithMobileID(flow)
         String location = initResponse.getHeader("location")
         HashMap<String, String> cookiesMap = (HashMap) Collections.emptyMap()
         def map1 = Utils.setParameter(cookiesMap, "SESSION", flow.sessionId)
@@ -107,7 +107,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         def map1 = Utils.setParameter(cookiesMap, "SESSION", "1234567")
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         def map2 = Utils.setParameter(paramsMap, "consent_given", true)
-        Response response = Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullConsenConfirmUrl, cookiesMap, paramsMap, Collections.emptyMap())
+        Response response = Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullConsentConfirmUrl, cookiesMap, paramsMap, Collections.emptyMap())
         assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
         // TODO "application/json;charset=UTF-8"
         assertEquals("Correct Content-Type is returned", "application/json", response.getContentType())
@@ -123,7 +123,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         def map1 = Utils.setParameter(cookiesMap, "SESSION", "1234567")
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         def map2 = Utils.setParameter(paramsMap, "consent_given", true)
-        Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullConsenConfirmUrl, cookiesMap, paramsMap, Collections.emptyMap())
+        Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullConsentConfirmUrl, cookiesMap, paramsMap, Collections.emptyMap())
         assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
         // TODO "application/json;charset=UTF-8"
         assertEquals("Correct Content-Type is returned", "application/json", response.getContentType())
@@ -136,7 +136,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         expect:
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         def map2 = Utils.setParameter(paramsMap, "consent_given", true)
-        Response response = Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullConsenConfirmUrl, Collections.emptyMap(), paramsMap, Collections.emptyMap())
+        Response response = Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullConsentConfirmUrl, Collections.emptyMap(), paramsMap, Collections.emptyMap())
         assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
         // TODO "application/json;charset=UTF-8"
         assertEquals("Correct Content-Type is returned", "application/json", response.getContentType())
@@ -147,7 +147,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
     @Feature("USER_CONSENT_CONFIRM_ENDPOINT")
     def "Confirm consent with authentication results. #label"() {
         expect:
-        Response initResponse = Steps.authWithMobileID(flow)
+        Response initResponse = Steps.initAuthSessionAndAuthWithMobileID(flow)
         Response consentResponse = Steps.followRedirectWithSessionId(flow, initResponse)
         assertEquals("Correct HTTP status code is returned", 302, consentResponse.statusCode())
         HashMap<String, String> cookiesMap = (HashMap) Collections.emptyMap()
@@ -156,7 +156,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         def map2 = Utils.setParameter(paramsMap, paramName, paramValue)
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
         def map3 = Utils.setParameter(additionalParamsMap, additionalParamName, additionalParamValue)
-        Response response = Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullConsenConfirmUrl, cookiesMap, paramsMap, additionalParamsMap)
+        Response response = Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullConsentConfirmUrl, cookiesMap, paramsMap, additionalParamsMap)
         assertEquals("Correct HTTP status code is returned", statusCode, response.statusCode())
         // TODO "application/json;charset=UTF-8"
         assertEquals("Correct Content-Type is returned", "application/json", response.getContentType())

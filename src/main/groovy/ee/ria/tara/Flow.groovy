@@ -55,7 +55,7 @@ class LoginService {
     @Lazy fullAuthAcceptUrl = "${protocol}://${host}${portCheck()}${authAcceptUrl}"
     @Lazy fullAuthRejectUrl = "${protocol}://${host}${portCheck()}${authRejectUrl}"
     @Lazy fullConsentUrl = "${protocol}://${host}${portCheck()}${consentUrl}"
-    @Lazy fullConsenConfirmUrl = "${protocol}://${host}${portCheck()}${consentConfirmUrl}"
+    @Lazy fullConsentConfirmUrl = "${protocol}://${host}${portCheck()}${consentConfirmUrl}"
     @Lazy fullHeartbeatUrl = "${protocol}://${host}${portCheck()}${heartbeatUrl}"
     @Lazy fullAuthLegalInitUrl = "${protocol}://${host}${portCheck()}${authLegalInitUrl}"
     @Lazy fullAuthLegalPersonUrl = "${protocol}://${host}${portCheck()}${authLegalPersonUrl}"
@@ -129,6 +129,7 @@ class OidcService {
         String responseUrl
         String requestUrl
         String clientId
+        String clientSecret
         HashMap <String, String> cookies
 
         @Lazy fullResponseUrl = "${protocol}://${host}:${port}${responseUrl}"
@@ -141,6 +142,7 @@ class OidcService {
             this.responseUrl = properties."oidcclient.responseUrl"
             this.requestUrl = properties."oidcclient.requestUrl"
             this.clientId = properties."oidcclient.clientId"
+            this.clientSecret = properties."oidcclient.secret"
             this.cookies = new HashMap<String, String>()
         }
 
