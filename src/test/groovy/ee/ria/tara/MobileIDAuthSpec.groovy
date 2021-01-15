@@ -233,7 +233,7 @@ class MobileIDAuthSpec extends TaraSpecification {
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
         Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", additionalParamsMap)
         assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
-        Response response = Requests.followRedirectWithSessionId(flow, REQUEST_TYPE_POST, flow.loginService.fullMidPollUrl)
+        Response response = Requests.postRequestWithSessionId(flow, flow.loginService.fullMidPollUrl)
         assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
         assertThat(response.body().jsonPath().get("message").toString(), Matchers.equalTo("Request method 'POST' not supported"))
     }
@@ -247,7 +247,7 @@ class MobileIDAuthSpec extends TaraSpecification {
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
         Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", additionalParamsMap)
         assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
-        Response response = Requests.followRedirectWithSessionId(flow, REQUEST_TYPE_POST, flow.loginService.fullMidCancelUrl)
+        Response response = Requests.postRequestWithSessionId(flow, flow.loginService.fullMidCancelUrl)
         assertEquals("Correct HTTP status code is returned", 302, response.statusCode())
         assertThat(response.getHeader("location"), Matchers.startsWith(flow.loginService.initUrl + "?login_challenge=" + flow.loginChallenge))
     }
@@ -262,7 +262,7 @@ class MobileIDAuthSpec extends TaraSpecification {
         assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
 
         flow.setSessionId("1234567")
-        Response response = Requests.followRedirectWithSessionId(flow, REQUEST_TYPE_POST, flow.loginService.fullMidCancelUrl)
+        Response response = Requests.postRequestWithSessionId(flow, flow.loginService.fullMidCancelUrl)
         assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
         // TODO "application/json;charset=UTF-8"
         assertEquals("Correct Content-Type is returned", "application/json", response.getContentType())
@@ -278,7 +278,7 @@ class MobileIDAuthSpec extends TaraSpecification {
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
         Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", additionalParamsMap)
         assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
-        Response response = Requests.followRedirectWithSessionId(flow, REQUEST_TYPE_GET, flow.loginService.fullMidCancelUrl)
+        Response response = Requests.getRequestWithSessionId(flow, flow.loginService.fullMidCancelUrl)
         assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
         assertThat(response.body().jsonPath().get("message").toString(), Matchers.equalTo("Request method 'GET' not supported"))
     }

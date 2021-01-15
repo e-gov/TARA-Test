@@ -50,6 +50,7 @@ class Steps {
     static Response createLoginSession(Flow flow, Response response) {
         Response initLogin = followRedirect(flow, response)
         flow.setSessionId(initLogin.getCookie("SESSION"))
+        flow.setCsrf(initLogin.body().htmlPath().get("**.find {it.@name == '_csrf'}.@value"))
         return initLogin
     }
 
@@ -58,6 +59,7 @@ class Steps {
                                        , Object idCode, Object telephoneNumber
                                        , Map additionalParamsMap = Collections.emptyMap()) {
         LinkedHashMap<String, String> formParamsMap = (LinkedHashMap)Collections.emptyMap()
+        Utils.setParameter(formParamsMap, "_csrf", flow.csrf)
         if (!(idCode instanceof Wildcard)) {
             Utils.setParameter(formParamsMap, "idCode", idCode)
         }
@@ -80,6 +82,9 @@ class Steps {
             }
             ++counter
             sleep(2000L)
+        }
+        if( response.body().jsonPath().get("status") == "COMPLETED" && response.getCookie("SESSION") != null) {
+            flow.setSessionId(response.getCookie("SESSION"))
         }
         return response
     }
@@ -119,7 +124,7 @@ class Steps {
     @Step("Follow redirect with session id")
     static Response followRedirectWithSessionId(Flow flow, Response response) {
         String location = response.then().extract().response().getHeader("location")
-        return Requests.followRedirectWithSessionId(flow, REQUEST_TYPE_GET, location)
+        return Requests.getRequestWithSessionId(flow, location)
     }
 
     @Step("Init person authentication session")
@@ -143,7 +148,7 @@ class Steps {
         assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
         Response pollResponse = pollMidResponse(flow)
         assertEquals("Correct HTTP status code is returned", 200, pollResponse.statusCode())
-        Response acceptResponse = Requests.followRedirectWithSessionId(flow, REQUEST_TYPE_POST, flow.loginService.fullAuthAcceptUrl)
+        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
         assertEquals("Correct HTTP status code is returned", 302, acceptResponse.statusCode())
         Response oidcServiceResponse = getOAuthCookies(flow, acceptResponse)
         assertEquals("Correct HTTP status code is returned", 302, oidcServiceResponse.statusCode())
@@ -156,6 +161,7 @@ class Steps {
         Utils.setParameter(cookiesMap, "SESSION", flow.sessionId)
         HashMap<String, String> formParamsMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(formParamsMap, "consent_given", consentGiven)
+        Utils.setParameter(formParamsMap, "_csrf", flow.csrf)
         Response consentConfirmResponse = Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullConsentConfirmUrl, cookiesMap, formParamsMap, Collections.emptyMap())
         return consentConfirmResponse
     }

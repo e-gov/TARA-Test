@@ -26,12 +26,12 @@ class AuthLegalPersonSpec extends TaraSpecification {
         assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
         Response pollResponse = Steps.pollMidResponse(flow)
         assertEquals("Correct HTTP status code is returned", 200, pollResponse.statusCode())
-        Response acceptResponse = Requests.followRedirectWithSessionId(flow, REQUEST_TYPE_POST, flow.loginService.fullAuthAcceptUrl)
+        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
         assertEquals("Correct HTTP status code is returned", 302, acceptResponse.statusCode())
         // /auth/legal_person/init
         Response initLegalResponse = Steps.followRedirectWithSessionId(flow, acceptResponse)
         assertEquals("Correct HTTP status code is returned", 200, initLegalResponse.statusCode())
-        Response response = Requests.followRedirectWithSessionId(flow, REQUEST_TYPE_GET, flow.loginService.fullAuthLegalPersonUrl)
+        Response response = Requests.getRequestWithSessionId(flow, flow.loginService.fullAuthLegalPersonUrl)
         assertEquals("Correct HTTP status code is returned", 200, response.statusCode())
         assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
         assertThat(response.body().jsonPath().get("legalPersons[0].legalPersonIdentifier").toString(), Matchers.equalTo("12341234"))
@@ -43,7 +43,7 @@ class AuthLegalPersonSpec extends TaraSpecification {
     def "legal persons authentication request with invalid session ID"() {
         expect:
         flow.setSessionId("1234567")
-        Response response = Requests.followRedirectWithSessionId(flow, REQUEST_TYPE_GET, flow.loginService.fullAuthLegalPersonUrl)
+        Response response = Requests.getRequestWithSessionId(flow, flow.loginService.fullAuthLegalPersonUrl)
         assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
         // TODO "application/json;charset=UTF-8"
         assertEquals("Correct Content-Type is returned", "application/json", response.getContentType())
@@ -56,7 +56,7 @@ class AuthLegalPersonSpec extends TaraSpecification {
     def "legal persons authentication request with invalid method post"() {
         expect:
         flow.setSessionId("1234567")
-        Response response = Requests.followRedirectWithSessionId(flow, REQUEST_TYPE_POST, flow.loginService.fullAuthLegalPersonUrl)
+        Response response = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthLegalPersonUrl)
         assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
         // TODO "application/json;charset=UTF-8"
         assertEquals("Correct Content-Type is returned", "application/json", response.getContentType())
@@ -73,13 +73,13 @@ class AuthLegalPersonSpec extends TaraSpecification {
         assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
         Response pollResponse = Steps.pollMidResponse(flow)
         assertEquals("Correct HTTP status code is returned", 200, pollResponse.statusCode())
-        Response acceptResponse = Requests.followRedirectWithSessionId(flow, REQUEST_TYPE_POST, flow.loginService.fullAuthAcceptUrl)
+        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
         assertEquals("Correct HTTP status code is returned", 302, acceptResponse.statusCode())
         // /auth/legal_person/init
         Response initLegalResponse = Steps.followRedirectWithSessionId(flow, acceptResponse)
         HashMap<String, String> cookiesMap = (HashMap)Collections.emptyMap()
         def map1 = Utils.setParameter(cookiesMap, "SESSION", "S12345")
-        Response response = Requests.followRedirectWithSessionIdAndCookies(flow, REQUEST_TYPE_GET, flow.loginService.fullAuthLegalPersonUrl, cookiesMap)
+        Response response = Requests.followRedirectWithSessionIdAndCookies(flow, flow.loginService.fullAuthLegalPersonUrl, cookiesMap)
         assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
 
         // TODO "application/json;charset=UTF-8"

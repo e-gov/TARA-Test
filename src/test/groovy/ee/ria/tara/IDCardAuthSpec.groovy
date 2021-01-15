@@ -49,7 +49,7 @@ class IDCardAuthSpec extends TaraSpecification {
         Utils.setParameter(headersMap, "XCLIENTCERTIFICATE", certificate)
         Response response = Requests.idCardAuthentication(flow, headersMap)
         assertThat("Correct response", response.body().jsonPath().get("status").toString(), equalTo("COMPLETED"))
-        Response acceptResponse = Requests.followRedirectWithSessionId(flow, REQUEST_TYPE_POST, flow.loginService.fullAuthAcceptUrl)
+        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
         assertEquals("Correct HTTP status code is returned", 302, acceptResponse.statusCode())
         Response oidcServiceResponse = Steps.getOAuthCookies(flow, acceptResponse)
         assertEquals("Correct HTTP status code is returned", 302, oidcServiceResponse.statusCode())

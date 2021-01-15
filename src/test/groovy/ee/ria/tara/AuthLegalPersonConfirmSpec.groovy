@@ -27,16 +27,17 @@ class AuthLegalPersonConfirmSpec extends TaraSpecification {
         assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
         Response pollResponse = Steps.pollMidResponse(flow)
         assertEquals("Correct HTTP status code is returned", 200, pollResponse.statusCode())
-        Response acceptResponse = Requests.followRedirectWithSessionId(flow, REQUEST_TYPE_POST, flow.loginService.fullAuthAcceptUrl)
+        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
         assertEquals("Correct HTTP status code is returned", 302, acceptResponse.statusCode())
         // /auth/legal_person/init
         Response initLegalResponse = Steps.followRedirectWithSessionId(flow, acceptResponse)
         assertEquals("Correct HTTP status code is returned", 200, initLegalResponse.statusCode())
 
-        Response legalPersonsResponse = Requests.followRedirectWithSessionId(flow, REQUEST_TYPE_GET, flow.loginService.fullAuthLegalPersonUrl)
+        Response legalPersonsResponse = Requests.getRequestWithSessionId(flow, flow.loginService.fullAuthLegalPersonUrl)
         String legalPersonIdentifier = legalPersonsResponse.body().jsonPath().get("legalPersons[0].legalPersonIdentifier").toString()
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         def map1 = Utils.setParameter(paramsMap, "legal_person_identifier", legalPersonIdentifier)
+        def map3 = Utils.setParameter(paramsMap, "_csrf", flow.csrf)
         HashMap<String, String> cookiesMap = (HashMap) Collections.emptyMap()
         def map2 = Utils.setParameter(cookiesMap, "SESSION", flow.sessionId)
         // TARA2-75 SESSION cookie in request?
@@ -83,15 +84,16 @@ class AuthLegalPersonConfirmSpec extends TaraSpecification {
         assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
         Response pollResponse = Steps.pollMidResponse(flow)
         assertEquals("Correct HTTP status code is returned", 200, pollResponse.statusCode())
-        Response acceptResponse = Requests.followRedirectWithSessionId(flow, REQUEST_TYPE_POST, flow.loginService.fullAuthAcceptUrl)
+        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
         assertEquals("Correct HTTP status code is returned", 302, acceptResponse.statusCode())
         // /auth/legal_person/init
         Response initLegalResponse = Steps.followRedirectWithSessionId(flow, acceptResponse)
         assertEquals("Correct HTTP status code is returned", 200, initLegalResponse.statusCode())
 
-        Response legalPersonsResponse = Requests.followRedirectWithSessionId(flow, REQUEST_TYPE_GET, flow.loginService.fullAuthLegalPersonUrl)
+        Response legalPersonsResponse = Requests.getRequestWithSessionId(flow, flow.loginService.fullAuthLegalPersonUrl)
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         def map1 = Utils.setParameter(paramsMap, "legal_person_identifier", legalPersonIdentifier)
+        def map3 = Utils.setParameter(paramsMap, "_csrf", flow.csrf)
         HashMap<String, String> cookiesMap = (HashMap) Collections.emptyMap()
         def map2 = Utils.setParameter(cookiesMap, "SESSION", flow.sessionId)
         Response response = Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullAuthLegalConfirmUrl, cookiesMap, paramsMap, Collections.emptyMap())

@@ -27,7 +27,7 @@ class AuthInitLegalPersonSpec extends TaraSpecification {
         assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
         Response pollResponse = Steps.pollMidResponse(flow)
         assertEquals("Correct HTTP status code is returned", 200, pollResponse.statusCode())
-        Response acceptResponse = Requests.followRedirectWithSessionId(flow, REQUEST_TYPE_POST, flow.loginService.fullAuthAcceptUrl)
+        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
         assertEquals("Correct HTTP status code is returned", 302, acceptResponse.statusCode())
         String oldSessionID = flow.sessionId
         // /auth/legal_person/init
@@ -46,7 +46,7 @@ class AuthInitLegalPersonSpec extends TaraSpecification {
     def "request initialize legal person authentication with invalid session ID"() {
         expect:
         flow.setSessionId("1234567")
-        Response response = Requests.followRedirectWithSessionId(flow, REQUEST_TYPE_GET, flow.loginService.fullAuthLegalInitUrl)
+        Response response = Requests.getRequestWithSessionId(flow, flow.loginService.fullAuthLegalInitUrl)
         assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
         // TODO "application/json;charset=UTF-8"
         assertEquals("Correct Content-Type is returned", "application/json", response.getContentType())
@@ -59,7 +59,7 @@ class AuthInitLegalPersonSpec extends TaraSpecification {
     def "request initialize legal person authentication with invalid method post"() {
         expect:
         flow.setSessionId("1234567")
-        Response response = Requests.followRedirectWithSessionId(flow, REQUEST_TYPE_POST, flow.loginService.fullAuthLegalInitUrl)
+        Response response = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthLegalInitUrl)
         assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
         // TODO "application/json;charset=UTF-8"
         assertEquals("Correct Content-Type is returned", "application/json", response.getContentType())

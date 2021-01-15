@@ -50,7 +50,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         expect:
         Response initResponse = Steps.initAuthSessionAndAuthWithMobileID(flow)
         String location = initResponse.getHeader("location")
-        Response response = Requests.followRedirectWithSessionId(flow, REQUEST_TYPE_POST, location)
+        Response response = Requests.postRequestWithSessionId(flow, location)
         assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
         // TODO "application/json;charset=UTF-8"
         assertEquals("Correct Content-Type is returned", "application/json", response.getContentType())
@@ -107,6 +107,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         def map1 = Utils.setParameter(cookiesMap, "SESSION", "1234567")
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         def map2 = Utils.setParameter(paramsMap, "consent_given", true)
+        def map3 = Utils.setParameter(paramsMap, "_csrf", flow.csrf)
         Response response = Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullConsentConfirmUrl, cookiesMap, paramsMap, Collections.emptyMap())
         assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
         // TODO "application/json;charset=UTF-8"
@@ -136,6 +137,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         expect:
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         def map2 = Utils.setParameter(paramsMap, "consent_given", true)
+        def map3 = Utils.setParameter(paramsMap, "_csrf", flow.csrf)
         Response response = Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullConsentConfirmUrl, Collections.emptyMap(), paramsMap, Collections.emptyMap())
         assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
         // TODO "application/json;charset=UTF-8"
@@ -154,6 +156,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         def map1 = Utils.setParameter(cookiesMap, "SESSION", flow.sessionId)
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         def map2 = Utils.setParameter(paramsMap, paramName, paramValue)
+        def map4 = Utils.setParameter(paramsMap, "_csrf", flow.csrf)
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
         def map3 = Utils.setParameter(additionalParamsMap, additionalParamName, additionalParamValue)
         Response response = Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullConsentConfirmUrl, cookiesMap, paramsMap, additionalParamsMap)

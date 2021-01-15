@@ -38,6 +38,7 @@ class Requests {
                         .formParam("idCode", "60001017716")
                         .formParam("telephoneNumber", "69100366")
                         .cookie("SESSION", flow.sessionId)
+                        .formParam("_csrf", flow.csrf)
                         .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
                         .when()
                         .redirects().follow(false)
@@ -80,8 +81,8 @@ class Requests {
                 .extract().response()
     }
 
-    @Step("Follow redirect request with session id")
-    static Response followRedirectWithSessionId(Flow flow,String requestType, String location) {
+    @Step("Login service get request with session id")
+    static Response getRequestWithSessionId(Flow flow, String location) {
         return given()
                 .filter(flow.cookieFilter)
                 .filter(new AllureRestAssured())
@@ -90,14 +91,31 @@ class Requests {
                 .baseUri(flow.loginService.baseUrl)
                 .when()
                 .redirects().follow(false)
-                .request(requestType, location)
+                .get(location)
+                .then()
+                .log().cookies()
+                .extract().response()
+    }
+
+    @Step("Login service post request with session id")
+    static Response postRequestWithSessionId(Flow flow, String location) {
+        return given()
+                .filter(flow.cookieFilter)
+                .filter(new AllureRestAssured())
+                .cookie("SESSION", flow.sessionId)
+                .formParam("_csrf", flow.csrf)
+                .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
+                .baseUri(flow.loginService.baseUrl)
+                .when()
+                .redirects().follow(false)
+                .post(location)
                 .then()
                 .log().cookies()
                 .extract().response()
     }
 
     @Step("Follow redirect request with session id and cookies")
-    static Response followRedirectWithSessionIdAndCookies(Flow flow,String requestType, String location, Map cookies) {
+    static Response followRedirectWithSessionIdAndCookies(Flow flow, String location, Map cookies) {
         return given()
                 .filter(flow.cookieFilter)
                 .filter(new AllureRestAssured())
@@ -107,7 +125,7 @@ class Requests {
                 .baseUri(flow.loginService.baseUrl)
                 .when()
                 .redirects().follow(false)
-                .request(requestType, location)
+                .get(location)
                 .then()
                 .log().cookies()
                 .extract().response()

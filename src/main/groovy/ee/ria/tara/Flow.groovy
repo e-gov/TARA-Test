@@ -13,6 +13,7 @@ class Flow {
     OidcClient oidcClient
     CookieFilter cookieFilter
     String sessionId
+    String csrf
     String loginChallenge
 
     String state
