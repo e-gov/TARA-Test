@@ -12,6 +12,7 @@ import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.Matchers.startsWith
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertThat
+import static org.junit.Assert.assertTrue
 
 class AuthConsentConfirmSpec extends TaraSpecification {
     Flow flow = new Flow(props)
@@ -27,7 +28,11 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         Response initResponse = Steps.initAuthSessionAndAuthWithMobileID(flow)
         Response response = Steps.followRedirectWithSessionId(flow, initResponse)
         assertEquals("Correct HTTP status code is returned", 200, response.statusCode())
-        assertThat(response.getHeader("location"), Matchers.startsWith(flow.oidcService.fullAuthenticationRequestUrl))
+        List<String> identityFields = response.body().htmlPath().getList("**.findAll {th -> th.@colspan == '1'}")
+        assertTrue(response.body().htmlPath().getList("**.findAll { it.@method == 'POST'}.button").contains("Nõustu"))
+        assertTrue(response.body().htmlPath().getList("**.findAll { it.@method == 'POST'}.button").contains("Keeldu"))
+        assertTrue(identityFields.containsAll("Isikukood:", "Perenimi:", "Eesnimi:", "Sünniaeg:"))
+        assertTrue(identityFields.containsAll("60001017716", "TESTNUMBER", "ONE", "01.01.2000"))
     }
 
     @Unroll
