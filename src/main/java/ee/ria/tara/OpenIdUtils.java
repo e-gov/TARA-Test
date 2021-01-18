@@ -25,13 +25,13 @@ public class OpenIdUtils {
         return signedJWT.verify(verifier);
     }
 
-    public static Map getAuthorizationParameters(Flow flow) {
-        Map<String, Object> queryParams = new HashMap<>();
+    public static Map<String, String> getAuthorizationParameters(Flow flow) {
+        Map<String, String> queryParams = new HashMap<>();
         queryParams.put("ui_locales", "et");
         queryParams.put("response_type", "code");
         queryParams.put("scope", "openid");
         queryParams.put("client_id",flow.getOidcClient().getClientId());
-        queryParams.put("redirect_uri", flow.getOidcClient().getFullResponseUrl());
+        queryParams.put("redirect_uri", flow.getOidcClient().getFullResponseUrl().toString());
         queryParams.put("state", Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))));
         queryParams.put("nonce", Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))));
         return queryParams;

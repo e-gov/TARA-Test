@@ -26,7 +26,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         expect:
         Response initResponse = Steps.initAuthSessionAndAuthWithMobileID(flow)
         Response response = Steps.followRedirectWithSessionId(flow, initResponse)
-        assertEquals("Correct HTTP status code is returned", 302, response.statusCode())
+        assertEquals("Correct HTTP status code is returned", 200, response.statusCode())
         assertThat(response.getHeader("location"), Matchers.startsWith(flow.oidcService.fullAuthenticationRequestUrl))
     }
 
@@ -151,7 +151,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         expect:
         Response initResponse = Steps.initAuthSessionAndAuthWithMobileID(flow)
         Response consentResponse = Steps.followRedirectWithSessionId(flow, initResponse)
-        assertEquals("Correct HTTP status code is returned", 302, consentResponse.statusCode())
+        assertEquals("Correct HTTP status code is returned", 200, consentResponse.statusCode())
         HashMap<String, String> cookiesMap = (HashMap) Collections.emptyMap()
         def map1 = Utils.setParameter(cookiesMap, "SESSION", flow.sessionId)
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
