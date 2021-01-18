@@ -23,8 +23,6 @@ class IDCardAuthSpec extends TaraSpecification {
         flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.oidcService.fullJwksUrl))
     }
 
-    // Strange /auth/init SSL error
-    @Ignore
     @Unroll
     @Feature("ESTEID_AUTH_ENDPOINT")
     def "Init ID-Card authentication"() {
@@ -37,8 +35,6 @@ class IDCardAuthSpec extends TaraSpecification {
         assertThat("Correct response", response.body().jsonPath().get("status").toString(), equalTo("COMPLETED"))
     }
 
-    // Strange /auth/init SSL error
-    @Ignore
     @Unroll
     @Feature("IDCARD_AUTH_SUCCESSFUL")
     def "Authenticate with ID-Card"() {
@@ -55,8 +51,10 @@ class IDCardAuthSpec extends TaraSpecification {
         assertEquals("Correct HTTP status code is returned", 302, oidcServiceResponse.statusCode())
 
         Response consentResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
-        assertEquals("Correct HTTP status code is returned", 302, consentResponse.statusCode())
-        Response oidcserviceResponse = Steps.followRedirectWithCookies(flow, consentResponse, flow.oidcService.cookies)
+        assertEquals("Correct HTTP status code is returned", 200, consentResponse.statusCode())
+        Response consentConfirmResponse = Steps.consentConfirmation(flow, true)
+        assertEquals("Correct HTTP status code is returned", 302, consentConfirmResponse.statusCode())
+        Response oidcserviceResponse = Steps.followRedirectWithCookies(flow, consentConfirmResponse, flow.oidcService.cookies)
         assertEquals("Correct HTTP status code is returned", 302, oidcserviceResponse.statusCode())
 
         Response webTokenResponse = Steps.followRedirectWithCookies(flow, oidcserviceResponse, flow.oidcClient.cookies)

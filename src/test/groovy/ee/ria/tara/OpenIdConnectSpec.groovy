@@ -18,7 +18,6 @@ import static org.junit.Assert.assertThat
 class OpenIdConnectSpec extends TaraSpecification {
     Flow flow = new Flow(props)
     String DEFAULT_SCOPE = "openid"
-    String MOCK_URI = "https://oidc-client-mock:8451/oauth/response"
 
     def setup() {
         flow.cookieFilter = new CookieFilter()
@@ -94,7 +93,7 @@ class OpenIdConnectSpec extends TaraSpecification {
         def map1 = Utils.setParameter(paramsMap, "scope", DEFAULT_SCOPE)
         def map2 = Utils.setParameter(paramsMap, "state", flow.state)
         def map4 = Utils.setParameter(paramsMap, "code", Utils.getParamValueFromResponseHeader(oidcServiceResponse2, "code") + "e")
-        Response response = Requests.getRequestWithCookiesAndParams(flow, MOCK_URI , flow.oidcClient.cookies, paramsMap, Collections.emptyMap())
+        Response response = Requests.getRequestWithCookiesAndParams(flow, flow.oidcClient.fullResponseUrl, flow.oidcClient.cookies, paramsMap, Collections.emptyMap())
         assertEquals("Correct HTTP status code is returned", 200, response.statusCode())
         assertThat("Correct Content-Type is returned", response.getContentType(), startsWith("application/json"))
         assertEquals("Correct error message is returned", "invalid_grant", response.body().jsonPath().get("error"))
@@ -117,7 +116,7 @@ class OpenIdConnectSpec extends TaraSpecification {
         def map1 = Utils.setParameter(paramsMap, "scope", DEFAULT_SCOPE)
         def map2 = Utils.setParameter(paramsMap, "state", flow.state)
 
-        Response response = Requests.getRequestWithCookiesAndParams(flow, MOCK_URI, flow.oidcClient.cookies, paramsMap, Collections.emptyMap())
+        Response response = Requests.getRequestWithCookiesAndParams(flow, flow.oidcClient.fullResponseUrl, flow.oidcClient.cookies, paramsMap, Collections.emptyMap())
         assertEquals("Correct HTTP status code is returned", 200, response.statusCode())
         assertThat("Correct Content-Type is returned", response.getContentType(), startsWith("application/json"))
         assertEquals("Correct error message is returned", "invalid_grant", response.body().jsonPath().get("error"))
