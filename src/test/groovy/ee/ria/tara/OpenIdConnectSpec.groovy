@@ -29,7 +29,8 @@ class OpenIdConnectSpec extends TaraSpecification {
     @Feature("OPENID_CONNECT")
     def "Metadata and token key ID matches"() {
         expect:
-        Response oidcServiceResponse = Steps.initAuthSessionAndAuthWithMobileID(flow)
+        Response initClientAuthenticationSession = Steps.initAuthenticationSession(flow)
+        Response oidcServiceResponse = Steps.authWithMobileID(flow,"60001017727" , "69200366")
         Response consentResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
         assertEquals("Correct HTTP status code is returned", 200, consentResponse.statusCode())
         Response consentConfirmResponse = Steps.consentConfirmation(flow, true)
@@ -46,7 +47,8 @@ class OpenIdConnectSpec extends TaraSpecification {
     @Feature("OPENID_CONNECT")
     def "Request a token twice"() {
         expect:
-        Response oidcServiceResponse = Steps.initAuthSessionAndAuthWithMobileID(flow)
+        Response initClientAuthenticationSession = Steps.initAuthenticationSession(flow)
+        Response oidcServiceResponse = Steps.authWithMobileID(flow,"60001017727" , "69200366")
         Response consentResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
         assertEquals("Correct HTTP status code is returned", 200, consentResponse.statusCode())
         Response consentConfirmResponse = Steps.consentConfirmation(flow, true)
@@ -80,7 +82,8 @@ class OpenIdConnectSpec extends TaraSpecification {
     @Feature("OPENID_CONNECT")
     def "Request with invalid authorization code"() {
         expect:
-        Response oidcServiceResponse = Steps.initAuthSessionAndAuthWithMobileID(flow)
+        Response initClientAuthenticationSession = Steps.initAuthenticationSession(flow)
+        Response oidcServiceResponse = Steps.authWithMobileID(flow,"60001017727" , "69200366")
         Response consentResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
         assertEquals("Correct HTTP status code is returned", 200, consentResponse.statusCode())
         Response consentConfirmResponse = Steps.consentConfirmation(flow, true)
@@ -103,7 +106,8 @@ class OpenIdConnectSpec extends TaraSpecification {
     @Feature("OPENID_CONNECT")
     def "Request with missing authorization code"() {
         expect:
-        Response oidcServiceResponse = Steps.initAuthSessionAndAuthWithMobileID(flow)
+        Response initClientAuthenticationSession = Steps.initAuthenticationSession(flow)
+        Response oidcServiceResponse = Steps.authWithMobileID(flow,"60001017727" , "69200366")
         Response consentResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
         assertEquals("Correct HTTP status code is returned", 200, consentResponse.statusCode())
         Response consentConfirmResponse = Steps.consentConfirmation(flow, true)
