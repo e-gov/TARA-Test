@@ -1,22 +1,22 @@
 package ee.ria.tara
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.nimbusds.jose.JOSEException
+import com.nimbusds.jwt.SignedJWT
 import io.qameta.allure.Allure
 import io.qameta.allure.Step
 import io.restassured.response.Response
+import org.hamcrest.Matchers
 import org.spockframework.lang.Wildcard
-import com.nimbusds.jose.JOSEException
-import com.nimbusds.jwt.SignedJWT
-import java.text.ParseException
-import com.fasterxml.jackson.databind.ObjectMapper
 
-import static org.hamcrest.CoreMatchers.equalTo
+import java.text.ParseException
+
 import static org.hamcrest.CoreMatchers.is
-import static org.hamcrest.MatcherAssert.assertThat
+import static org.hamcrest.Matchers.equalTo
 import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertThat
 
 class Steps {
-    static String REQUEST_TYPE_POST = "post"
-    static String REQUEST_TYPE_GET = "get"
 
     @Step("Create client authentication session")
     static Response createAuthenticationSession(Flow flow, String scopeList = "openid") {
@@ -83,9 +83,9 @@ class Steps {
             ++counter
             sleep(2000L)
         }
-        if( response.body().jsonPath().get("status") == "COMPLETED" && response.getCookie("SESSION") != null) {
-            flow.setSessionId(response.getCookie("SESSION"))
-        }
+  //      if( response.body().jsonPath().get("status") == "COMPLETED" && response.getCookie("SESSION") != null) {
+  //          flow.setSessionId(response.getCookie("SESSION"))
+  //      }
         return response
     }
 
@@ -148,6 +148,7 @@ class Steps {
         assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
         Response pollResponse = pollMidResponse(flow)
         assertEquals("Correct HTTP status code is returned", 200, pollResponse.statusCode())
+        assertThat(pollResponse.body().jsonPath().get("status").toString(), Matchers.not(equalTo("PENDING")))
         Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
         assertEquals("Correct HTTP status code is returned", 302, acceptResponse.statusCode())
         Response oidcServiceResponse = getOAuthCookies(flow, acceptResponse)

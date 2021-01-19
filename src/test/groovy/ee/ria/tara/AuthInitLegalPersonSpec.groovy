@@ -7,6 +7,7 @@ import org.hamcrest.Matchers
 import spock.lang.Ignore
 import spock.lang.Unroll
 
+import static org.hamcrest.Matchers.equalTo
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertThat
 
@@ -27,6 +28,7 @@ class AuthInitLegalPersonSpec extends TaraSpecification {
         assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
         Response pollResponse = Steps.pollMidResponse(flow)
         assertEquals("Correct HTTP status code is returned", 200, pollResponse.statusCode())
+        assertThat(pollResponse.body().jsonPath().get("status").toString(), Matchers.not(equalTo("PENDING")))
         Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
         assertEquals("Correct HTTP status code is returned", 302, acceptResponse.statusCode())
         String oldSessionID = flow.sessionId
