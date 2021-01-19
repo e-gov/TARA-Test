@@ -156,7 +156,7 @@ class Steps {
         return oidcServiceResponse
     }
 
-    @Step("Consent confirm")
+    @Step("Confirm or reject consent")
     static Response consentConfirmation(Flow flow, boolean consentGiven) {
         HashMap<String, String> cookiesMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(cookiesMap, "SESSION", flow.sessionId)
