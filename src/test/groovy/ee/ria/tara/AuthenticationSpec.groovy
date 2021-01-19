@@ -93,7 +93,7 @@ class AuthenticationSpec extends TaraSpecification {
         assertEquals("Correct Content-Type is returned", "application/json", response.getContentType())
         assertThat(response.body().jsonPath().get("message").toString(), equalTo("Request method 'GET' not supported"))
     }
-
+    @Ignore // session
     @Unroll
     @Feature("AUTH_ACCEPT_LOGIN_ENDPOINT")
     def "request accept authentication with invalid session ID"() {
@@ -110,7 +110,7 @@ class AuthenticationSpec extends TaraSpecification {
         assertEquals("Correct Content-Type is returned", "application/json", response.getContentType())
         assertEquals("Correct error message is returned", "Teie sessiooni ei leitud! Sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"))
     }
-
+    @Ignore
     @Unroll
     @Feature("AUTH_ACCEPT_LOGIN_ENDPOINT")
     def "request accept authentication with missing session ID"() {

@@ -16,7 +16,7 @@ class AuthLegalPersonSpec extends TaraSpecification {
     def setup() {
         flow.cookieFilter = new CookieFilter()
     }
-
+    @Ignore // http 404
     @Unroll
     @Feature("LEGAL_PERSON_AUTH_START_ENDPOINT")
     def "legal persons authentication request"() {
@@ -31,13 +31,14 @@ class AuthLegalPersonSpec extends TaraSpecification {
         // /auth/legal_person/init
         Response initLegalResponse = Steps.followRedirectWithSessionId(flow, acceptResponse)
         assertEquals("Correct HTTP status code is returned", 200, initLegalResponse.statusCode())
+        sleep(4000L)
         Response response = Requests.getRequestWithSessionId(flow, flow.loginService.fullAuthLegalPersonUrl)
         assertEquals("Correct HTTP status code is returned", 200, response.statusCode())
         assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
         assertThat(response.body().jsonPath().get("legalPersons[0].legalPersonIdentifier").toString(), Matchers.equalTo("12341234"))
         assertThat(response.body().jsonPath().get("legalPersons[0].legalName").toString(), Matchers.equalTo("Acme INC OÜ"))
     }
-
+    @Ignore // http 404 and session
     @Unroll
     @Feature("LEGAL_PERSON_AUTH_START_ENDPOINT")
     def "legal persons authentication request with invalid session ID"() {

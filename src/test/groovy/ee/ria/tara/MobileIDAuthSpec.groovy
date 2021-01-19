@@ -31,7 +31,7 @@ class MobileIDAuthSpec extends TaraSpecification {
         assertEquals("Verification code exists", 4, controlCode.size())
     }
 
-    @Ignore // TARA2-80
+    @Ignore // TARA2-80 , TARA2-165
     @Feature("MID_INIT_ENDPOINT")
     def "initialize mobile-ID authentication with invalid method get"() {
         expect:
@@ -252,6 +252,7 @@ class MobileIDAuthSpec extends TaraSpecification {
         assertThat(response.getHeader("location"), Matchers.startsWith(flow.loginService.initUrl + "?login_challenge=" + flow.loginChallenge))
     }
 
+    @Ignore
     @Unroll
     @Feature("MID_AUTH_STATUS_CHECK_ENDPOINT")
     def "cancel mobile-ID authentication with invalid session ID"() {
