@@ -24,7 +24,6 @@ class Requests {
                         .redirects().follow(false)
                         .get(flow.oidcClient.fullRequestUrl)
                         .then()
-                        .log().cookies()
                         .extract().response()
         return response
     }
@@ -44,7 +43,6 @@ class Requests {
                         .redirects().follow(false)
                         .post(flow.loginService.fullMidInitUrl)
                         .then()
-                        .log().cookies()
                         .extract().response()
         return response
     }
@@ -61,7 +59,6 @@ class Requests {
                         .redirects().follow(false)
                         .get(flow.loginService.fullMidPollUrl)
                         .then()
-                        .log().cookies()
                         .extract().response()
         return response
     }
@@ -77,7 +74,6 @@ class Requests {
                 .urlEncodingEnabled(true)
                 .get(location)
                 .then()
-                .log().cookies()
                 .extract().response()
     }
 
@@ -93,7 +89,6 @@ class Requests {
                 .redirects().follow(false)
                 .get(location)
                 .then()
-                .log().cookies()
                 .extract().response()
     }
 
@@ -110,7 +105,6 @@ class Requests {
                 .redirects().follow(false)
                 .post(location)
                 .then()
-                .log().cookies()
                 .extract().response()
     }
 
@@ -127,7 +121,6 @@ class Requests {
                 .redirects().follow(false)
                 .get(location)
                 .then()
-                .log().cookies()
                 .extract().response()
     }
 
@@ -143,7 +136,6 @@ class Requests {
                 .urlEncodingEnabled(false)
                 .get(location)
                 .then()
-                .log().cookies()
                 .extract().response()
     }
 
@@ -164,7 +156,6 @@ class Requests {
                 .urlEncodingEnabled(false)
                 .get(url)
                 .then()
-                .log().cookies()
                 .extract().response()
     }
 
@@ -186,7 +177,6 @@ class Requests {
                 .urlEncodingEnabled(false)
                 .get(url)
                 .then()
-                .log().cookies()
                 .extract().response()
     }
 
@@ -205,7 +195,6 @@ class Requests {
                 .urlEncodingEnabled(true)
                 .get(url)
                 .then()
-                .log().cookies()
                 .extract().response()
     }
 
@@ -287,7 +276,6 @@ class Requests {
                 .urlEncodingEnabled(false)
                 .get(flow.loginService.fullIdCardInitUrl)
                 .then()
-                .log().cookies()
                 .extract().response()
     }
 

@@ -4,7 +4,6 @@ import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import org.apache.commons.lang.RandomStringUtils
-import org.hamcrest.Matchers
 import spock.lang.Ignore
 import spock.lang.Unroll
 
@@ -99,9 +98,28 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         _                   | _                                        | _                   | _                    | "Missing parameter consent_challenge"                      || 400        || "Required String parameter 'consent_challenge' is not present"
         "consent_challenge" | _                                        | _                   | _                    | "Empty parameter consent_challenge value"                  || 400        || "authConsent.consentChallenge: only characters and numbers allowed"
         "consent_challenge" | RandomStringUtils.random(51, true, true) | _                   | _                    | "Too long consent_challenge"                               || 400        || "authConsent.consentChallenge: size must be between 0 and 50"
-    // http 200    "consent_challenge" | RandomStringUtils.random(50, true, true) | _                   | _                    | "Correct consent_challenge length"                         || 400        || "a'la consent with ID not found"
         "consent_challenge" | "342%26abz"                              | _                   | _                    | "Invalid symbols in the consent_challenge parameter value" || 400        || "authConsent.consentChallenge: only characters and numbers allowed"
         "consent_challenge" | "ABCD1234"                               | "consent_challenge" | "1234abc"            | "Multiple consent_challenge parameters"                    || 400        || "Multiple request parameters with the same name not allowed"
+    }
+
+    @Feature("USER_CONSENT_ENDPOINT")
+    @Feature("USER_CONSENT_POST_ACCEPT")
+    def "Consent with invalid consent challenge value"() {
+        expect:
+        Response initResponse = Steps.initAuthSessionAndAuthWithMobileID(flow)
+        String location = initResponse.getHeader("location")
+        HashMap<String, String> cookiesMap = (HashMap) Collections.emptyMap()
+        def map1 = Utils.setParameter(cookiesMap, "SESSION", flow.sessionId)
+        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
+        def map2 = Utils.setParameter(paramsMap, "consent_challenge", RandomStringUtils.random(50, true, true))
+        Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullConsentUrl, cookiesMap, paramsMap, Collections.emptyMap())
+        flow.setCsrf(response.body().htmlPath().get("**.find {it.@name == '_csrf'}.@value"))
+        Response consentConfirmResponse = Steps.consentConfirmation(flow, true)
+        assertEquals("Correct HTTP status code is returned", 500, consentConfirmResponse.statusCode())
+        // TODO "application/json;charset=UTF-8"
+        assertEquals("Correct Content-Type is returned", "application/json", consentConfirmResponse.getContentType())
+        assertThat(consentConfirmResponse.body().jsonPath().get("message").toString(), startsWith("Autentimine ebaõnnestus teenuse tehnilise vea tõttu."))
+        assertThat(consentConfirmResponse.body().jsonPath().get("path").toString(), startsWith("/auth/consent/confirm"))
     }
 
     @Ignore // session 403
