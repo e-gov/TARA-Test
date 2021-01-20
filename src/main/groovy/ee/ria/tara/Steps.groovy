@@ -81,7 +81,7 @@ class Steps {
                 break
             }
             ++counter
-            sleep(2000L)
+            sleep(4000L)
         }
   //      if( response.body().jsonPath().get("status") == "COMPLETED" && response.getCookie("SESSION") != null) {
   //          flow.setSessionId(response.getCookie("SESSION"))

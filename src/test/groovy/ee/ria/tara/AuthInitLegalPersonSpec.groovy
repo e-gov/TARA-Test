@@ -24,25 +24,26 @@ class AuthInitLegalPersonSpec extends TaraSpecification {
     def "request initialize legal person authentication"() {
         expect:
         Response initClientAuthenticationSession = Steps.initAuthenticationSession(flow, "openid legalperson")
-        Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001019906", "00000766", Collections.emptyMap())
+        Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017705", "69000366", Collections.emptyMap())
         assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
         Response pollResponse = Steps.pollMidResponse(flow)
         assertEquals("Correct HTTP status code is returned", 200, pollResponse.statusCode())
         assertThat(pollResponse.body().jsonPath().get("status").toString(), Matchers.not(equalTo("PENDING")))
         Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
         assertEquals("Correct HTTP status code is returned", 302, acceptResponse.statusCode())
-        String oldSessionID = flow.sessionId
-        // /auth/legal_person/init
+        assertThat(acceptResponse.getHeader("location"), Matchers.containsString(flow.loginService.authLegalInitUrl))
+
         Response response = Steps.followRedirectWithSessionId(flow, acceptResponse)
         assertEquals("Correct HTTP status code is returned", 200, response.statusCode())
         assertEquals("Correct content type", "text/html;charset=UTF-8", response.getContentType())
-        String sessionCookie = response.getCookie("SESSION")
-        String sessionHeader = response.getHeader("Set-Cookie")
         assertEquals("Correct header attribute Content-Language", "et", response.getHeader("Content-Language"))
-        // TARA2-75 new session cookie value
-        // assertEquals("Correct header attribute Set-Cookie", "SESSION=${sessionCookie}; Path=/; Secure; HttpOnly; SameSite=Strict".toString(), sessionHeader)
+        assertThat(response.body().htmlPath().get("**.find { it.@id == 'legal-person-representative-id-code'}").toString(), equalTo("60001017705"))
+        assertThat(response.body().htmlPath().get("**.find { it.@id == 'legal-person-representative-last-name'}").toString(), equalTo("TESTNUMBER"))
+        assertThat(response.body().htmlPath().get("**.find { it.@id == 'legal-person-representative-given-name'}").toString(), equalTo("TEN"))
+        assertThat(response.body().htmlPath().get("**.find { it.@id == 'legal-person-representative-date-of-birth'}").toString(), equalTo("01.01.2000"))
+        assertThat(response.body().htmlPath().get("**.find { it.@id == 'btn-select-legal-person'}").toString(), equalTo("Jätkan"))
     }
-    @Ignore //http 404
+
     @Unroll
     @Feature("LEGAL_PERSON_INIT_START_ENDPOINT")
     def "request initialize legal person authentication with invalid session ID"() {
@@ -50,12 +51,11 @@ class AuthInitLegalPersonSpec extends TaraSpecification {
         flow.setSessionId("1234567")
         Response response = Requests.getRequestWithSessionId(flow, flow.loginService.fullAuthLegalInitUrl)
         assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
-        // TODO "application/json;charset=UTF-8"
-        assertEquals("Correct Content-Type is returned", "application/json", response.getContentType())
+        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
         assertEquals("Correct error message is returned", "Teie sessiooni ei leitud! Sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"))
     }
 
-    @Ignore // TARA2-80
+    @Ignore // TARA2-80 TARA2-165
     @Unroll
     @Feature("LEGAL_PERSON_INIT_START_ENDPOINT")
     def "request initialize legal person authentication with invalid method post"() {
@@ -63,9 +63,8 @@ class AuthInitLegalPersonSpec extends TaraSpecification {
         flow.setSessionId("1234567")
         Response response = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthLegalInitUrl)
         assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
-        // TODO "application/json;charset=UTF-8"
-        assertEquals("Correct Content-Type is returned", "application/json", response.getContentType())
-        assertThat(response.body().jsonPath().get("message").toString(), Matchers.equalTo("Request method 'POST' not supported"))
+        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
+        assertThat(response.body().jsonPath().get("message").toString(), equalTo("Request method 'POST' not supported"))
     }
 
 }
