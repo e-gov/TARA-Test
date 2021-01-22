@@ -47,24 +47,6 @@ class MobileIDAuthSpec extends TaraSpecification {
         assertThat(response.body().jsonPath().get("message").toString(), Matchers.equalTo("Request method 'GET' not supported"))
     }
 
-    @Ignore
-    // https://jira.ria.ee/browse/TARA2-80
-    @Feature("MID_INIT_ENDPOINT")
-    def "initialize mobile-ID authentication with unsupported Content-Type"() {
-        expect:
-        Steps.initAuthenticationSession(flow)
-        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        def map1 = Utils.setParameter(paramsMap, "idCode", "60001017716")
-        def map2 = Utils.setParameter(paramsMap, "telephoneNumber", "69100366")
-        HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
-        def map3 = Utils.setParameter(cookieMap, "SESSION", flow.sessionId)
-        HashMap<String, String> headersMap = (HashMap) Collections.emptyMap()
-        def map4 = Utils.setParameter(headersMap, "Content-Type", "application/xml")
-        Response response = Requests.postRequestWithHeadersCookiesAndParams(flow, flow.loginService.fullMidInitUrl, headersMap, cookieMap, paramsMap)
-        assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
-        assertThat(response.body().jsonPath().get("message").toString(), Matchers.equalTo("Invalid content type"))
-    }
-
     @Unroll
     @Feature("MID_INIT_ENDPOINT")
     @Feature("MID_VALID_INPUT_IDCODE")
@@ -76,6 +58,7 @@ class MobileIDAuthSpec extends TaraSpecification {
         Steps.initAuthenticationSession(flow)
         Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, idCode, phoneNo, additionalParamsMap)
         assertEquals("Correct HTTP status code is returned", 400, initMidAuthenticationSession.statusCode())
+        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", initMidAuthenticationSession.getContentType())
         assertThat(initMidAuthenticationSession.body().jsonPath().get("message"), Matchers.containsString(errorMessage))
 
         where:
@@ -95,7 +78,6 @@ class MobileIDAuthSpec extends TaraSpecification {
         RandomStringUtils.random(16, false, true) | "60001019939"  | _                       | _                        | "too long telephone number"           || "Telefoninumber ei ole korrektne."
     }
 
-    @Ignore // thread pool issue
     @Unroll
     @Feature("MID_AUTH_POLL_RESPONSE_COMPLETE")
     @Feature("MID_VALID_INPUT_TEL")
@@ -108,6 +90,7 @@ class MobileIDAuthSpec extends TaraSpecification {
         assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
         Response pollResponse = Steps.pollMidResponse(flow)
         assertEquals("Correct HTTP status code is returned", 400, pollResponse.statusCode())
+        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", pollResponse.getContentType())
         assertThat(pollResponse.body().jsonPath().get("message"), Matchers.startsWith(errorMessage))
 
         where:
@@ -116,12 +99,12 @@ class MobileIDAuthSpec extends TaraSpecification {
         "07110066"                                | "60001019947" | _                       | _                        | "Sending authentication request to phone failed" || "Teie mobiiltelefoni ei saa Mobiil-ID autentimise sõnumeid saata."
         "01100266"                                | "60001019950" | _                       | _                        | "User cancelled authentication"                  || "Autentimine on katkestatud."
         "00000666"                                | "60001019961" | _                       | _                        | "Created signature is not valid"                 || "Autentimine Mobiil-ID-ga ei õnnestunud. Testi oma Mobiil-ID toimimist DigiDoc4 kliendis:"
-  // TARA2-80      "01200266"                                | "60001019972" | _                       | _                        | "SIM application error"                          || "Teie mobiiltelefoni SIM kaardiga tekkis tõrge."
+        "01200266"                                | "60001019972" | _                       | _                        | "SIM application error"                          || "Teie mobiiltelefoni ei saa Mobiil-ID autentimise sõnumeid saata."
         "13100266"                                | "60001019983" | _                       | _                        | "Phone is not in coverage area"                  || "Teie mobiiltelefon on levialast väljas."
         RandomStringUtils.random(15, false, true) | "60001019939" | _                       | _                        | "Telephone number length check"                  || "Kasutajal pole Mobiil-ID lepingut."
     }
 
-    @Ignore //TARA2-80
+    @Ignore //TARA2-80 , TARA2-169
     @Unroll
     @Feature("MID_AUTH_POLL_RESPONSE_COMPLETE")
     def "initialize mobile-ID authentication with scenario: #label ru"() {
@@ -136,6 +119,7 @@ class MobileIDAuthSpec extends TaraSpecification {
         assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
         Response pollResponse = Steps.pollMidResponse(flow)
         assertEquals("Correct HTTP status code is returned", 400, pollResponse.statusCode())
+        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", pollResponse.getContentType())
         assertThat(pollResponse.body().jsonPath().get("message"), Matchers.startsWith(errorMessage))
 
         where:
@@ -149,7 +133,7 @@ class MobileIDAuthSpec extends TaraSpecification {
 
     }
 
-    @Ignore //TARA2-80
+    @Ignore //TARA2-80 , TARA2-169
     @Unroll
     @Feature("MID_AUTH_POLL_RESPONSE_COMPLETE")
     def "initialize mobile-ID authentication with scenario: #label en"() {
@@ -164,6 +148,7 @@ class MobileIDAuthSpec extends TaraSpecification {
         assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
         Response pollResponse = Steps.pollMidResponse(flow)
         assertEquals("Correct HTTP status code is returned", 400, pollResponse.statusCode())
+        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", pollResponse.getContentType())
         assertThat(pollResponse.body().jsonPath().get("message"), Matchers.startsWith(errorMessage))
 
         where:
@@ -223,7 +208,7 @@ class MobileIDAuthSpec extends TaraSpecification {
         assertEquals("Correct Mobile-ID status", "COMPLETED", response.body().jsonPath().get("status"))
     }
 
-    @Ignore // TARA2-80
+    @Ignore // TARA2-80 , TARA2-165
     @Unroll
     @Feature("MID_AUTH_STATUS_CHECK_ENDPOINT")
     def "poll mobile-ID authentication with invalid method post"() {
@@ -251,7 +236,6 @@ class MobileIDAuthSpec extends TaraSpecification {
         assertThat(response.getHeader("location"), Matchers.startsWith(flow.loginService.initUrl + "?login_challenge=" + flow.loginChallenge))
     }
 
-    @Ignore
     @Unroll
     @Feature("MID_AUTH_STATUS_CHECK_ENDPOINT")
     def "cancel mobile-ID authentication with invalid session ID"() {
@@ -263,13 +247,13 @@ class MobileIDAuthSpec extends TaraSpecification {
 
         flow.setSessionId("1234567")
         Response response = Requests.postRequestWithSessionId(flow, flow.loginService.fullMidCancelUrl)
-        assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
-        // TODO "application/json;charset=UTF-8"
-        assertEquals("Correct Content-Type is returned", "application/json", response.getContentType())
-        assertEquals("Correct error message is returned", "Teie sessiooni ei leitud! Sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"))
+        assertEquals("Correct HTTP status code is returned", 403, response.statusCode())
+        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
+        // _csrf is directly related with SESSION cookie
+        assertEquals("Correct error message is returned", "Forbidden", response.body().jsonPath().get("message"))
     }
 
-    @Ignore //TARA2-80
+    @Ignore //TARA2-80 , TARA2-165
     @Unroll
     @Feature("MID_AUTH_STATUS_CHECK_ENDPOINT")
     def "cancel mobile-ID authentication with invalid method get"() {

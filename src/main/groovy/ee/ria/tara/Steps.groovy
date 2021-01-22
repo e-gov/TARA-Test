@@ -81,11 +81,8 @@ class Steps {
                 break
             }
             ++counter
-            sleep(4000L)
+            sleep(2000L)
         }
-  //      if( response.body().jsonPath().get("status") == "COMPLETED" && response.getCookie("SESSION") != null) {
-  //          flow.setSessionId(response.getCookie("SESSION"))
-  //      }
         return response
     }
 
@@ -106,6 +103,7 @@ class Steps {
         HashMap<String, String> paramMap = (HashMap)Collections.emptyMap()
         Response initResponse= Requests.getRequestWithCookiesAndParams(flow , location, cookiesMap, paramMap, additionalParamsMap)
         flow.setSessionId(initResponse.getCookie("SESSION"))
+        flow.setCsrf(initResponse.body().htmlPath().get("**.find {it.@name == '_csrf'}.@value"))
         return initResponse
     }
 
