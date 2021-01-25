@@ -7,6 +7,8 @@ import spock.lang.Unroll
 import org.hamcrest.Matchers
 
 import java.time.Duration
+
+import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertTrue
 
 class HeartBeatSpec extends TaraSpecification {
@@ -20,6 +22,7 @@ class HeartBeatSpec extends TaraSpecification {
     @Unroll
     @Feature("HEALTH_MONITORING_ENDPOINT")
     @Feature("HEALTH_MONITORING_ENDPOINT_DEPENDENCIES")
+    @Feature("HEALTH_MONITORING_STATUS")
     def "Verify heartbeat response elements"() {
         expect:
         Response heartBeat = Requests.getHeartbeat(flow)
@@ -34,14 +37,23 @@ class HeartBeatSpec extends TaraSpecification {
                 .body("currentTime", Matchers.notNullValue())
                 .body("upTime", Matchers.notNullValue())
                 .body("dependencies[0].name", Matchers.is("oidcServer"))
-                .body("dependencies[0].status", Matchers.oneOf("UP", "DOWN"))
+                .body("dependencies[0].status", Matchers.oneOf("UP", "DOWN", "UNKNOWN"))
                 .body("dependencies[1].name", Matchers.is("truststore"))
-                .body("dependencies[1].status",  Matchers.oneOf("UP", "DOWN"))
+                .body("dependencies[1].status",  Matchers.oneOf("UP", "DOWN", "UNKNOWN"))
         //        .body("dependencies[2].name", Matchers.is("ignite"))
-        //        .body("dependencies[2].status",  Matchers.oneOf("UP", "DOWN"))
+        //        .body("dependencies[2].status",  Matchers.oneOf("UP", "DOWN", "UNKNOWN"))
                 .contentType("application/json")
         String duration = heartBeat.body().jsonPath().get("upTime")
         Duration upTime = Duration.parse(duration)
         assertTrue("Correct upTime value exists", upTime.getSeconds() > 5)
+        String serviceStatus = heartBeat.body().jsonPath().get("status")
+        switch (serviceStatus) {
+            case "UP" :
+                assertEquals("Correct heartbeat HTTP status code is returned", 200, heartBeat.statusCode())
+                break
+            case "DOWN" :
+                assertEquals("Correct heartbeat HTTP status code is returned if some component is down", 503, heartBeat.statusCode())
+                break
+        }
     }
 }

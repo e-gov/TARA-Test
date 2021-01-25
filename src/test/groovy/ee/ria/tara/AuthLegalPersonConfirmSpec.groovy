@@ -13,6 +13,7 @@ import spock.lang.Unroll
 import static org.hamcrest.Matchers.equalTo
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertThat
+import static org.junit.Assert.assertTrue
 
 class AuthLegalPersonConfirmSpec extends TaraSpecification {
     Flow flow = new Flow(props)
@@ -144,6 +145,36 @@ class AuthLegalPersonConfirmSpec extends TaraSpecification {
         RandomStringUtils.random(51, true, true) | "legal person identifier is too long"            || 400        || "confirmLegalPerson.legalPersonIdentifier: size must be between 0 and 50"
         "678@123"                                | "unsupported symbols in legal person identifier" || 400        || "confirmLegalPerson.legalPersonIdentifier: invalid legal person identifier"
         RandomStringUtils.random(50, true, true) | "legal person identifier max length"             || 400        || "Antud id-ga juriidilist isikut ei leitud."
+    }
+
+    @Unroll
+    @Feature("LEGAL_PERSON_SELECTION_ENDPOINT")
+    def "legal person selection request with multiple legal_person_identifier values"() {
+        expect:
+        Response initClientAuthenticationSession = Steps.initAuthenticationSession(flow, "openid legalperson")
+        Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001019906", "00000766", Collections.emptyMap())
+        assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
+        Response pollResponse = Steps.pollMidResponse(flow)
+        assertEquals("Correct HTTP status code is returned", 200, pollResponse.statusCode())
+        assertThat(pollResponse.body().jsonPath().get("status").toString(), Matchers.not(equalTo("PENDING")))
+        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
+        assertEquals("Correct HTTP status code is returned", 302, acceptResponse.statusCode())
+
+        Response initLegalResponse = Steps.followRedirectWithSessionId(flow, acceptResponse)
+        assertEquals("Correct HTTP status code is returned", 200, initLegalResponse.statusCode())
+        HashMap<String, String> cookiesMap = (HashMap)Collections.emptyMap()
+        def map2 = Utils.setParameter(cookiesMap, "SESSION", flow.sessionId)
+        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
+        def map1 = Utils.setParameter(paramsMap, "legal_person_identifier", "12341234")
+        def map3 = Utils.setParameter(paramsMap, "_csrf", flow.csrf)
+        HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
+        def map4 = Utils.setParameter(additionalParamsMap, "legal_person_identifier", "10910878")
+        Response response = Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullAuthLegalConfirmUrl, cookiesMap, paramsMap, additionalParamsMap)
+        assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
+        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
+        String message = "Multiple request parameters with the same name not allowed"
+        assertThat(response.body().jsonPath().get("message").toString(), Matchers.equalTo(message))
+        assertTrue(response.body().jsonPath().get("incident_nr").toString().size() > 15)
     }
 
 }

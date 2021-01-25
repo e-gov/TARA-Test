@@ -41,8 +41,15 @@ class AuthLegalPersonSpec extends TaraSpecification {
         assertTrue(response.body().jsonPath().getList("legalPersons").size() > 0)
         assertTrue(response.body().jsonPath().getList("legalPersons.legalName").size() > 0)
         assertTrue(response.body().jsonPath().getList("legalPersons.legalPersonIdentifier").size() > 0)
-        assertTrue(response.body().jsonPath().getList("legalPersons.legalPersonIdentifier").contains("10910878"))
-        assertTrue(response.body().jsonPath().getList("legalPersons.legalName").contains("täisühing VAVILOV"))
+        // TODO better environment selection solution here
+        if(flow.loginService.baseUrl.contains("local")) { //local environment
+            assertTrue(response.body().jsonPath().getList("legalPersons.legalPersonIdentifier").contains("12341234"))
+            assertTrue(response.body().jsonPath().getList("legalPersons.legalName").contains("Acme INC OÜ"))
+        }  else {
+            // other environments
+            assertTrue(response.body().jsonPath().getList("legalPersons.legalPersonIdentifier").contains("10910878"))
+            assertTrue(response.body().jsonPath().getList("legalPersons.legalName").contains("täisühing VAVILOV"))
+        }
     }
 
     @Unroll
