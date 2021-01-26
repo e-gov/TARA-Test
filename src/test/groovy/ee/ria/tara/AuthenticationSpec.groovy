@@ -12,6 +12,7 @@ import spock.lang.Unroll
 import static org.hamcrest.Matchers.equalTo
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertThat
+import static org.junit.Assert.assertTrue
 
 class AuthenticationSpec extends TaraSpecification {
 
@@ -79,7 +80,7 @@ class AuthenticationSpec extends TaraSpecification {
         assertEquals("Location field contains correct client_id value", flow.oidcClient.clientId, Utils.getParamValueFromResponseHeader(response, "client_id"))
     }
 
-    @Ignore // TARA2-82
+    @Ignore // TARA2-82 , TARA2-165
     @Unroll
     @Feature("AUTH_ACCEPT_LOGIN_ENDPOINT")
     def "request accept authentication with invalid method get"() {
@@ -92,11 +93,10 @@ class AuthenticationSpec extends TaraSpecification {
         assertThat(pollResponse.body().jsonPath().get("status").toString(), Matchers.not(equalTo("PENDING")))
         Response response = Requests.getRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
         assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
-        // TODO "application/json;charset=UTF-8"
-        assertEquals("Correct Content-Type is returned", "application/json", response.getContentType())
+        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
         assertThat(response.body().jsonPath().get("message").toString(), equalTo("Request method 'GET' not supported"))
     }
-    @Ignore // session
+
     @Unroll
     @Feature("AUTH_ACCEPT_LOGIN_ENDPOINT")
     def "request accept authentication with invalid session ID"() {
@@ -109,21 +109,10 @@ class AuthenticationSpec extends TaraSpecification {
         assertThat(pollResponse.body().jsonPath().get("status").toString(), Matchers.not(equalTo("PENDING")))
         flow.setSessionId("1234567")
         Response response = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
-        assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
-        // TODO "application/json;charset=UTF-8"
-        assertEquals("Correct Content-Type is returned", "application/json", response.getContentType())
-        assertEquals("Correct error message is returned", "Teie sessiooni ei leitud! Sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"))
-    }
-    @Ignore
-    @Unroll
-    @Feature("AUTH_ACCEPT_LOGIN_ENDPOINT")
-    def "request accept authentication with missing session ID"() {
-        expect:
-        Response response = Requests.postRequestWithParams(flow, flow.loginService.fullAuthAcceptUrl, Collections.emptyMap() , Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
-        // TODO "application/json;charset=UTF-8"
-        assertEquals("Correct Content-Type is returned", "application/json", response.getContentType())
-        assertEquals("Correct error message is returned", "Teie sessiooni ei leitud! Sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"))
+        assertEquals("Correct HTTP status code is returned", 403, response.statusCode())
+        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
+        assertEquals("Correct error message is returned", "Forbidden", response.body().jsonPath().get("message"))
+        assertTrue(response.body().jsonPath().get("incident_nr").toString().size() > 15)
     }
 
     @Ignore // TARA2-104
@@ -164,8 +153,7 @@ class AuthenticationSpec extends TaraSpecification {
         def map3 = Utils.setParameter(cookieMap, "SESSION", flow.sessionId)
         Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullAuthRejectUrl, cookieMap, paramsMap, Collections.emptyMap())
         assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
-        // TODO "application/json;charset=UTF-8"
-        assertEquals("Correct Content-Type is returned", "application/json", response.getContentType())
+        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
         assertEquals("Correct error message is returned", "Error text here", response.body().jsonPath().get("message"))
     }
 
@@ -180,8 +168,7 @@ class AuthenticationSpec extends TaraSpecification {
         def map3 = Utils.setParameter(cookieMap, "SESSION", "S34567")
         Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullAuthRejectUrl, cookieMap, paramsMap, Collections.emptyMap())
         assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
-        // TODO "application/json;charset=UTF-8"
-        assertEquals("Correct Content-Type is returned", "application/json", response.getContentType())
+        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
         assertEquals("Correct error message is returned", "Teie sessiooni ei leitud! Sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"))
     }
 
@@ -194,8 +181,7 @@ class AuthenticationSpec extends TaraSpecification {
         def map1 = Utils.setParameter(paramsMap, "error_code", REJECT_ERROR_CODE)
         Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullAuthRejectUrl, Collections.emptyMap(), paramsMap, Collections.emptyMap())
         assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
-        // TODO "application/json;charset=UTF-8"
-        assertEquals("Correct Content-Type is returned", "application/json", response.getContentType())
+        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
         assertEquals("Correct error message is returned", "Teie sessiooni ei leitud! Sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"))
     }
     
@@ -217,8 +203,7 @@ class AuthenticationSpec extends TaraSpecification {
         def map3 = Utils.setParameter(cookieMap, "SESSION", flow.sessionId)
         Response response = Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullAuthRejectUrl, cookieMap, paramsMap, Collections.emptyMap())
         assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
-        // TODO "application/json;charset=UTF-8"
-        assertEquals("Correct Content-Type is returned", "application/json", response.getContentType())
+        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
         assertThat(response.body().jsonPath().get("message").toString(), equalTo("Request method 'POST' not supported"))
     }
 }

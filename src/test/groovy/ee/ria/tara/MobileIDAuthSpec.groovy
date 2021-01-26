@@ -62,25 +62,28 @@ class MobileIDAuthSpec extends TaraSpecification {
         assertThat(initMidAuthenticationSession.body().jsonPath().get("message"), Matchers.containsString(errorMessage))
 
         where:
-        phoneNo                                   | idCode         | additionalParameterName | additionalParameterValue | label                                 || errorMessage
-        "00000266"                                | "60001019938"  | _                       | _                        | "invalid idCode checksum"             || "Isikukood ei ole korrektne."
-        "+37200000266"                            | "60001019939"  | _                       | _                        | "invalid telephone number"            || "Telefoninumber ei ole korrektne."
-     // TARA2-80  _                                         | _              | _                       | _                        | "missing telephone number and idCode" || "Telefoninumber ei ole korrektne.; Isikukood ei ole korrektne."
-        _                                         | _              | _                       | _                        | "missing telephone number and idCode" || "Telefoninumber ei ole korrektne."
-        "00000266"                                | _              | _                       | _                        | "missing idCode"                      || "Isikukood ei ole korrektne."
-        _                                         | "60001019939"  | _                       | _                        | "missing telephone number"            || "Telefoninumber ei ole korrektne."
-        "00000266"                                | "600010199399" | _                       | _                        | "too long idCode"                     || "Isikukood ei ole korrektne."
-        "00000266"                                | "6000"         | _                       | _                        | "too short idCode"                    || "Isikukood ei ole korrektne."
-       // TARA2-80 "abcd"                                    | "ABCD"         | _                       | _                        | "invalid telephone number and idCode" || "Isikukood ei ole korrektne.; Telefoninumber ei ole korrektne."
-        "abcd"                                    | "ABCD"         | _                       | _                        | "invalid telephone number and idCode" || "Isikukood ei ole korrektne."
-        "00000266"                                | "38500030556"  | _                       | _                        | "invalid month in idCode"             || "Isikukood ei ole korrektne."
-        "12345"                                   | "60001019939"  | _                       | _                        | "too short telephone number"          || "Telefoninumber ei ole korrektne."
-        RandomStringUtils.random(16, false, true) | "60001019939"  | _                       | _                        | "too long telephone number"           || "Telefoninumber ei ole korrektne."
+        phoneNo                                   | idCode         | additionalParameterName | additionalParameterValue               | label                                 || errorMessage
+        "00000266"                                | "60001019938"  | _                       | _                                      | "invalid idCode checksum"             || "Isikukood ei ole korrektne."
+        "+37200000266"                            | "60001019939"  | _                       | _                                      | "invalid telephone number"            || "Telefoninumber ei ole korrektne."
+        _                                         | _              | _                       | _                                      | "missing telephone number and idCode" || "Isikukood ei ole korrektne.; Telefoninumber ei ole korrektne."
+        "00000266"                                | _              | _                       | _                                      | "missing idCode"                      || "Isikukood ei ole korrektne."
+        _                                         | "60001019939"  | _                       | _                                      | "missing telephone number"            || "Telefoninumber ei ole korrektne."
+        "00000266"                                | "600010199399" | _                       | _                                      | "too long idCode"                     || "Isikukood ei ole korrektne."
+        "00000266"                                | "60001329939"  | _                       | _                                      | "wrong date inside idCode"            || "Isikukood ei ole korrektne."
+        "00000266"                                | "6000"         | _                       | _                                      | "too short idCode"                    || "Isikukood ei ole korrektne."
+        "abcd"                                    | "ABCD"         | _                       | _                                      | "invalid telephone number and idCode" || "Isikukood ei ole korrektne.; Telefoninumber ei ole korrektne."
+        "00000266"                                | "38500030556"  | _                       | _                                      | "invalid month in idCode"             || "Isikukood ei ole korrektne."
+        "12345"                                   | "60001019939"  | _                       | _                                      | "too short telephone number"          || "Telefoninumber ei ole korrektne."
+        RandomStringUtils.random(16, false, true) | "60001019939"  | _                       | _                                      | "too long telephone number"           || "Telefoninumber ei ole korrektne."
+        "69100366"                                | "60001017716"  | "idCode"                | "60001017727"                          | "multiple idCode parameters"          || "Multiple request parameters with the same name not allowed"
+        "69100366"                                | "60001017716"  | "telephoneNumber"       | "00000766"                             | "multiple telephoneNumber parameters" || "Multiple request parameters with the same name not allowed"
+        "69100366"                                | "60001017716"  | "_csrf"                 | "d7860443-a0cc-45db-ad68-3c9300c0b3bb" | "multiple _csrf parameters"           || "Multiple request parameters with the same name not allowed"
     }
 
     @Unroll
     @Feature("MID_AUTH_POLL_RESPONSE_COMPLETE")
     @Feature("MID_VALID_INPUT_TEL")
+    @Feature("MID_AUTH_FAILED")
     def "initialize mobile-ID authentication with scenario: #label et"() {
         expect:
         LinkedHashMap<String, String> additionalParamsMap = (LinkedHashMap) Collections.emptyMap()

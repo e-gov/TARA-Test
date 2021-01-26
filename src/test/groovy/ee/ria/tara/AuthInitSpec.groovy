@@ -46,7 +46,6 @@ class AuthInitSpec extends TaraSpecification {
     @Feature("AUTH_INIT_ENDPOINT")
     def "request initialize authentication language"() {
         expect:
-        // TODO followRedirectWithSessionId
         HashMap<String, String> cookiesMap = (HashMap) Collections.emptyMap()
         HashMap<String, String> paramMap = (HashMap) Collections.emptyMap()
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
@@ -102,6 +101,27 @@ class AuthInitSpec extends TaraSpecification {
         "login_challenge" | "+372& (aa" | _                 | _           | "invalid symbols &( in login_challenge" || "authInit.loginChallenge: only characters and numbers allowed"
         _                 | _           | "login_challenge" | "+372"      | "invalid symbols + in login_challenge"  || "authInit.loginChallenge: only characters and numbers allowed"
         "login_challenge" | RandomStringUtils.random(51, true, true) | _ | _ | "too long login_challenge"           || "authInit.loginChallenge: size must be between 0 and 50"
+    }
+
+    @Unroll
+    @Feature("AUTH_INIT_ENDPOINT")
+    def "initialize authentication session with multiple parameters: #label"() {
+        expect:
+        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
+        HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
+        Response initOIDCServiceSession = Steps.createSession(flow)
+        String loginChallenge = Utils.getParamValueFromResponseHeader(initOIDCServiceSession, "login_challenge")
+        def map1 = Utils.setParameter(paramsMap, "lang", "et")
+        def map2 = Utils.setParameter(paramsMap, "login_challenge", loginChallenge)
+        def map3 = Utils.setParameter(additionalParamsMap, paramName1, paramValue1)
+        Response initResponse = Requests.getRequestWithParams(flow, flow.loginService.fullInitUrl, paramsMap, additionalParamsMap)
+        assertEquals("Correct HTTP status code is returned", 400, initResponse.statusCode())
+        assertThat(initResponse.body().jsonPath().get("message"), Matchers.startsWith(errorMessage))
+
+        where:
+        paramName1        | paramValue1 | paramName2 | paramValue2 | label             || errorMessage
+        "lang"            | "zu"        | _          | _           | "language code"   || "Multiple request parameters with the same name not allowed"
+        "login_challenge" | "12345"     | _          | _           | "login_challenge" || "Multiple request parameters with the same name not allowed"
     }
 
     @Unroll
