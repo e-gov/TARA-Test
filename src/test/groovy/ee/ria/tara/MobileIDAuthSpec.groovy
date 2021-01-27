@@ -241,6 +241,24 @@ class MobileIDAuthSpec extends TaraSpecification {
     }
 
     @Unroll
+    @Feature("DISALLOW_IFRAMES")
+    @Feature("CSP_ENABLED")
+    @Feature("HSTS_ENABLED")
+    @Feature("CACHE_POLICY")
+    @Feature("NOSNIFF")
+    @Feature("XSS_DETECTION_FILTER_ENABLED")
+    def "Verify cancel mobile-ID authentication response headers"() {
+        expect:
+        Steps.initAuthenticationSession(flow)
+        HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
+        Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", additionalParamsMap)
+        assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
+        Response response = Requests.postRequestWithSessionId(flow, flow.loginService.fullMidCancelUrl)
+        assertEquals("Correct HTTP status code is returned", 302, response.statusCode())
+        Steps.verifyResponseHeaders(response)
+    }
+
+    @Unroll
     @Feature("MID_AUTH_STATUS_CHECK_ENDPOINT")
     def "cancel mobile-ID authentication with invalid session ID"() {
         expect:

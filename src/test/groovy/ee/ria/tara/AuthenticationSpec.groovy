@@ -65,6 +65,60 @@ class AuthenticationSpec extends TaraSpecification {
     }
 
     @Unroll
+    @Feature("DISALLOW_IFRAMES")
+    @Feature("CSP_ENABLED")
+    @Feature("HSTS_ENABLED")
+    @Feature("SECURE_COOKIE_HANDLING")
+    @Feature("CACHE_POLICY")
+    @Feature("NOSNIFF")
+    @Feature("XSS_DETECTION_FILTER_ENABLED")
+    def "request authentication with security checks"() {
+        expect:
+        Response initClientAuthenticationSession = Steps.createAuthenticationSession(flow)
+        assertEquals("Correct HTTP status code is returned", 302, initClientAuthenticationSession.statusCode())
+
+        Response initOIDCServiceSession = Steps.createOIDCSession(flow, initClientAuthenticationSession)
+        assertEquals("Correct HTTP status code is returned", 302, initOIDCServiceSession.statusCode())
+
+        Response initLoginSession = Steps.createLoginSession(flow, initOIDCServiceSession)
+        assertEquals("Correct HTTP status code is returned", 200, initLoginSession.statusCode())
+        Steps.verifyResponseHeaders(initLoginSession)
+        assertThat(initLoginSession.getDetailedCookie("SESSION").toString(), Matchers.containsString("HttpOnly"))
+        assertThat(initLoginSession.getDetailedCookie("SESSION").toString(), Matchers.containsString("SameSite=Strict"))
+        Response midInit = Requests.initMid(flow)
+        assertEquals("Correct HTTP status code is returned", 200, midInit.statusCode())
+        Steps.verifyResponseHeaders(midInit)
+        Response midPollResult = Steps.pollMidResponse(flow)
+        assertEquals("Correct HTTP status code is returned", 200, midPollResult.statusCode())
+        assertThat(midPollResult.body().jsonPath().get("status").toString(), Matchers.not(equalTo("PENDING")))
+        // TARA2-178
+        // Steps.verifyResponseHeaders(midPollResult)
+        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
+        assertEquals("Correct HTTP status code is returned", 302, acceptResponse.statusCode())
+        Steps.verifyResponseHeaders(acceptResponse)
+        Response oidcServiceResponse = Steps.getOAuthCookies(flow, acceptResponse)
+        assertEquals("Correct HTTP status code is returned", 302, oidcServiceResponse.statusCode())
+
+        Response consentResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
+        assertEquals("Correct HTTP status code is returned", 200, consentResponse.statusCode())
+        Steps.verifyResponseHeaders(consentResponse)
+
+        Response consentConfirmResponse = Steps.consentConfirmation(flow, true)
+        assertEquals("Correct HTTP status code is returned", 302, consentConfirmResponse.statusCode())
+        Steps.verifyResponseHeaders(consentConfirmResponse)
+        Response oidcserviceResponse = Steps.followRedirectWithCookies(flow, consentConfirmResponse, flow.oidcService.cookies)
+        assertEquals("Correct HTTP status code is returned", 302, oidcserviceResponse.statusCode())
+
+        Response webTokenResponse = Steps.followRedirectWithCookies(flow, oidcserviceResponse, flow.oidcClient.cookies)
+        assertEquals("Correct HTTP status code is returned", 200, webTokenResponse.statusCode())
+        Map<String, String> webToken = webTokenResponse.body().jsonPath().getMap("\$.")
+        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, webToken.get("id_token")).getJWTClaimsSet()
+        assertThat(claims.getAudience().get(0), equalTo(flow.oidcClient.clientId))
+        assertThat(claims.getSubject(), equalTo("EE60001017716"))
+        assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo("ONE"))
+    }
+
+    @Unroll
     @Feature("AUTH_ACCEPT_LOGIN_ENDPOINT")
     def "request accept authentication"() {
         expect:
@@ -136,6 +190,30 @@ class AuthenticationSpec extends TaraSpecification {
         Response oidcserviceResponse = Steps.followRedirectWithCookies(flow, response, flow.oidcService.cookies)
         assertEquals("Correct HTTP status code is returned", 302, oidcserviceResponse.statusCode())
         assertThat(oidcserviceResponse.getHeader("location"), Matchers.containsString("user_cancel"))
+    }
+
+    @Unroll
+    @Feature("DISALLOW_IFRAMES")
+    @Feature("CSP_ENABLED")
+    @Feature("HSTS_ENABLED")
+    @Feature("CACHE_POLICY")
+    @Feature("NOSNIFF")
+    @Feature("XSS_DETECTION_FILTER_ENABLED")
+    def "Verify reject authentication response headers"() {
+        expect:
+        Response initClientAuthenticationSession = Steps.initAuthenticationSession(flow)
+        Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", Collections.emptyMap())
+        assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
+        Response pollResponse = Steps.pollMidResponse(flow)
+        assertEquals("Correct HTTP status code is returned", 200, pollResponse.statusCode())
+        assertThat(pollResponse.body().jsonPath().get("status").toString(), Matchers.not(equalTo("PENDING")))
+        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
+        def map1 = Utils.setParameter(paramsMap, "error_code", REJECT_ERROR_CODE)
+        HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
+        def map3 = Utils.setParameter(cookieMap, "SESSION", flow.sessionId)
+        Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullAuthRejectUrl, cookieMap, paramsMap, Collections.emptyMap())
+        assertEquals("Correct HTTP status code is returned", 302, response.statusCode())
+       Steps.verifyResponseHeaders(response)
     }
 
     @Unroll

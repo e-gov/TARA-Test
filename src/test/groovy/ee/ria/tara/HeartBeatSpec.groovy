@@ -56,4 +56,17 @@ class HeartBeatSpec extends TaraSpecification {
                 break
         }
     }
+
+    @Unroll
+    @Feature("DISALLOW_IFRAMES")
+    @Feature("CSP_ENABLED")
+    @Feature("HSTS_ENABLED")
+    @Feature("CACHE_POLICY")
+    @Feature("NOSNIFF")
+    @Feature("XSS_DETECTION_FILTER_ENABLED")
+    def "Verify heartbeat response headers"() {
+        expect:
+        Response heartBeat = Requests.getHeartbeat(flow)
+        Steps.verifyResponseHeaders(heartBeat)
+    }
 }

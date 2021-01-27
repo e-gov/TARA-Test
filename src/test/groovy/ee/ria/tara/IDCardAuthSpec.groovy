@@ -69,4 +69,22 @@ class IDCardAuthSpec extends TaraSpecification {
         assertThat(claims.getClaim("amr")[0].toString(), equalTo("idcard"))
         assertThat(claims.getClaim("acr"), equalTo("high"))
     }
+
+    @Ignore // TARA2-178
+    @Unroll
+    @Feature("DISALLOW_IFRAMES")
+    @Feature("CSP_ENABLED")
+    @Feature("HSTS_ENABLED")
+    @Feature("CACHE_POLICY")
+    @Feature("NOSNIFF")
+    @Feature("XSS_DETECTION_FILTER_ENABLED")
+    def "Verify ID-Card authentication response headers"() {
+        expect:
+        String certificate = Utils.getCertificateAsString("src/test/resources/joeorg-auth.pem")
+        Response initClientAuthenticationSession = Steps.initAuthenticationSession(flow)
+        HashMap<String, String> headersMap = (HashMap) Collections.emptyMap()
+        Utils.setParameter(headersMap, "XCLIENTCERTIFICATE", certificate)
+        Response response = Requests.idCardAuthentication(flow, headersMap)
+        Steps.verifyResponseHeaders(response)
+    }
 }

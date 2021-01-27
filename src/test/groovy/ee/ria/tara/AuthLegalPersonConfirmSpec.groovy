@@ -74,6 +74,43 @@ class AuthLegalPersonConfirmSpec extends TaraSpecification {
         assertThat(claims.getJSONObjectClaim("profile_attributes").get("represents_legal_person").getAt("name"), equalTo(legalName))
     }
 
+    @Unroll
+    @Feature("DISALLOW_IFRAMES")
+    @Feature("CSP_ENABLED")
+    @Feature("HSTS_ENABLED")
+    @Feature("CACHE_POLICY")
+    @Feature("NOSNIFF")
+    @Feature("XSS_DETECTION_FILTER_ENABLED")
+    def "Verify legal person response headers"() {
+        expect:
+        Response initClientAuthenticationSession = Steps.initAuthenticationSession(flow, "openid legalperson")
+        Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001019906", "00000766", Collections.emptyMap())
+        assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
+        Response pollResponse = Steps.pollMidResponse(flow)
+        assertEquals("Correct HTTP status code is returned", 200, pollResponse.statusCode())
+        assertThat(pollResponse.body().jsonPath().get("status").toString(), Matchers.not(equalTo("PENDING")))
+        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
+        assertEquals("Correct HTTP status code is returned", 302, acceptResponse.statusCode())
+
+        Response initLegalResponse = Steps.followRedirectWithSessionId(flow, acceptResponse)
+        assertEquals("Correct HTTP status code is returned", 200, initLegalResponse.statusCode())
+        Steps.verifyResponseHeaders(initLegalResponse)
+        Response legalPersonsResponse = Requests.getRequestWithSessionId(flow, flow.loginService.fullAuthLegalPersonUrl)
+        // TARA2-178
+        // Steps.verifyResponseHeaders(legalPersonsResponse)
+        String legalPersonIdentifier = legalPersonsResponse.body().jsonPath().get("legalPersons[0].legalPersonIdentifier").toString()
+        String legalName = legalPersonsResponse.body().jsonPath().get("legalPersons[0].legalName").toString()
+        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
+        def map1 = Utils.setParameter(paramsMap, "legal_person_identifier", legalPersonIdentifier)
+        def map3 = Utils.setParameter(paramsMap, "_csrf", flow.csrf)
+        HashMap<String, String> cookiesMap = (HashMap) Collections.emptyMap()
+        def map2 = Utils.setParameter(cookiesMap, "SESSION", flow.sessionId)
+
+        Response response = Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullAuthLegalConfirmUrl, cookiesMap, paramsMap, Collections.emptyMap())
+        assertEquals("Correct HTTP status code is returned", 302, response.statusCode())
+        Steps.verifyResponseHeaders(response)
+    }
+
     @Ignore // TARA2-75 , TARA2-165
     @Unroll
     @Feature("LEGAL_PERSON_SELECTION_ENDPOINT")
