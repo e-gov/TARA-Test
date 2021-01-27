@@ -115,7 +115,6 @@ class AuthenticationSpec extends TaraSpecification {
         assertTrue(response.body().jsonPath().get("incident_nr").toString().size() > 15)
     }
 
-    @Ignore // TARA2-104
     @Unroll
     @Feature("AUTH_REJECT_LOGIN_ENDPOINT")
     def "request reject authentication"() {
@@ -134,9 +133,11 @@ class AuthenticationSpec extends TaraSpecification {
         assertEquals("Correct HTTP status code is returned", 302, response.statusCode())
         assertThat(response.getHeader("location"), Matchers.startsWith(flow.oidcService.fullAuthenticationRequestUrl))
         assertEquals("Location field contains correct client_id value", flow.oidcClient.clientId, Utils.getParamValueFromResponseHeader(response, "client_id"))
+        Response oidcserviceResponse = Steps.followRedirectWithCookies(flow, response, flow.oidcService.cookies)
+        assertEquals("Correct HTTP status code is returned", 302, oidcserviceResponse.statusCode())
+        assertThat(oidcserviceResponse.getHeader("location"), Matchers.containsString("user_cancel"))
     }
 
-    @Ignore // TARA2-104
     @Unroll
     @Feature("AUTH_REJECT_LOGIN_ENDPOINT")
     def "request reject authentication with invalid error_code value"() {
@@ -154,10 +155,10 @@ class AuthenticationSpec extends TaraSpecification {
         Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullAuthRejectUrl, cookieMap, paramsMap, Collections.emptyMap())
         assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
         assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
-        assertEquals("Correct error message is returned", "Error text here", response.body().jsonPath().get("message"))
+        assertEquals("Correct error message is returned", "authReject.errorCode: the only supported value is: 'user_cancel'", response.body().jsonPath().get("message"))
+        assertTrue(response.body().jsonPath().get("incident_nr").toString().size() > 15)
     }
 
-    @Ignore // TARA2-104
     @Unroll
     @Feature("AUTH_REJECT_LOGIN_ENDPOINT")
     def "request reject authentication with invalid session ID"() {
@@ -172,7 +173,6 @@ class AuthenticationSpec extends TaraSpecification {
         assertEquals("Correct error message is returned", "Teie sessiooni ei leitud! Sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"))
     }
 
-    @Ignore // TARA2-104
     @Unroll
     @Feature("AUTH_REJECT_LOGIN_ENDPOINT")
     def "request reject authentication with missing session ID"() {
@@ -205,5 +205,28 @@ class AuthenticationSpec extends TaraSpecification {
         assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
         assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
         assertThat(response.body().jsonPath().get("message").toString(), equalTo("Request method 'POST' not supported"))
+    }
+
+    @Unroll
+    @Feature("AUTH_REJECT_LOGIN_ENDPOINT")
+    def "request reject authentication with multiple error_code values"() {
+        expect:
+        Response initClientAuthenticationSession = Steps.initAuthenticationSession(flow)
+        Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", Collections.emptyMap())
+        assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
+        Response pollResponse = Steps.pollMidResponse(flow)
+        assertEquals("Correct HTTP status code is returned", 200, pollResponse.statusCode())
+        assertThat(pollResponse.body().jsonPath().get("status").toString(), Matchers.not(equalTo("PENDING")))
+        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
+        def map1 = Utils.setParameter(paramsMap, "error_code", "ERROR12345")
+        HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
+        def map3 = Utils.setParameter(cookieMap, "SESSION", flow.sessionId)
+        HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
+        def map4 = Utils.setParameter(additionalParamsMap, "error_code", REJECT_ERROR_CODE)
+        Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullAuthRejectUrl, cookieMap, paramsMap, additionalParamsMap)
+        assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
+        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
+        assertEquals("Correct error message is returned", "Multiple request parameters with the same name not allowed", response.body().jsonPath().get("message"))
+        assertTrue(response.body().jsonPath().get("incident_nr").toString().size() > 15)
     }
 }
