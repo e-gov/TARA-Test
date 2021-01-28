@@ -279,6 +279,20 @@ class Requests {
                 .extract().response()
     }
 
+    @Step("Get request with ID-Card authentication and without session cookie")
+    static Response idCardAuthenticationWithoutSession(Flow flow , Map<String, String> headers) {
+        return given()
+                .filter(flow.cookieFilter)
+                .headers(headers)
+                .relaxedHTTPSValidation()
+                .filter(new AllureRestAssured())
+                .redirects().follow(false)
+                .urlEncodingEnabled(false)
+                .get(flow.loginService.fullIdCardInitUrl)
+                .then()
+                .extract().response()
+    }
+
     @Step("Download openid service configuration")
     static JsonPath getOpenidConfiguration(String url) {
         return given()

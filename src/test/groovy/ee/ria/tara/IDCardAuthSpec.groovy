@@ -32,7 +32,26 @@ class IDCardAuthSpec extends TaraSpecification {
         HashMap<String, String> headersMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(headersMap, "XCLIENTCERTIFICATE", certificate)
         Response response = Requests.idCardAuthentication(flow, headersMap)
+        assertEquals("Correct HTTP status code is returned", 200, response.statusCode())
         assertThat("Correct response", response.body().jsonPath().get("status").toString(), equalTo("COMPLETED"))
+        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
+    }
+
+    @Unroll
+    @Feature("ESTEID_AUTH_ENDPOINT")
+    @Feature("CERTIFICATE_IS_VALID")
+    @Feature("REJECT_EXPIRED_CERTS")
+    def "Init ID-Card authentication with expired certificate"() {
+        expect:
+        String certificate = Utils.getCertificateAsString("src/test/resources/expired-cert.pem")
+        Response initClientAuthenticationSession = Steps.initAuthenticationSession(flow)
+        HashMap<String, String> headersMap = (HashMap) Collections.emptyMap()
+        Utils.setParameter(headersMap, "XCLIENTCERTIFICATE", certificate)
+        Response response = Requests.idCardAuthentication(flow, headersMap)
+        assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
+        assertThat("Correct response", response.body().jsonPath().get("status").toString(), equalTo("ERROR"))
+        assertThat("Correct error message", response.body().jsonPath().get("errorMessage").toString(), equalTo("Teie sertifikaadid ei kehti."))
+        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
     }
 
     @Unroll
@@ -86,5 +105,36 @@ class IDCardAuthSpec extends TaraSpecification {
         Utils.setParameter(headersMap, "XCLIENTCERTIFICATE", certificate)
         Response response = Requests.idCardAuthentication(flow, headersMap)
         Steps.verifyResponseHeaders(response)
+    }
+
+    @Unroll
+    @Feature("ESTEID_AUTH_ENDPOINT")
+    @Feature("ESTEID_INIT")
+    def "Init ID-Card authentication with invalid session"() {
+        expect:
+        String certificate = Utils.getCertificateAsString("src/test/resources/joeorg-auth.pem")
+        Response initClientAuthenticationSession = Steps.initAuthenticationSession(flow)
+        HashMap<String, String> headersMap = (HashMap) Collections.emptyMap()
+        Utils.setParameter(headersMap, "XCLIENTCERTIFICATE", certificate)
+        flow.setSessionId("123456789")
+        Response response = Requests.idCardAuthentication(flow, headersMap)
+        assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
+        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
+        assertEquals("Correct error message is returned", "Teie sessiooni ei leitud! Sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"))
+    }
+
+    @Unroll
+    @Feature("ESTEID_AUTH_ENDPOINT")
+    @Feature("ESTEID_INIT")
+    def "Init ID-Card authentication with missing session cookie"() {
+        expect:
+        String certificate = Utils.getCertificateAsString("src/test/resources/joeorg-auth.pem")
+        Response initClientAuthenticationSession = Steps.initAuthenticationSession(flow)
+        HashMap<String, String> headersMap = (HashMap) Collections.emptyMap()
+        Utils.setParameter(headersMap, "XCLIENTCERTIFICATE", certificate)
+        Response response = Requests.idCardAuthenticationWithoutSession(flow, headersMap)
+        assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
+        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
+        assertEquals("Correct error message is returned", "Teie sessiooni ei leitud! Sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"))
     }
 }
