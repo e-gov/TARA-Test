@@ -61,7 +61,6 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         assertThat(response.body().jsonPath().get("message").toString(), equalTo("Request method 'POST' not supported"))
     }
 
-    @Ignore // TARA2-76 , TARA2-177
     @Unroll
     @Feature("USER_CONSENT_ENDPOINT")
     def "Consent with authentication results. Missing session ID"() {
