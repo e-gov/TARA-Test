@@ -102,13 +102,12 @@ class MobileIDAuthSpec extends TaraSpecification {
         "00000266"                                | "60001019939" | _                       | _                        | "Mobile-ID user has no active certificates"      || "Kasutajal pole Mobiil-ID lepingut."
         "07110066"                                | "60001019947" | _                       | _                        | "Sending authentication request to phone failed" || "Teie mobiiltelefoni ei saa Mobiil-ID autentimise sõnumeid saata."
         "01100266"                                | "60001019950" | _                       | _                        | "User cancelled authentication"                  || "Autentimine on katkestatud."
-        "00000666"                                | "60001019961" | _                       | _                        | "Created signature is not valid"                 || "Autentimine Mobiil-ID-ga ei õnnestunud. Testi oma Mobiil-ID toimimist DigiDoc4 kliendis:"
-        "01200266"                                | "60001019972" | _                       | _                        | "SIM application error"                          || "Teie mobiiltelefoni ei saa Mobiil-ID autentimise sõnumeid saata."
+        "00000666"                                | "60001019961" | _                       | _                        | "Created signature is not valid"                 || "Autentimine Mobiil-ID-ga ei õnnestunud."
+        "01200266"                                | "60001019972" | _                       | _                        | "Phone cannot receive Mobile-ID auth messages"   || "Teie mobiiltelefoni ei saa Mobiil-ID autentimise sõnumeid saata."
         "13100266"                                | "60001019983" | _                       | _                        | "Phone is not in coverage area"                  || "Teie mobiiltelefon on levialast väljas."
         RandomStringUtils.random(15, false, true) | "60001019939" | _                       | _                        | "Telephone number length check"                  || "Kasutajal pole Mobiil-ID lepingut."
     }
 
-    @Ignore //TARA2-80 , TARA2-169
     @Unroll
     @Feature("MID_AUTH_POLL_RESPONSE_COMPLETE")
     def "initialize mobile-ID authentication with scenario: #label ru"() {
@@ -132,12 +131,11 @@ class MobileIDAuthSpec extends TaraSpecification {
         "07110066" | "60001019947" | _                       | _                        | "Sending authentication request to phone failed" || "На Ваш телефон нельзя отправить сообщение аутентификации"
         "01100266" | "60001019950" | _                       | _                        | "User cancelled authentication"                  || "Аутентификация прервана"
         "00000666" | "60001019961" | _                       | _                        | "Created signature is not valid"                 || "Аутентификация с помощью Вашего"
-        "01200266" | "60001019972" | _                       | _                        | "SIM application error"                          || "В SIM-карте Вашего телефона произошел сбой."
+        "01200266" | "60001019972" | _                       | _                        | "Phone cannot receive Mobile-ID auth messages"   || "На Ваш телефон нельзя отправить сообщение аутентификации"
         "13100266" | "60001019983" | _                       | _                        | "Phone is not in coverage area"                  || "Ваш телефон находится вне зоны доступа."
 
     }
 
-    @Ignore //TARA2-80 , TARA2-169
     @Unroll
     @Feature("MID_AUTH_POLL_RESPONSE_COMPLETE")
     def "initialize mobile-ID authentication with scenario: #label en"() {
@@ -161,7 +159,7 @@ class MobileIDAuthSpec extends TaraSpecification {
         "07110066" | "60001019947" | _                       | _                        | "Sending authentication request to phone failed" || "Your mobile phone cannot receive Mobile-ID authentication messages."
         "01100266" | "60001019950" | _                       | _                        | "User cancelled authentication"                  || "Authentication has been cancelled."
         "00000666" | "60001019961" | _                       | _                        | "Created signature is not valid"                 || "Authentication with Mobile-ID failed. Test your Mobile-ID with the DigiDoc4 client"
-        "01200266" | "60001019972" | _                       | _                        | "SIM application error"                          || "There was an error with your SIM card."
+        "01200266" | "60001019972" | _                       | _                        | "Phone cannot receive Mobile-ID auth messages"   || "Your mobile phone cannot receive Mobile-ID authentication messages."
         "13100266" | "60001019983" | _                       | _                        | "Phone is not in coverage area"                  || "Your mobile phone is out of coverage area."
 
     }

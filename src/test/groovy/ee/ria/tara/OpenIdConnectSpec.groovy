@@ -9,7 +9,6 @@ import spock.lang.Ignore;
 import spock.lang.Unroll
 import com.nimbusds.jose.jwk.JWKSet
 
-import java.nio.charset.StandardCharsets
 import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.Matchers.startsWith
 import static org.junit.Assert.assertEquals
@@ -17,7 +16,6 @@ import static org.junit.Assert.assertThat
 
 class OpenIdConnectSpec extends TaraSpecification {
     Flow flow = new Flow(props)
-    String DEFAULT_SCOPE = "openid"
 
     def setup() {
         flow.cookieFilter = new CookieFilter()
@@ -29,16 +27,18 @@ class OpenIdConnectSpec extends TaraSpecification {
     @Feature("OPENID_CONNECT")
     def "Metadata and token key ID matches"() {
         expect:
-        Response initClientAuthenticationSession = Steps.initAuthenticationSession(flow)
+        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
+        Response initOIDCServiceSession = Steps.createOIDCSessionWithParameters(flow, paramsMap)
+        assertEquals("Correct HTTP status code is returned", 302, initOIDCServiceSession.statusCode())
+        Response initLoginSession = Steps.createLoginSession(flow, initOIDCServiceSession)
+        assertEquals("Correct HTTP status code is returned", 200, initLoginSession.statusCode())
         Response oidcServiceResponse = Steps.authWithMobileID(flow,"60001017727" , "69200366")
-        Response consentResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
-        assertEquals("Correct HTTP status code is returned", 200, consentResponse.statusCode())
-        Response consentConfirmResponse = Steps.consentConfirmation(flow, true)
-        assertEquals("Correct HTTP status code is returned", 302, consentConfirmResponse.statusCode())
-        assertThat(consentConfirmResponse.getHeader("location"), startsWith(flow.oidcService.fullAuthenticationRequestUrl))
-
-        Response webTokenResponse = Steps.getWebTokenFromOidcService(flow, consentConfirmResponse)
-        Map<String, String> webToken = webTokenResponse.body().jsonPath().getMap("\$.")
+        String authorizationCode = Steps.getPermissionCode(flow, oidcServiceResponse)
+        Response tokenResponse = Requests.getWebToken(flow, authorizationCode)
+        assertEquals("Correct HTTP status code is returned", 200, tokenResponse.statusCode())
+        Map<String, String> webToken = tokenResponse.body().jsonPath().getMap("\$.")
+        flow.setState(paramsMap.get("state"))
+        flow.setNonce(paramsMap.get("nonce"))
         String keyID = Steps.verifyTokenAndReturnSignedJwtObject(flow, webToken.get("id_token")).getHeader().getKeyID()
         assertThat(keyID, equalTo(flow.jwkSet.getKeys().get(0).getKeyID()))
     }
@@ -47,23 +47,21 @@ class OpenIdConnectSpec extends TaraSpecification {
     @Feature("OPENID_CONNECT")
     def "Request a token twice"() {
         expect:
-        Response initClientAuthenticationSession = Steps.initAuthenticationSession(flow)
+        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
+        Response initOIDCServiceSession = Steps.createOIDCSessionWithParameters(flow, paramsMap)
+        assertEquals("Correct HTTP status code is returned", 302, initOIDCServiceSession.statusCode())
+        Response initLoginSession = Steps.createLoginSession(flow, initOIDCServiceSession)
+        assertEquals("Correct HTTP status code is returned", 200, initLoginSession.statusCode())
         Response oidcServiceResponse = Steps.authWithMobileID(flow,"60001017727" , "69200366")
-        Response consentResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
-        assertEquals("Correct HTTP status code is returned", 200, consentResponse.statusCode())
-        Response consentConfirmResponse = Steps.consentConfirmation(flow, true)
-        assertEquals("Correct HTTP status code is returned", 302, consentConfirmResponse.statusCode())
-        assertThat(consentConfirmResponse.getHeader("location"), startsWith(flow.oidcService.fullAuthenticationRequestUrl))
-        Response oidcServiceResponse2 = Steps.followRedirectWithCookies(flow, consentConfirmResponse, flow.oidcService.cookies)
-        assertEquals("Correct HTTP status code is returned", 302, oidcServiceResponse2.statusCode())
+        String authorizationCode = Steps.getPermissionCode(flow, oidcServiceResponse)
         // 1
-        Response webTokenResponse = Steps.followRedirectWithCookies(flow, oidcServiceResponse2, flow.oidcClient.cookies)
-        assertEquals("Correct HTTP status code is returned", 200, webTokenResponse.statusCode())
+        Response tokenResponse = Requests.getWebToken(flow, authorizationCode)
         // 2
-        Response webTokenResponse2 = Steps.followRedirectWithCookies(flow, oidcServiceResponse2, flow.oidcClient.cookies)
-        assertEquals("Correct HTTP status code is returned", 200, webTokenResponse2.statusCode())
-        assertThat("Correct Content-Type is returned", webTokenResponse2.getContentType(), startsWith("application/json"))
-        assertEquals("Correct error message is returned", "invalid_grant", webTokenResponse2.body().jsonPath().get("error"))
+        Response tokenResponse2 = Requests.getWebToken(flow, authorizationCode)
+        assertEquals("Correct HTTP status code is returned", 400, tokenResponse2.statusCode())
+        assertThat("Correct Content-Type is returned", tokenResponse2.getContentType(), startsWith("application/json"))
+        assertEquals("Correct error message is returned", "invalid_grant", tokenResponse2.body().jsonPath().get("error"))
+        assertEquals("Correct error hint is returned", "The authorization code has already been used.", tokenResponse2.body().jsonPath().get("error_hint"))
     }
 
     @Ignore // Etapp 4
@@ -73,7 +71,7 @@ class OpenIdConnectSpec extends TaraSpecification {
         expect:
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
         paramsMap.put("scope", "")
-        Response response = Requests.getRequestWithParams(flow, flow.oidcService.fullAuthenticationRequestUrl, paramsMap, Collections.emptyMap())
+        Response response = Steps.createOIDCSessionWithParameters(flow, paramsMap)
         assertEquals("Correct HTTP status code is returned", 302, response.statusCode())
         assertEquals("Correct error value", " error text here", Utils.getParamValueFromResponseHeader(response, "error"))
     }
@@ -82,46 +80,16 @@ class OpenIdConnectSpec extends TaraSpecification {
     @Feature("OPENID_CONNECT")
     def "Request with invalid authorization code"() {
         expect:
-        Response initClientAuthenticationSession = Steps.initAuthenticationSession(flow)
+        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
+        Response initOIDCServiceSession = Steps.createOIDCSessionWithParameters(flow, paramsMap)
+        assertEquals("Correct HTTP status code is returned", 302, initOIDCServiceSession.statusCode())
+        Response initLoginSession = Steps.createLoginSession(flow, initOIDCServiceSession)
+        assertEquals("Correct HTTP status code is returned", 200, initLoginSession.statusCode())
         Response oidcServiceResponse = Steps.authWithMobileID(flow,"60001017727" , "69200366")
-        Response consentResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
-        assertEquals("Correct HTTP status code is returned", 200, consentResponse.statusCode())
-        Response consentConfirmResponse = Steps.consentConfirmation(flow, true)
-        assertEquals("Correct HTTP status code is returned", 302, consentConfirmResponse.statusCode())
-        assertThat(consentConfirmResponse.getHeader("location"), startsWith(flow.oidcService.fullAuthenticationRequestUrl))
-        Response oidcServiceResponse2 = Steps.followRedirectWithCookies(flow, consentConfirmResponse, flow.oidcService.cookies)
-        assertEquals("Correct HTTP status code is returned", 302, oidcServiceResponse2.statusCode())
 
-        HashMap<String, String> paramsMap = (HashMap)Collections.emptyMap()
-        def map1 = Utils.setParameter(paramsMap, "scope", DEFAULT_SCOPE)
-        def map2 = Utils.setParameter(paramsMap, "state", flow.state)
-        def map4 = Utils.setParameter(paramsMap, "code", Utils.getParamValueFromResponseHeader(oidcServiceResponse2, "code") + "e")
-        Response response = Requests.getRequestWithCookiesAndParams(flow, flow.oidcClient.fullResponseUrl, flow.oidcClient.cookies, paramsMap, Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 200, response.statusCode())
-        assertThat("Correct Content-Type is returned", response.getContentType(), startsWith("application/json"))
-        assertEquals("Correct error message is returned", "invalid_grant", response.body().jsonPath().get("error"))
-    }
-
-    @Unroll
-    @Feature("OPENID_CONNECT")
-    def "Request with missing authorization code"() {
-        expect:
-        Response initClientAuthenticationSession = Steps.initAuthenticationSession(flow)
-        Response oidcServiceResponse = Steps.authWithMobileID(flow,"60001017727" , "69200366")
-        Response consentResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
-        assertEquals("Correct HTTP status code is returned", 200, consentResponse.statusCode())
-        Response consentConfirmResponse = Steps.consentConfirmation(flow, true)
-        assertEquals("Correct HTTP status code is returned", 302, consentConfirmResponse.statusCode())
-        assertThat(consentConfirmResponse.getHeader("location"), startsWith(flow.oidcService.fullAuthenticationRequestUrl))
-        Response oidcServiceResponse2 = Steps.followRedirectWithCookies(flow, consentConfirmResponse, flow.oidcService.cookies)
-        assertEquals("Correct HTTP status code is returned", 302, oidcServiceResponse2.statusCode())
-
-        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        def map1 = Utils.setParameter(paramsMap, "scope", DEFAULT_SCOPE)
-        def map2 = Utils.setParameter(paramsMap, "state", flow.state)
-
-        Response response = Requests.getRequestWithCookiesAndParams(flow, flow.oidcClient.fullResponseUrl, flow.oidcClient.cookies, paramsMap, Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 200, response.statusCode())
+        String authorizationCode = Steps.getPermissionCode(flow, oidcServiceResponse)
+        Response response = Requests.getWebToken(flow, authorizationCode + "e")
+        assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
         assertThat("Correct Content-Type is returned", response.getContentType(), startsWith("application/json"))
         assertEquals("Correct error message is returned", "invalid_grant", response.body().jsonPath().get("error"))
     }
@@ -130,49 +98,45 @@ class OpenIdConnectSpec extends TaraSpecification {
     @Feature("OPENID_CONNECT")
     def "Request with missing parameter #paramName"() {
         expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
-        paramsMap.remove(paramName)
-        Response response = Requests.getRequestWithParams(flow, flow.oidcService.fullAuthenticationRequestUrl, paramsMap, Collections.emptyMap())
+        HashMap<String, String> formParamsMap = (HashMap) Collections.emptyMap()
+        def map1 = Utils.setParameter(formParamsMap, "grant_type", "code")
+        def map2 = Utils.setParameter(formParamsMap, "code", "1234567")
+        def map3 = Utils.setParameter(formParamsMap, "redirect_uri", flow.oidcClient.fullResponseUrl)
+        formParamsMap.remove(paramName)
+        Response response = Requests.getWebTokenResponseBody(flow, formParamsMap)
         assertEquals("Correct HTTP status code is returned", statusCode, response.statusCode())
-        assertEquals("Correct error value", error, Utils.getParamValueFromResponseHeader(response, "error"))
-        String actualErrorDescription = URLDecoder.decode(Utils.getParamValueFromResponseHeader(response, "error_description"), StandardCharsets.UTF_8)
-        assertThat("Correct error_description value", actualErrorDescription, startsWith(errorDescription))
-        String actualErrorHint = URLDecoder.decode(Utils.getParamValueFromResponseHeader(response, "error_hint"), StandardCharsets.UTF_8)
-        assertThat("Correct error_hint value", actualErrorHint, startsWith(errorHint))
+        assertThat("Correct Content-Type is returned", response.getContentType(), startsWith("application/json"))
+        assertEquals("Correct error message is returned", error, response.body().jsonPath().get("error"))
+        assertThat("Correct error_hint value", response.body().jsonPath().get("error_hint"), startsWith(errorHint))
 
         where:
-        paramName       || statusCode || error                       || errorDescription                                                                                                              || errorHint
-        "client_id"     || 302        || "invalid_client"            || "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method" || "The requested OAuth 2.0 Client does not exist."
-        "response_type" || 302        || "unsupported_response_type" || "The authorization server does not support obtaining a token using this method"                                               || "The request is missing the \"response_type\"\" parameter"
-        "state"         || 302        || "invalid_state"             || "The state is missing or does not have enough characters and is therefore considered too weak"                                || "Request parameter \"state\" must be at least be 8 characters long to ensure sufficient entropy"
-     //   "nonce"         || 302        || "invalid_state"             || "The state is missing or does not have enough characters and is therefore considered too weak"                                || "Request parameter \"state\" must be at least be 8 characters long to ensure sufficient entropy"
-
+        paramName      || statusCode || error             || errorHint
+        "code"         || 400        || "invalid_request" || "Make sure that the various parameters are correct"
+        "grant_type"   || 400        || "invalid_request" || "Request parameter \"grant_type\"\" is missing"
+        "redirect_uri" || 400        || "invalid_request" || "Make sure that the various parameters are correct"
     }
+
 
     @Unroll
     @Feature("OPENID_CONNECT")
     def "Request with invalid parameter value #paramName"() {
         expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
-        paramsMap.put(paramName, paramValue)
-        Response response = Requests.getRequestWithParams(flow, flow.oidcService.fullAuthenticationRequestUrl, paramsMap, Collections.emptyMap())
+        HashMap<String, String> formParamsMap = (HashMap) Collections.emptyMap()
+        def map1 = Utils.setParameter(formParamsMap, "grant_type", "code")
+        def map2 = Utils.setParameter(formParamsMap, "code", "1234567")
+        def map3 = Utils.setParameter(formParamsMap, "redirect_uri", flow.oidcClient.fullResponseUrl)
+        def map4 = Utils.setParameter(formParamsMap, paramName, paramValue)
+        Response response = Requests.getWebTokenResponseBody(flow, formParamsMap)
         assertEquals("Correct HTTP status code is returned", statusCode, response.statusCode())
-        assertEquals("Correct error value", error, Utils.getParamValueFromResponseHeader(response, "error"))
-        String actualErrorDescription = URLDecoder.decode(Utils.getParamValueFromResponseHeader(response, "error_description"), StandardCharsets.UTF_8)
-        assertThat("Correct error_description value", actualErrorDescription, startsWith(errorDescription))
-        String actualErrorHint = URLDecoder.decode(Utils.getParamValueFromResponseHeader(response, "error_hint"), StandardCharsets.UTF_8)
-        assertThat("Correct error_hint value", actualErrorHint, startsWith(errorHint))
+        assertThat("Correct Content-Type is returned", response.getContentType(), startsWith("application/json"))
+        assertEquals("Correct error message is returned", error, response.body().jsonPath().get("error"))
+        assertThat("Correct error_hint value", response.body().jsonPath().get("error_hint"), startsWith(errorHint))
 
         where:
-        paramName       | paramValue                         || statusCode || error                       || errorDescription                                                                                                                                   || errorHint
-        "client_id"     | "my-old-client"                    || 302        || "invalid_client"            || "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method"                      || "The requested OAuth 2.0 Client does not exist."
-        "scope"         | "wrongscope"                       || 302        || "invalid_scope"             || "The requested scope is invalid, unknown, or malformed"                                                                                            || "The OAuth 2.0 Client is not allowed to request scope"
-        "response_type" | "token"                            || 302        || "unsupported_response_type" || "The authorization server does not support obtaining a token using this method"                                                                    || "The client is not allowed to request response_type \"token"
-        "redirect_uri"  | "https://www.example.com/redirect" || 302        || "invalid_request"           || "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed" || "The \"redirect_uri\" parameter does not match any of the OAuth 2.0 Client's pre-registered redirect urls"
-        "state"         | "short"                            || 302        || "invalid_state"             || "The state is missing or does not have enough characters and is therefore considered too weak"                                                     || "Request parameter \"state\" must be at least be 8 characters long to ensure sufficient entropy."
-        // Uurida max pikkust    "state" | RandomStringUtils.random(4000, true, true) || 302 || "invalid_state" || "The state is missing or does not have enough characters and is therefore considered too weak" || "Request parameter \"state\" must be at least be 8 characters long to ensure sufficient entropy."
-        // Uurida max ja min pikkust     "nonce" | RandomStringUtils.random(4000, true, true) || 302 || "invalid_nonce" || "The state is missing or does not have enough characters and is therefore considered too weak" || "Request parameter \"state\" must be at least be 8 characters long to ensure sufficient entropy."
-
+        paramName      | paramValue                || statusCode || error             || errorHint
+        "redirect_uri" | "https://www.example.com" || 400        || "invalid_request" || "Make sure that the various parameters are correct"
+        "grant_type"   | "token"                   || 400        || "invalid_request" || "Make sure that the various parameters are correct"
+        "code"         | "45678"                   || 400        || "invalid_request" || "Make sure that the various parameters are correct"
     }
 
     @Unroll
@@ -186,20 +150,13 @@ class OpenIdConnectSpec extends TaraSpecification {
         Response initLoginSession = Steps.createLoginSession(flow, initOIDCServiceSession)
         assertEquals("Correct HTTP status code is returned", 200, initLoginSession.statusCode())
         Response oidcServiceResponse = Steps.authWithMobileID(flow)
-        Response consentResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
-        assertEquals("Correct HTTP status code is returned", 200, consentResponse.statusCode())
-        Response consentConfirmResponse = Steps.consentConfirmation(flow, true)
-        assertEquals("Correct HTTP status code is returned", 302, consentConfirmResponse.statusCode())
-
-        Response oidcServiceResponse2 = Steps.followRedirectWithCookies(flow, consentConfirmResponse, flow.oidcService.cookies)
-        assertEquals("Correct HTTP status code is returned", 302, oidcServiceResponse2.statusCode())
-        String authorizationCode = Utils.getParamValueFromResponseHeader(oidcServiceResponse2, "code")
+        String authorizationCode = Steps.getPermissionCode(flow, oidcServiceResponse)
         Response tokenResponse = Requests.getWebToken(flow, authorizationCode)
         assertEquals("Correct HTTP status code is returned", 200, tokenResponse.statusCode())
         Map<String, String> webToken = tokenResponse.body().jsonPath().getMap("\$.")
         JWTClaimsSet claims =  SignedJWT.parse(webToken.get("id_token")).getJWTClaimsSet();
         assertThat(claims.getClaim("nonce"), equalTo(paramsMap.get("nonce")))
-        // Should be fixed in id_token
+        // Should be fixed in id_token TARA2-182
         // assertThat(claims.getClaim("state"), equalTo(paramsMap.get("state")))
     }
 

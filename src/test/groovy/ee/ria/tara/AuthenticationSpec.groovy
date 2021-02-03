@@ -263,7 +263,7 @@ class AuthenticationSpec extends TaraSpecification {
         assertEquals("Correct error message is returned", "Teie sessiooni ei leitud! Sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"))
     }
     
-    @Ignore // TARA2-104
+    @Ignore // TARA2-104 , TARA2-165
     @Unroll
     @Feature("AUTH_REJECT_LOGIN_ENDPOINT")
     def "request reject authentication with invalid method post"() {

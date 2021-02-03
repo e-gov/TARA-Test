@@ -348,4 +348,18 @@ class Requests {
                 .then()
                 .extract().response()
     }
+
+    @Step("Get token response body")
+    static Response getWebTokenResponseBody(Flow flow, Map<String, String> formParams) {
+        return given()
+                .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
+                .filter(new AllureRestAssured())
+                .formParams(formParams)
+                .auth().preemptive().basic(flow.oidcClient.clientId, flow.oidcClient.clientSecret)
+                .when()
+                .urlEncodingEnabled(true)
+                .post(flow.openIdServiceConfiguration.getString("token_endpoint"))
+                .then()
+                .extract().response()
+    }
 }

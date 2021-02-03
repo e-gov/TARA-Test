@@ -23,7 +23,7 @@ class Steps {
     static Response createAuthenticationSession(Flow flow, String scopeList = "openid") {
         Response initAuthResponse = Requests.initAuthRequest(flow, scopeList)
         String taraClientCookie = initAuthResponse.getCookie("TARAClient")
-        Utils.setParameter(flow.oidcClient.cookies,"TARAClient", taraClientCookie)
+        Utils.setParameter(flow.oidcClient.cookies, "TARAClient", taraClientCookie)
         flow.state = Utils.getParamValueFromResponseHeader(initAuthResponse, "state")
         flow.nonce = Utils.getParamValueFromResponseHeader(initAuthResponse, "nonce")
         return initAuthResponse
@@ -33,16 +33,16 @@ class Steps {
     static Response createOIDCSession(Flow flow, Response response) {
         Response initSession = followRedirect(flow, response)
         String authCookie = initSession.getCookie("oauth2_authentication_csrf")
-        Utils.setParameter(flow.oidcService.cookies,"oauth2_authentication_csrf", authCookie)
+        Utils.setParameter(flow.oidcService.cookies, "oauth2_authentication_csrf", authCookie)
         flow.setLoginChallenge(Utils.getParamValueFromResponseHeader(initSession, "login_challenge"))
         return initSession
     }
 
     @Step("Create authentication session in oidc service with parameters")
     static Response createOIDCSessionWithParameters(Flow flow, Map<String, String> paramsMap) {
-        Response initSession = Requests.getRequestWithParams(flow , flow.oidcService.fullAuthenticationRequestUrl, paramsMap, Collections.emptyMap())
+        Response initSession = Requests.getRequestWithParams(flow, flow.oidcService.fullAuthenticationRequestUrl, paramsMap, Collections.emptyMap())
         String authCookie = initSession.getCookie("oauth2_authentication_csrf")
-        Utils.setParameter(flow.oidcService.cookies,"oauth2_authentication_csrf", authCookie)
+        Utils.setParameter(flow.oidcService.cookies, "oauth2_authentication_csrf", authCookie)
         flow.setLoginChallenge(Utils.getParamValueFromResponseHeader(initSession, "login_challenge"))
         return initSession
     }
@@ -59,7 +59,7 @@ class Steps {
     static Response initMidAuthSession(Flow flow, String sessionId
                                        , Object idCode, Object telephoneNumber
                                        , Map additionalParamsMap = Collections.emptyMap()) {
-        LinkedHashMap<String, String> formParamsMap = (LinkedHashMap)Collections.emptyMap()
+        LinkedHashMap<String, String> formParamsMap = (LinkedHashMap) Collections.emptyMap()
         Utils.setParameter(formParamsMap, "_csrf", flow.csrf)
         if (!(idCode instanceof Wildcard)) {
             Utils.setParameter(formParamsMap, "idCode", idCode)
@@ -67,7 +67,7 @@ class Steps {
         if (!(telephoneNumber instanceof Wildcard)) {
             Utils.setParameter(formParamsMap, "telephoneNumber", telephoneNumber)
         }
-        HashMap<String, String> cookieMap = (HashMap)Collections.emptyMap()
+        HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(cookieMap, "SESSION", sessionId)
         return Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullMidInitUrl, cookieMap, formParamsMap, additionalParamsMap)
     }
@@ -76,9 +76,9 @@ class Steps {
     static Response pollMidResponse(Flow flow) {
         int counter = 0
         Response response = null
-        while(counter < 10) {
+        while (counter < 10) {
             response = Requests.pollMid(flow)
-            if( response.body().jsonPath().get("status") != "PENDING") {
+            if (response.body().jsonPath().get("status") != "PENDING") {
                 break
             }
             ++counter
@@ -93,16 +93,16 @@ class Steps {
         String oauthConsentCookie = oidcServiceResponse.getCookie("oauth2_consent_csrf")
         // String oauthSessionCookie = oidcServiceResponse.getCookie("oauth2_authentication_session")
         // Utils.setParameter(flow.oidcService.cookies, "oauth2_authentication_session", oauthSessionCookie)
-        Utils.setParameter(flow.oidcService.cookies,"oauth2_consent_csrf", oauthConsentCookie)
+        Utils.setParameter(flow.oidcService.cookies, "oauth2_consent_csrf", oauthConsentCookie)
         return oidcServiceResponse
     }
 
     @Step("Initialize authentication session")
     static Response initLoginSession(Flow flow, Response response, Map<String, String> additionalParamsMap) {
         String location = response.then().extract().response().getHeader("location")
-        HashMap<String, String> cookiesMap = (HashMap)Collections.emptyMap()
-        HashMap<String, String> paramMap = (HashMap)Collections.emptyMap()
-        Response initResponse= Requests.getRequestWithCookiesAndParams(flow , location, cookiesMap, paramMap, additionalParamsMap)
+        HashMap<String, String> cookiesMap = (HashMap) Collections.emptyMap()
+        HashMap<String, String> paramMap = (HashMap) Collections.emptyMap()
+        Response initResponse = Requests.getRequestWithCookiesAndParams(flow, location, cookiesMap, paramMap, additionalParamsMap)
         flow.setSessionId(initResponse.getCookie("SESSION"))
         flow.setCsrf(initResponse.body().htmlPath().get("**.find {it.@name == '_csrf'}.@value"))
         return initResponse
@@ -202,10 +202,11 @@ class Steps {
         assertThat("Expected current: " + date + " to be before exp: " + signedJWT.getJWTClaimsSet().getExpirationTime(), date.before(signedJWT.getJWTClaimsSet().getExpirationTime()), is(true))
         // TODO Etapp 4
         // assertThat("Expected current: " + date + " to be after nbf: " + signedJWT.getJWTClaimsSet().getNotBeforeTime(), date.after(signedJWT.getJWTClaimsSet().getNotBeforeTime()), is(true))
-        assertThat(signedJWT.getJWTClaimsSet().getStringClaim("state"), equalTo(flow.getState()))
         if (!flow.getNonce().isEmpty()) {
             assertThat(signedJWT.getJWTClaimsSet().getStringClaim("nonce"), equalTo(flow.getNonce()))
         }
+        // TARA2-182
+        // assertThat(signedJWT.getJWTClaimsSet().getStringClaim("state"), equalTo(flow.getState()))
         return signedJWT
     }
 
@@ -226,5 +227,31 @@ class Steps {
         Object jsonObject = mapper.readValue(json, Object.class)
         String prettyJson = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(jsonObject)
         Allure.addAttachment(name, "application/json", prettyJson, "json")
+    }
+
+    @Step("Get permission code")
+    static String getPermissionCode(Flow flow, Response response) {
+        Response consentConfirmResponse = authorizationConfirmation(flow, response)
+        Response oidcServiceResponse = followRedirectWithCookies(flow, consentConfirmResponse, flow.oidcService.cookies)
+        assertEquals("Correct HTTP status code is returned", 302, oidcServiceResponse.statusCode())
+        return Utils.getParamValueFromResponseHeader(oidcServiceResponse, "code")
+    }
+
+    @Step("Get permission response")
+    static Response getPermissionResponse(Flow flow, Response response) {
+        Response consentConfirmResponse = authorizationConfirmation(flow, response)
+        Response oidcServiceResponse = followRedirectWithCookies(flow, consentConfirmResponse, flow.oidcService.cookies)
+        assertEquals("Correct HTTP status code is returned", 302, oidcServiceResponse.statusCode())
+        return oidcServiceResponse
+    }
+
+    @Step("Confirm authorization data delivery")
+    static Response authorizationConfirmation(Flow flow, Response response) {
+        Response consentResponse = followRedirectWithSessionId(flow, response)
+        assertEquals("Correct HTTP status code is returned", 200, consentResponse.statusCode())
+        Response consentConfirmResponse = consentConfirmation(flow, true)
+
+        assertEquals("Correct HTTP status code is returned", 302, consentConfirmResponse.statusCode())
+        return consentConfirmResponse
     }
 }
