@@ -19,16 +19,6 @@ import static org.junit.Assert.assertThat
 
 class Steps {
 
-    @Step("Create client authentication session")
-    static Response createAuthenticationSession(Flow flow, String scopeList = "openid") {
-        Response initAuthResponse = Requests.initAuthRequest(flow, scopeList)
-        String taraClientCookie = initAuthResponse.getCookie("TARAClient")
-        Utils.setParameter(flow.oidcClient.cookies, "TARAClient", taraClientCookie)
-        flow.state = Utils.getParamValueFromResponseHeader(initAuthResponse, "state")
-        flow.nonce = Utils.getParamValueFromResponseHeader(initAuthResponse, "nonce")
-        return initAuthResponse
-    }
-
     @Step("Create authentication session in oidc service")
     static Response createOIDCSession(Flow flow, Response response) {
         Response initSession = followRedirect(flow, response)
@@ -167,9 +157,8 @@ class Steps {
     }
 
     static Response createSession(Flow flow, String scopeList = "openid") {
-        Response initClientAuthenticationSession = createAuthenticationSession(flow, scopeList)
-        assertEquals("Correct HTTP status code is returned", 302, initClientAuthenticationSession.statusCode())
-        Response initOIDCServiceSession = createOIDCSession(flow, initClientAuthenticationSession)
+        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, scopeList)
+        Response initOIDCServiceSession = Steps.createOIDCSessionWithParameters(flow, paramsMap)
         assertEquals("Correct HTTP status code is returned", 302, initOIDCServiceSession.statusCode())
         return initOIDCServiceSession
     }

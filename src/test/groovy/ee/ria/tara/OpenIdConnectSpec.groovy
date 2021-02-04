@@ -37,8 +37,6 @@ class OpenIdConnectSpec extends TaraSpecification {
         Response tokenResponse = Requests.getWebToken(flow, authorizationCode)
         assertEquals("Correct HTTP status code is returned", 200, tokenResponse.statusCode())
         Map<String, String> webToken = tokenResponse.body().jsonPath().getMap("\$.")
-        flow.setState(paramsMap.get("state"))
-        flow.setNonce(paramsMap.get("nonce"))
         String keyID = Steps.verifyTokenAndReturnSignedJwtObject(flow, webToken.get("id_token")).getHeader().getKeyID()
         assertThat(keyID, equalTo(flow.jwkSet.getKeys().get(0).getKeyID()))
     }

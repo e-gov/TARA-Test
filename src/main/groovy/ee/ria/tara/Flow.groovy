@@ -34,6 +34,9 @@ class LoginService {
     String host
     String port
     String protocol
+    String nodeHost
+    String nodePort
+    String nodeProtocol
     String initUrl
     String midInitUrl
     String midPollUrl
@@ -52,7 +55,7 @@ class LoginService {
     @Lazy fullMidInitUrl = "${protocol}://${host}${portCheck()}${midInitUrl}"
     @Lazy fullMidPollUrl = "${protocol}://${host}${portCheck()}${midPollUrl}"
     @Lazy fullMidCancelUrl = "${protocol}://${host}${portCheck()}${midCancelUrl}"
-    @Lazy fullIdCardInitUrl = "${protocol}://${host}${portCheck()}${idCardInitUrl}"
+    @Lazy fullIdCardInitUrl = "${nodeProtocol}://${nodeHost}:${nodePort}${idCardInitUrl}"
     @Lazy fullAuthAcceptUrl = "${protocol}://${host}${portCheck()}${authAcceptUrl}"
     @Lazy fullAuthRejectUrl = "${protocol}://${host}${portCheck()}${authRejectUrl}"
     @Lazy fullConsentUrl = "${protocol}://${host}${portCheck()}${consentUrl}"
@@ -67,6 +70,9 @@ class LoginService {
         this.host = properties."loginservice.host"
         this.port = properties."loginservice.port"
         this.protocol = properties."loginservice.protocol"
+        this.nodeHost = properties."loginservice.node.host"
+        this.nodePort = properties."loginservice.node.port"
+        this.nodeProtocol = properties."loginservice.node.protocol"
         this.initUrl = properties."loginservice.initUrl"
         this.midInitUrl = properties."loginservice.midInitUrl"
         this.midPollUrl = properties."loginservice.midPollUrl"

@@ -26,9 +26,8 @@ class AuthInitSpec extends TaraSpecification {
     @Feature("AUTH_INIT_ENDPOINT")
     def "request initialize authentication"() {
         expect:
-        Response initClientAuthenticationSession = Steps.createAuthenticationSession(flow)
-        assertEquals("Correct HTTP status code is returned", 302, initClientAuthenticationSession.statusCode())
-        Response initOIDCServiceSession = Steps.createOIDCSession(flow, initClientAuthenticationSession)
+        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
+        Response initOIDCServiceSession = Steps.createOIDCSessionWithParameters(flow, paramsMap)
         assertEquals("Correct HTTP status code is returned", 302, initOIDCServiceSession.statusCode())
         Response response = Steps.createLoginSession(flow, initOIDCServiceSession)
         assertEquals("Correct HTTP status code is returned", 200, response.statusCode())
@@ -46,18 +45,9 @@ class AuthInitSpec extends TaraSpecification {
     @Feature("AUTH_INIT_ENDPOINT")
     def "request initialize authentication language"() {
         expect:
-        HashMap<String, String> cookiesMap = (HashMap) Collections.emptyMap()
-        HashMap<String, String> paramMap = (HashMap) Collections.emptyMap()
-        HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(paramMap, "TARAClient", "1234")
-        Utils.setParameter(additionalParamsMap, "TARAClient", "1234")
-        Requests.getRequestWithCookiesAndParams(flow, flow.oidcClient.fullRequestUrl
-                , cookiesMap
-                , paramMap
-                , additionalParamsMap)
-        Response initClientAuthenticationSession = Steps.createAuthenticationSession(flow)
-        assertEquals("Correct HTTP status code is returned", 302, initClientAuthenticationSession.statusCode())
-        Response initOIDCServiceSession = Steps.createOIDCSession(flow, initClientAuthenticationSession)
+        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "openid", "et")
+        Response initOIDCServiceSession = Steps.createOIDCSessionWithParameters(flow, paramsMap)
+
         assertEquals("Correct HTTP status code is returned", 302, initOIDCServiceSession.statusCode())
         Response response = Steps.createLoginSession(flow, initOIDCServiceSession)
         assertEquals("Correct HTTP status code is returned", 200, response.statusCode())

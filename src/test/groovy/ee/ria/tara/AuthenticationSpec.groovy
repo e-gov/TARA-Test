@@ -28,11 +28,9 @@ class AuthenticationSpec extends TaraSpecification {
     @Feature("AUTHENTICATION")
     def "request authentication"() {
         expect:
-        Response initClientAuthenticationSession = Steps.createAuthenticationSession(flow)
-        assertEquals("Correct HTTP status code is returned", 302, initClientAuthenticationSession.statusCode())
 
-        Response initOIDCServiceSession = Steps.createOIDCSession(flow, initClientAuthenticationSession)
-        assertEquals("Correct HTTP status code is returned", 302, initOIDCServiceSession.statusCode())
+        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
+        Response initOIDCServiceSession = Steps.createOIDCSessionWithParameters(flow, paramsMap)
 
         Response initLoginSession = Steps.createLoginSession(flow, initOIDCServiceSession)
         assertEquals("Correct HTTP status code is returned", 200, initLoginSession.statusCode())
@@ -54,11 +52,10 @@ class AuthenticationSpec extends TaraSpecification {
         assertEquals("Correct HTTP status code is returned", 302, consentConfirmResponse.statusCode())
         Response oidcserviceResponse = Steps.followRedirectWithCookies(flow, consentConfirmResponse, flow.oidcService.cookies)
         assertEquals("Correct HTTP status code is returned", 302, oidcserviceResponse.statusCode())
+        String authorizationCode = Utils.getParamValueFromResponseHeader(oidcserviceResponse, "code")
+        Response tokenResponse = Requests.getWebToken(flow, authorizationCode)
 
-        Response webTokenResponse = Steps.followRedirectWithCookies(flow, oidcserviceResponse, flow.oidcClient.cookies)
-        assertEquals("Correct HTTP status code is returned", 200, webTokenResponse.statusCode())
-        Map<String, String> webToken = webTokenResponse.body().jsonPath().getMap("\$.")
-        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, webToken.get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat(claims.getAudience().get(0), equalTo(flow.oidcClient.clientId))
         assertThat(claims.getSubject(), equalTo("EE60001017716"))
         assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo("ONE"))
@@ -74,11 +71,9 @@ class AuthenticationSpec extends TaraSpecification {
     @Feature("XSS_DETECTION_FILTER_ENABLED")
     def "request authentication with security checks"() {
         expect:
-        Response initClientAuthenticationSession = Steps.createAuthenticationSession(flow)
-        assertEquals("Correct HTTP status code is returned", 302, initClientAuthenticationSession.statusCode())
 
-        Response initOIDCServiceSession = Steps.createOIDCSession(flow, initClientAuthenticationSession)
-        assertEquals("Correct HTTP status code is returned", 302, initOIDCServiceSession.statusCode())
+        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
+        Response initOIDCServiceSession = Steps.createOIDCSessionWithParameters(flow, paramsMap)
 
         Response initLoginSession = Steps.createLoginSession(flow, initOIDCServiceSession)
         assertEquals("Correct HTTP status code is returned", 200, initLoginSession.statusCode())
@@ -106,13 +101,13 @@ class AuthenticationSpec extends TaraSpecification {
         Response consentConfirmResponse = Steps.consentConfirmation(flow, true)
         assertEquals("Correct HTTP status code is returned", 302, consentConfirmResponse.statusCode())
         Steps.verifyResponseHeaders(consentConfirmResponse)
+
         Response oidcserviceResponse = Steps.followRedirectWithCookies(flow, consentConfirmResponse, flow.oidcService.cookies)
         assertEquals("Correct HTTP status code is returned", 302, oidcserviceResponse.statusCode())
+        String authorizationCode = Utils.getParamValueFromResponseHeader(oidcserviceResponse, "code")
+        Response tokenResponse = Requests.getWebToken(flow, authorizationCode)
 
-        Response webTokenResponse = Steps.followRedirectWithCookies(flow, oidcserviceResponse, flow.oidcClient.cookies)
-        assertEquals("Correct HTTP status code is returned", 200, webTokenResponse.statusCode())
-        Map<String, String> webToken = webTokenResponse.body().jsonPath().getMap("\$.")
-        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, webToken.get("id_token")).getJWTClaimsSet()
+        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat(claims.getAudience().get(0), equalTo(flow.oidcClient.clientId))
         assertThat(claims.getSubject(), equalTo("EE60001017716"))
         assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo("ONE"))

@@ -64,9 +64,12 @@ class AuthLegalPersonConfirmSpec extends TaraSpecification {
         assertEquals("Correct HTTP status code is returned", 302, consentConfirmResponse.statusCode())
         assertThat("Session cookie is invalidated", consentConfirmResponse.getCookie("SESSION"), equalTo(""))
 
-        Response webTokenResponse = Steps.getWebTokenFromOidcService(flow, consentConfirmResponse)
-        Map<String, String> webToken = webTokenResponse.body().jsonPath().getMap("\$.")
-        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, webToken.get("id_token")).getJWTClaimsSet()
+        Response oidcserviceResponse = Steps.followRedirectWithCookies(flow, consentConfirmResponse, flow.oidcService.cookies)
+        assertEquals("Correct HTTP status code is returned", 302, oidcserviceResponse.statusCode())
+        String authorizationCode = Utils.getParamValueFromResponseHeader(oidcserviceResponse, "code")
+        Response tokenResponse = Requests.getWebToken(flow, authorizationCode)
+
+        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat(claims.getAudience().get(0), equalTo(flow.oidcClient.clientId))
         assertThat(claims.getSubject(), equalTo("EE60001019906"))
         assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo("MARY ÄNN"))
