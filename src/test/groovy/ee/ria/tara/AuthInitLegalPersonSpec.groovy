@@ -23,7 +23,7 @@ class AuthInitLegalPersonSpec extends TaraSpecification {
     @Feature("AUTH_REDIRECT_TO_LEGALPERSON_INIT")
     def "request initialize legal person authentication"() {
         expect:
-        Response initClientAuthenticationSession = Steps.initAuthenticationSession(flow, "openid legalperson")
+        Steps.startAuthenticationInTara(flow, "openid legalperson")
         Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017705", "69000366", Collections.emptyMap())
         assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
         Response pollResponse = Steps.pollMidResponse(flow)

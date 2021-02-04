@@ -5,7 +5,6 @@ import com.nimbusds.jwt.JWTClaimsSet
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
-import org.hamcrest.Matchers
 import spock.lang.Ignore
 
 import static org.hamcrest.Matchers.equalTo
@@ -28,7 +27,7 @@ class IDCardAuthSpec extends TaraSpecification {
     def "Init ID-Card authentication"() {
         expect:
         String certificate = Utils.getCertificateAsString("src/test/resources/joeorg-auth.pem")
-        Response initClientAuthenticationSession = Steps.initAuthenticationSession(flow)
+        Response initClientAuthenticationSession = Steps.startAuthenticationInTara(flow)
         HashMap<String, String> headersMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(headersMap, "XCLIENTCERTIFICATE", certificate)
         Response response = Requests.idCardAuthentication(flow, headersMap)
@@ -44,7 +43,7 @@ class IDCardAuthSpec extends TaraSpecification {
     def "Init ID-Card authentication with expired certificate"() {
         expect:
         String certificate = Utils.getCertificateAsString("src/test/resources/expired-cert.pem")
-        Response initClientAuthenticationSession = Steps.initAuthenticationSession(flow)
+        Response initClientAuthenticationSession = Steps.startAuthenticationInTara(flow)
         HashMap<String, String> headersMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(headersMap, "XCLIENTCERTIFICATE", certificate)
         Response response = Requests.idCardAuthentication(flow, headersMap)
@@ -59,7 +58,7 @@ class IDCardAuthSpec extends TaraSpecification {
     def "Authenticate with ID-Card"() {
         expect:
         String certificate = Utils.getCertificateAsString("src/test/resources/joeorg-auth.pem")
-        Response initClientAuthenticationSession = Steps.initAuthenticationSession(flow)
+        Response initClientAuthenticationSession = Steps.startAuthenticationInTara(flow)
         HashMap<String, String> headersMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(headersMap, "XCLIENTCERTIFICATE", certificate)
         Response response = Requests.idCardAuthentication(flow, headersMap)
@@ -71,7 +70,7 @@ class IDCardAuthSpec extends TaraSpecification {
 
         Response consentResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
         assertEquals("Correct HTTP status code is returned", 200, consentResponse.statusCode())
-        Response consentConfirmResponse = Steps.consentConfirmation(flow, true)
+        Response consentConfirmResponse = Steps.submitConsent(flow, true)
         assertEquals("Correct HTTP status code is returned", 302, consentConfirmResponse.statusCode())
         Response oidcserviceResponse = Steps.followRedirectWithCookies(flow, consentConfirmResponse, flow.oidcService.cookies)
         assertEquals("Correct HTTP status code is returned", 302, oidcserviceResponse.statusCode())
@@ -99,7 +98,7 @@ class IDCardAuthSpec extends TaraSpecification {
     def "Verify ID-Card authentication response headers"() {
         expect:
         String certificate = Utils.getCertificateAsString("src/test/resources/joeorg-auth.pem")
-        Response initClientAuthenticationSession = Steps.initAuthenticationSession(flow)
+        Response initClientAuthenticationSession = Steps.startAuthenticationInTara(flow)
         HashMap<String, String> headersMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(headersMap, "XCLIENTCERTIFICATE", certificate)
         Response response = Requests.idCardAuthentication(flow, headersMap)
@@ -112,7 +111,7 @@ class IDCardAuthSpec extends TaraSpecification {
     def "Init ID-Card authentication with invalid session"() {
         expect:
         String certificate = Utils.getCertificateAsString("src/test/resources/joeorg-auth.pem")
-        Response initClientAuthenticationSession = Steps.initAuthenticationSession(flow)
+        Response initClientAuthenticationSession = Steps.startAuthenticationInTara(flow)
         HashMap<String, String> headersMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(headersMap, "XCLIENTCERTIFICATE", certificate)
         flow.setSessionId("123456789")
@@ -128,7 +127,7 @@ class IDCardAuthSpec extends TaraSpecification {
     def "Init ID-Card authentication with missing session cookie"() {
         expect:
         String certificate = Utils.getCertificateAsString("src/test/resources/joeorg-auth.pem")
-        Response initClientAuthenticationSession = Steps.initAuthenticationSession(flow)
+        Response initClientAuthenticationSession = Steps.startAuthenticationInTara(flow)
         HashMap<String, String> headersMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(headersMap, "XCLIENTCERTIFICATE", certificate)
         Response response = Requests.idCardAuthenticationWithoutSession(flow, headersMap)

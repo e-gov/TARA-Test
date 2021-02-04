@@ -4,6 +4,7 @@ import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import org.apache.commons.lang.RandomStringUtils
+import org.hamcrest.Matchers
 import spock.lang.Ignore
 import spock.lang.Unroll
 
@@ -26,8 +27,8 @@ class AuthConsentConfirmSpec extends TaraSpecification {
     @Feature("UI_CONSENT_VIEW")
     def "Consent with authentication results"() {
         expect:
-        Response initResponse = Steps.initAuthSessionAndAuthWithMobileID(flow)
-        Response response = Steps.followRedirectWithSessionId(flow, initResponse)
+        Steps.startAuthenticationInTara(flow)
+        Response response = Steps.authenticateWithMid(flow,"60001017716", "69100366")
         assertEquals("Correct HTTP status code is returned", 200, response.statusCode())
         List<String> identityFields = response.body().htmlPath().getList("**.findAll {th -> th.@colspan == '1'}")
         assertTrue(response.body().htmlPath().getList("**.findAll { it.@method == 'POST'}.button").contains("Nõustu"))
@@ -40,9 +41,13 @@ class AuthConsentConfirmSpec extends TaraSpecification {
     @Feature("USER_CONSENT_ENDPOINT")
     def "Consent with authentication results. Invalid session ID"() {
         expect:
-        Response initResponse = Steps.initAuthSessionAndAuthWithMobileID(flow)
+        Steps.startAuthenticationInTara(flow)
+        Requests.startMidAuthentication(flow, "60001017716", "69100366")
+        Steps.pollMidResponse(flow)
+        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
+        Response oidcServiceResponse = Steps.getOAuthCookies(flow, acceptResponse)
         flow.setSessionId("1234567")
-        Response response = Steps.followRedirectWithSessionId(flow, initResponse)
+        Response response = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
         assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
         assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
         assertEquals("Correct error message is returned", "Teie sessiooni ei leitud! Sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"))
@@ -53,8 +58,12 @@ class AuthConsentConfirmSpec extends TaraSpecification {
     @Feature("USER_CONSENT_ENDPOINT")
     def "Consent with authentication results. Invalid method post"() {
         expect:
-        Response initResponse = Steps.initAuthSessionAndAuthWithMobileID(flow)
-        String location = initResponse.getHeader("location")
+        Steps.startAuthenticationInTara(flow)
+        Requests.startMidAuthentication(flow, "60001017716", "69100366")
+        Steps.pollMidResponse(flow)
+        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
+        Response oidcServiceResponse = Steps.getOAuthCookies(flow, acceptResponse)
+        String location = oidcServiceResponse.getHeader("location")
         Response response = Requests.postRequestWithSessionId(flow, location)
         assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
         assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
@@ -65,8 +74,12 @@ class AuthConsentConfirmSpec extends TaraSpecification {
     @Feature("USER_CONSENT_ENDPOINT")
     def "Consent with authentication results. Missing session ID"() {
         expect:
-        Response initResponse = Steps.initAuthSessionAndAuthWithMobileID(flow)
-        Response response = Steps.followRedirect(flow, initResponse)
+        Steps.startAuthenticationInTara(flow)
+        Requests.startMidAuthentication(flow, "60001017716", "69100366")
+        Steps.pollMidResponse(flow)
+        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
+        Response oidcServiceResponse = Steps.getOAuthCookies(flow, acceptResponse)
+        Response response = Steps.followRedirect(flow, oidcServiceResponse)
         assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
         assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
         assertEquals("Correct error message is returned", "Teie sessiooni ei leitud! Sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"))
@@ -76,8 +89,12 @@ class AuthConsentConfirmSpec extends TaraSpecification {
     @Feature("USER_CONSENT_ENDPOINT")
     def "Consent with authentication results. #label"() {
         expect:
-        Response initResponse = Steps.initAuthSessionAndAuthWithMobileID(flow)
-        String location = initResponse.getHeader("location")
+        Steps.startAuthenticationInTara(flow)
+        Requests.startMidAuthentication(flow,"60001017716", "69100366")
+        Steps.pollMidResponse(flow)
+        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
+        Steps.getOAuthCookies(flow, acceptResponse)
+
         HashMap<String, String> cookiesMap = (HashMap) Collections.emptyMap()
         def map1 = Utils.setParameter(cookiesMap, "SESSION", flow.sessionId)
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
@@ -103,15 +120,19 @@ class AuthConsentConfirmSpec extends TaraSpecification {
     @Feature("USER_CONSENT_POST_ACCEPT")
     def "Consent with invalid consent challenge value"() {
         expect:
-        Response initResponse = Steps.initAuthSessionAndAuthWithMobileID(flow)
-        String location = initResponse.getHeader("location")
+        Steps.startAuthenticationInTara(flow)
+        Requests.startMidAuthentication(flow,"60001017716", "69100366")
+        Steps.pollMidResponse(flow)
+        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
+        Steps.getOAuthCookies(flow, acceptResponse)
+
         HashMap<String, String> cookiesMap = (HashMap) Collections.emptyMap()
         def map1 = Utils.setParameter(cookiesMap, "SESSION", flow.sessionId)
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         def map2 = Utils.setParameter(paramsMap, "consent_challenge", RandomStringUtils.random(50, true, true))
         Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullConsentUrl, cookiesMap, paramsMap, Collections.emptyMap())
         flow.setCsrf(response.body().htmlPath().get("**.find {it.@name == '_csrf'}.@value"))
-        Response consentConfirmResponse = Steps.consentConfirmation(flow, true)
+        Response consentConfirmResponse = Steps.submitConsent(flow, true)
         assertEquals("Correct HTTP status code is returned", 500, consentConfirmResponse.statusCode())
         assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", consentConfirmResponse.getContentType())
         assertThat(consentConfirmResponse.body().jsonPath().get("message").toString(), startsWith("Autentimine ebaõnnestus teenuse tehnilise vea tõttu."))
@@ -123,11 +144,9 @@ class AuthConsentConfirmSpec extends TaraSpecification {
     @Feature("USER_CONSENT_POST_ACCEPT")
     def "Confirm consent"() {
         expect:
-        Response initClientAuthenticationSession = Steps.initAuthenticationSession(flow)
-        Response oidcServiceResponse = Steps.authWithMobileID(flow,"60001017727" , "69200366")
-        Response consentResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
-        assertEquals("Correct HTTP status code is returned", 200, consentResponse.statusCode())
-        Response consentConfirmResponse = Steps.consentConfirmation(flow, true)
+        Steps.startAuthenticationInTara(flow)
+        Steps.authenticateWithMid(flow,"60001017727" , "69200366")
+        Response consentConfirmResponse = Steps.submitConsent(flow, true)
         assertEquals("Correct HTTP status code is returned", 302, consentConfirmResponse.statusCode())
         assertThat(consentConfirmResponse.getHeader("location"), startsWith(flow.oidcService.fullAuthenticationRequestUrl))
         assertThat(Utils.getParamValueFromResponseHeader(consentConfirmResponse, "state"), equalTo(flow.state))
@@ -138,12 +157,11 @@ class AuthConsentConfirmSpec extends TaraSpecification {
     @Feature("USER_CONSENT_CONFIRM_ENDPOINT")
     def "Confirm consent with authentication results. Invalid session ID"() {
         expect:
-        Response initClientAuthenticationSession = Steps.initAuthenticationSession(flow)
-        Response oidcServiceResponse = Steps.authWithMobileID(flow,"60001017727" , "69200366")
-        Response consentResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
-        assertEquals("Correct HTTP status code is returned", 200, consentResponse.statusCode())
+        Steps.startAuthenticationInTara(flow)
+        Response oidcServiceResponse = Steps.authenticateWithMid(flow,"60001017727" , "69200366")
+        assertEquals("Correct HTTP status code is returned", 200, oidcServiceResponse.statusCode())
         flow.setSessionId("1234567")
-        Response response = Steps.consentConfirmation(flow, true)
+        Response response = Steps.submitConsent(flow, true)
         assertEquals("Correct HTTP status code is returned", 403, response.statusCode())
         assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
         assertEquals("Correct error message is returned", "Forbidden", response.body().jsonPath().get("message"))
@@ -168,10 +186,9 @@ class AuthConsentConfirmSpec extends TaraSpecification {
     @Feature("USER_CONSENT_CONFIRM_ENDPOINT")
     def "Confirm consent with authentication results. Missing session ID"() {
         expect:
-        Response initClientAuthenticationSession = Steps.initAuthenticationSession(flow)
-        Response oidcServiceResponse = Steps.authWithMobileID(flow,"60001017727" , "69200366")
-        Response consentResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
-        assertEquals("Correct HTTP status code is returned", 200, consentResponse.statusCode())
+        Steps.startAuthenticationInTara(flow)
+        Steps.authenticateWithMid(flow,"60001017727" , "69200366")
+
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         def map2 = Utils.setParameter(paramsMap, "consent_given", true)
         def map3 = Utils.setParameter(paramsMap, "_csrf", flow.csrf)
@@ -185,9 +202,9 @@ class AuthConsentConfirmSpec extends TaraSpecification {
     @Feature("USER_CONSENT_CONFIRM_ENDPOINT")
     def "Confirm consent with authentication results. #label"() {
         expect:
-        Response initResponse = Steps.initAuthSessionAndAuthWithMobileID(flow)
-        Response consentResponse = Steps.followRedirectWithSessionId(flow, initResponse)
-        assertEquals("Correct HTTP status code is returned", 200, consentResponse.statusCode())
+        Steps.startAuthenticationInTara(flow)
+        Steps.authenticateWithMid(flow,"60001017727" , "69200366")
+
         HashMap<String, String> cookiesMap = (HashMap) Collections.emptyMap()
         def map1 = Utils.setParameter(cookiesMap, "SESSION", flow.sessionId)
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
@@ -212,10 +229,9 @@ class AuthConsentConfirmSpec extends TaraSpecification {
     @Feature("USER_CONSENT_POST_REJECT")
     def "Reject consent with authentication results"() {
         expect:
-        Response initResponse = Steps.initAuthSessionAndAuthWithMobileID(flow)
-        Response consentResponse = Steps.followRedirectWithSessionId(flow, initResponse)
-        assertEquals("Correct HTTP status code is returned", 200, consentResponse.statusCode())
-        Response consentRejectResult = Steps.consentConfirmation(flow, false)
+        Steps.startAuthenticationInTara(flow)
+        Steps.authenticateWithMid(flow,"60001017716", "69100366")
+        Response consentRejectResult = Steps.submitConsent(flow, false)
         assertEquals("Correct HTTP status code is returned", 302, consentRejectResult.statusCode())
         assertThat("Session cookie is invalidated", consentRejectResult.getCookie("SESSION"), equalTo(""))
         Response response = Steps.followRedirectWithCookies(flow, consentRejectResult, flow.oidcClient.cookies)

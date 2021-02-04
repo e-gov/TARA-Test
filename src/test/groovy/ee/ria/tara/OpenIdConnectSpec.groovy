@@ -27,17 +27,12 @@ class OpenIdConnectSpec extends TaraSpecification {
     @Feature("OPENID_CONNECT")
     def "Metadata and token key ID matches"() {
         expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
-        Response initOIDCServiceSession = Steps.createOIDCSessionWithParameters(flow, paramsMap)
-        assertEquals("Correct HTTP status code is returned", 302, initOIDCServiceSession.statusCode())
-        Response initLoginSession = Steps.createLoginSession(flow, initOIDCServiceSession)
-        assertEquals("Correct HTTP status code is returned", 200, initLoginSession.statusCode())
-        Response oidcServiceResponse = Steps.authWithMobileID(flow,"60001017727" , "69200366")
-        String authorizationCode = Steps.getPermissionCode(flow, oidcServiceResponse)
-        Response tokenResponse = Requests.getWebToken(flow, authorizationCode)
+        Steps.startAuthenticationInTara(flow)
+        Steps.authenticateWithMid(flow,"60001017727" , "69200366")
+        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true)
+        Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
         assertEquals("Correct HTTP status code is returned", 200, tokenResponse.statusCode())
-        Map<String, String> webToken = tokenResponse.body().jsonPath().getMap("\$.")
-        String keyID = Steps.verifyTokenAndReturnSignedJwtObject(flow, webToken.get("id_token")).getHeader().getKeyID()
+        String keyID = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getHeader().getKeyID()
         assertThat(keyID, equalTo(flow.jwkSet.getKeys().get(0).getKeyID()))
     }
 
@@ -45,15 +40,15 @@ class OpenIdConnectSpec extends TaraSpecification {
     @Feature("OPENID_CONNECT")
     def "Request a token twice"() {
         expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
-        Response initOIDCServiceSession = Steps.createOIDCSessionWithParameters(flow, paramsMap)
+        Response initOIDCServiceSession = Steps.startAuthenticationInOidc(flow)
         assertEquals("Correct HTTP status code is returned", 302, initOIDCServiceSession.statusCode())
         Response initLoginSession = Steps.createLoginSession(flow, initOIDCServiceSession)
         assertEquals("Correct HTTP status code is returned", 200, initLoginSession.statusCode())
-        Response oidcServiceResponse = Steps.authWithMobileID(flow,"60001017727" , "69200366")
-        String authorizationCode = Steps.getPermissionCode(flow, oidcServiceResponse)
+        Steps.authenticateWithMid(flow,"60001017727" , "69200366")
+        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true)
+        String authorizationCode = Utils.getParamValueFromResponseHeader(authenticationFinishedResponse, "code")
         // 1
-        Response tokenResponse = Requests.getWebToken(flow, authorizationCode)
+        Requests.getWebToken(flow, authorizationCode)
         // 2
         Response tokenResponse2 = Requests.getWebToken(flow, authorizationCode)
         assertEquals("Correct HTTP status code is returned", 400, tokenResponse2.statusCode())
@@ -69,7 +64,7 @@ class OpenIdConnectSpec extends TaraSpecification {
         expect:
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
         paramsMap.put("scope", "")
-        Response response = Steps.createOIDCSessionWithParameters(flow, paramsMap)
+        Response response = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
         assertEquals("Correct HTTP status code is returned", 302, response.statusCode())
         assertEquals("Correct error value", " error text here", Utils.getParamValueFromResponseHeader(response, "error"))
     }
@@ -78,14 +73,14 @@ class OpenIdConnectSpec extends TaraSpecification {
     @Feature("OPENID_CONNECT")
     def "Request with invalid authorization code"() {
         expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
-        Response initOIDCServiceSession = Steps.createOIDCSessionWithParameters(flow, paramsMap)
+        Response initOIDCServiceSession = Steps.startAuthenticationInOidc(flow)
         assertEquals("Correct HTTP status code is returned", 302, initOIDCServiceSession.statusCode())
         Response initLoginSession = Steps.createLoginSession(flow, initOIDCServiceSession)
         assertEquals("Correct HTTP status code is returned", 200, initLoginSession.statusCode())
-        Response oidcServiceResponse = Steps.authWithMobileID(flow,"60001017727" , "69200366")
+        Steps.authenticateWithMid(flow,"60001017727" , "69200366")
+        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true)
+        String authorizationCode = Utils.getParamValueFromResponseHeader(authenticationFinishedResponse, "code")
 
-        String authorizationCode = Steps.getPermissionCode(flow, oidcServiceResponse)
         Response response = Requests.getWebToken(flow, authorizationCode + "e")
         assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
         assertThat("Correct Content-Type is returned", response.getContentType(), startsWith("application/json"))
@@ -142,17 +137,18 @@ class OpenIdConnectSpec extends TaraSpecification {
     def "Request with url encoded state and nonce"() {
         expect:
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
+        flow.setState("testȺ田\uD83D\uDE0D&additional=1 %20")
+        flow.setNonce("testȺ田\uD83D\uDE0D&additional=1 %20")
         paramsMap.put("state", "testȺ田\uD83D\uDE0D&additional=1 %20")
         paramsMap.put("nonce", "testȺ田\uD83D\uDE0D&additional=1 %20")
-        Response initOIDCServiceSession = Steps.createOIDCSessionWithParameters(flow, paramsMap)
+        Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
         Response initLoginSession = Steps.createLoginSession(flow, initOIDCServiceSession)
         assertEquals("Correct HTTP status code is returned", 200, initLoginSession.statusCode())
-        Response oidcServiceResponse = Steps.authWithMobileID(flow)
-        String authorizationCode = Steps.getPermissionCode(flow, oidcServiceResponse)
-        Response tokenResponse = Requests.getWebToken(flow, authorizationCode)
-        assertEquals("Correct HTTP status code is returned", 200, tokenResponse.statusCode())
-        Map<String, String> webToken = tokenResponse.body().jsonPath().getMap("\$.")
-        JWTClaimsSet claims =  SignedJWT.parse(webToken.get("id_token")).getJWTClaimsSet();
+        Steps.authenticateWithMid(flow,"60001017716", "69100366")
+        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true)
+        Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
+
+        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat(claims.getClaim("nonce"), equalTo(paramsMap.get("nonce")))
         // Should be fixed in id_token TARA2-182
         // assertThat(claims.getClaim("state"), equalTo(paramsMap.get("state")))

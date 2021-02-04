@@ -28,32 +28,10 @@ class AuthenticationSpec extends TaraSpecification {
     @Feature("AUTHENTICATION")
     def "request authentication"() {
         expect:
-
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
-        Response initOIDCServiceSession = Steps.createOIDCSessionWithParameters(flow, paramsMap)
-
-        Response initLoginSession = Steps.createLoginSession(flow, initOIDCServiceSession)
-        assertEquals("Correct HTTP status code is returned", 200, initLoginSession.statusCode())
-
-        Response midInit = Requests.initMid(flow)
-        assertEquals("Correct HTTP status code is returned", 200, midInit.statusCode())
-        Response midPollResult = Steps.pollMidResponse(flow)
-        assertEquals("Correct HTTP status code is returned", 200, midPollResult.statusCode())
-        assertThat(midPollResult.body().jsonPath().get("status").toString(), Matchers.not(equalTo("PENDING")))
-        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
-        assertEquals("Correct HTTP status code is returned", 302, acceptResponse.statusCode())
-
-        Response oidcServiceResponse = Steps.getOAuthCookies(flow, acceptResponse)
-        assertEquals("Correct HTTP status code is returned", 302, oidcServiceResponse.statusCode())
-
-        Response consentResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
-        assertEquals("Correct HTTP status code is returned", 200, consentResponse.statusCode())
-        Response consentConfirmResponse = Steps.consentConfirmation(flow, true)
-        assertEquals("Correct HTTP status code is returned", 302, consentConfirmResponse.statusCode())
-        Response oidcserviceResponse = Steps.followRedirectWithCookies(flow, consentConfirmResponse, flow.oidcService.cookies)
-        assertEquals("Correct HTTP status code is returned", 302, oidcserviceResponse.statusCode())
-        String authorizationCode = Utils.getParamValueFromResponseHeader(oidcserviceResponse, "code")
-        Response tokenResponse = Requests.getWebToken(flow, authorizationCode)
+        Steps.startAuthenticationInTara(flow)
+        Steps.authenticateWithMid(flow,"60001017716", "69100366")
+        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true)
+        Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
 
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat(claims.getAudience().get(0), equalTo(flow.oidcClient.clientId))
@@ -71,16 +49,12 @@ class AuthenticationSpec extends TaraSpecification {
     @Feature("XSS_DETECTION_FILTER_ENABLED")
     def "request authentication with security checks"() {
         expect:
-
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
-        Response initOIDCServiceSession = Steps.createOIDCSessionWithParameters(flow, paramsMap)
-
-        Response initLoginSession = Steps.createLoginSession(flow, initOIDCServiceSession)
+        Response initLoginSession = Steps.startAuthenticationInTara(flow)
         assertEquals("Correct HTTP status code is returned", 200, initLoginSession.statusCode())
         Steps.verifyResponseHeaders(initLoginSession)
         assertThat(initLoginSession.getDetailedCookie("SESSION").toString(), Matchers.containsString("HttpOnly"))
         assertThat(initLoginSession.getDetailedCookie("SESSION").toString(), Matchers.containsString("SameSite=Strict"))
-        Response midInit = Requests.initMid(flow)
+        Response midInit = Requests.startMidAuthentication(flow, "60001017716", "69100366")
         assertEquals("Correct HTTP status code is returned", 200, midInit.statusCode())
         Steps.verifyResponseHeaders(midInit)
         Response midPollResult = Steps.pollMidResponse(flow)
@@ -98,7 +72,7 @@ class AuthenticationSpec extends TaraSpecification {
         assertEquals("Correct HTTP status code is returned", 200, consentResponse.statusCode())
         Steps.verifyResponseHeaders(consentResponse)
 
-        Response consentConfirmResponse = Steps.consentConfirmation(flow, true)
+        Response consentConfirmResponse = Steps.submitConsent(flow, true)
         assertEquals("Correct HTTP status code is returned", 302, consentConfirmResponse.statusCode())
         Steps.verifyResponseHeaders(consentConfirmResponse)
 
@@ -117,7 +91,7 @@ class AuthenticationSpec extends TaraSpecification {
     @Feature("AUTH_ACCEPT_LOGIN_ENDPOINT")
     def "request accept authentication"() {
         expect:
-        Response initClientAuthenticationSession = Steps.initAuthenticationSession(flow)
+        Steps.startAuthenticationInTara(flow)
         Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", Collections.emptyMap())
         assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
         Response pollResponse = Steps.pollMidResponse(flow)
@@ -134,7 +108,7 @@ class AuthenticationSpec extends TaraSpecification {
     @Feature("AUTH_ACCEPT_LOGIN_ENDPOINT")
     def "request accept authentication with invalid method get"() {
         expect:
-        Response initClientAuthenticationSession = Steps.initAuthenticationSession(flow)
+        Steps.startAuthenticationInTara(flow)
         Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", Collections.emptyMap())
         assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
         Response pollResponse = Steps.pollMidResponse(flow)
@@ -150,7 +124,7 @@ class AuthenticationSpec extends TaraSpecification {
     @Feature("AUTH_ACCEPT_LOGIN_ENDPOINT")
     def "request accept authentication with invalid session ID"() {
         expect:
-        Response initClientAuthenticationSession = Steps.initAuthenticationSession(flow)
+        Steps.startAuthenticationInTara(flow)
         Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", Collections.emptyMap())
         assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
         Response pollResponse = Steps.pollMidResponse(flow)
@@ -168,7 +142,7 @@ class AuthenticationSpec extends TaraSpecification {
     @Feature("AUTH_REJECT_LOGIN_ENDPOINT")
     def "request reject authentication"() {
         expect:
-        Response initClientAuthenticationSession = Steps.initAuthenticationSession(flow)
+        Steps.startAuthenticationInTara(flow)
         Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", Collections.emptyMap())
         assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
         Response pollResponse = Steps.pollMidResponse(flow)
@@ -196,7 +170,7 @@ class AuthenticationSpec extends TaraSpecification {
     @Feature("XSS_DETECTION_FILTER_ENABLED")
     def "Verify reject authentication response headers"() {
         expect:
-        Response initClientAuthenticationSession = Steps.initAuthenticationSession(flow)
+        Steps.startAuthenticationInTara(flow)
         Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", Collections.emptyMap())
         assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
         Response pollResponse = Steps.pollMidResponse(flow)
@@ -215,7 +189,7 @@ class AuthenticationSpec extends TaraSpecification {
     @Feature("AUTH_REJECT_LOGIN_ENDPOINT")
     def "request reject authentication with invalid error_code value"() {
         expect:
-        Response initClientAuthenticationSession = Steps.initAuthenticationSession(flow)
+        Steps.startAuthenticationInTara(flow)
         Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", Collections.emptyMap())
         assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
         Response pollResponse = Steps.pollMidResponse(flow)
@@ -263,7 +237,7 @@ class AuthenticationSpec extends TaraSpecification {
     @Feature("AUTH_REJECT_LOGIN_ENDPOINT")
     def "request reject authentication with invalid method post"() {
         expect:
-        Response initClientAuthenticationSession = Steps.initAuthenticationSession(flow)
+        Steps.startAuthenticationInTara(flow)
         Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", Collections.emptyMap())
         assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
         Response pollResponse = Steps.pollMidResponse(flow)
@@ -284,7 +258,7 @@ class AuthenticationSpec extends TaraSpecification {
     @Feature("AUTH_REJECT_LOGIN_ENDPOINT")
     def "request reject authentication with multiple error_code values"() {
         expect:
-        Response initClientAuthenticationSession = Steps.initAuthenticationSession(flow)
+        Steps.startAuthenticationInTara(flow)
         Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", Collections.emptyMap())
         assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
         Response pollResponse = Steps.pollMidResponse(flow)

@@ -23,7 +23,7 @@ class AuthLegalPersonSpec extends TaraSpecification {
     @Feature("LEGAL_PERSON_AUTH_START_ENDPOINT")
     def "legal persons authentication request"() {
         expect:
-        Response initClientAuthenticationSession = Steps.initAuthenticationSession(flow, "openid legalperson")
+        Response initClientAuthenticationSession = Steps.startAuthenticationInTara(flow, "openid legalperson")
         Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001019906", "00000766", Collections.emptyMap())
         assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
         Response pollResponse = Steps.pollMidResponse(flow)
@@ -68,7 +68,7 @@ class AuthLegalPersonSpec extends TaraSpecification {
     @Feature("LEGAL_PERSON_AUTH_START_ENDPOINT")
     def "legal persons authentication request with invalid method post"() {
         expect:
-        Response initClientAuthenticationSession = Steps.initAuthenticationSession(flow, "openid legalperson")
+        Response initClientAuthenticationSession = Steps.startAuthenticationInTara(flow, "openid legalperson")
         Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001019906", "00000766", Collections.emptyMap())
         assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
         Response pollResponse = Steps.pollMidResponse(flow)
@@ -93,7 +93,7 @@ class AuthLegalPersonSpec extends TaraSpecification {
     @Feature("LEGAL_PERSON_AUTH_START_ENDPOINT")
     def "legal persons authentication request with multiple session ID's"() {
         expect:
-        Response initClientAuthenticationSession = Steps.initAuthenticationSession(flow, "openid legalperson")
+        Response initClientAuthenticationSession = Steps.startAuthenticationInTara(flow, "openid legalperson")
         Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001019906", "00000766", Collections.emptyMap())
         assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
         Response pollResponse = Steps.pollMidResponse(flow)

@@ -30,13 +30,13 @@ class Requests {
     }
 
     @Step("Mobile-ID authentication init request")
-    static Response initMid(Flow flow) {
+    static Response startMidAuthentication(Flow flow, String idCode, String phoneNo) {
         Response response =
                 given()
                         .filter(flow.cookieFilter)
                         .filter(new AllureRestAssured())
-                        .formParam("idCode", "60001017716")
-                        .formParam("telephoneNumber", "69100366")
+                        .formParam("idCode", idCode)
+                        .formParam("telephoneNumber", phoneNo)
                         .cookie("SESSION", flow.sessionId)
                         .formParam("_csrf", flow.csrf)
                         .log().cookies()

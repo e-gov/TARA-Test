@@ -22,7 +22,7 @@ class MobileIDAuthSpec extends TaraSpecification {
     @Feature("MID_INIT_ENDPOINT")
     def "initialize mobile-ID authentication"() {
         expect:
-        Steps.initAuthenticationSession(flow)
+        Steps.startAuthenticationInTara(flow)
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
         Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", additionalParamsMap)
         assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
@@ -35,7 +35,7 @@ class MobileIDAuthSpec extends TaraSpecification {
     @Feature("MID_INIT_ENDPOINT")
     def "initialize mobile-ID authentication with invalid method get"() {
         expect:
-        Steps.initAuthenticationSession(flow)
+        Steps.startAuthenticationInTara(flow)
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         def map1 = Utils.setParameter(paramsMap, "idCode", "60001017716")
         def map2 = Utils.setParameter(paramsMap, "telephoneNumber", "69100366")
@@ -55,7 +55,7 @@ class MobileIDAuthSpec extends TaraSpecification {
         expect:
         LinkedHashMap<String, String> additionalParamsMap = (LinkedHashMap) Collections.emptyMap()
         def map1 = Utils.setParameter(additionalParamsMap, additionalParameterName, additionalParameterValue)
-        Steps.initAuthenticationSession(flow)
+        Steps.startAuthenticationInTara(flow)
         Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, idCode, phoneNo, additionalParamsMap)
         assertEquals("Correct HTTP status code is returned", 400, initMidAuthenticationSession.statusCode())
         assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", initMidAuthenticationSession.getContentType())
@@ -88,7 +88,7 @@ class MobileIDAuthSpec extends TaraSpecification {
         expect:
         LinkedHashMap<String, String> additionalParamsMap = (LinkedHashMap) Collections.emptyMap()
         def map1 = Utils.setParameter(additionalParamsMap, additionalParameterName, additionalParameterValue)
-        Steps.initAuthenticationSession(flow)
+        Steps.startAuthenticationInTara(flow)
         Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, idCode, phoneNo, additionalParamsMap)
         assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
         Response pollResponse = Steps.pollMidResponse(flow)
@@ -114,7 +114,7 @@ class MobileIDAuthSpec extends TaraSpecification {
         expect:
         LinkedHashMap<String, String> localeMap = (LinkedHashMap) Collections.emptyMap()
         def map1 = Utils.setParameter(localeMap, "lang", "ru")
-        Response initOIDCServiceSession = Steps.createSession(flow)
+        Response initOIDCServiceSession = Steps.startAuthenticationInOidc(flow)
         Response loginSession = Steps.initLoginSession(flow, initOIDCServiceSession, localeMap)
         LinkedHashMap<String, String> additionalParamsMap = (LinkedHashMap) Collections.emptyMap()
         def map2 = Utils.setParameter(additionalParamsMap, additionalParameterName, additionalParameterValue)
@@ -142,7 +142,7 @@ class MobileIDAuthSpec extends TaraSpecification {
         expect:
         LinkedHashMap<String, String> localeMap = (LinkedHashMap) Collections.emptyMap()
         def map1 = Utils.setParameter(localeMap, "lang", "en")
-        Response initOIDCServiceSession = Steps.createSession(flow)
+        Response initOIDCServiceSession = Steps.startAuthenticationInOidc(flow)
         Response loginSession = Steps.initLoginSession(flow, initOIDCServiceSession, localeMap)
         LinkedHashMap<String, String> additionalParamsMap = (LinkedHashMap) Collections.emptyMap()
         def map2 = Utils.setParameter(additionalParamsMap, additionalParameterName, additionalParameterValue)
@@ -169,7 +169,7 @@ class MobileIDAuthSpec extends TaraSpecification {
     @Feature("MID_AUTH_PENDING")
     def "poll mobile-ID authentication session"() {
         expect:
-        Steps.initAuthenticationSession(flow)
+        Steps.startAuthenticationInTara(flow)
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
         Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", additionalParamsMap)
         assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
@@ -183,7 +183,7 @@ class MobileIDAuthSpec extends TaraSpecification {
     @Feature("MID_AUTH_STATUS_CHECK_ENDPOINT")
     def "poll mobile-ID authentication session with invalid session ID"() {
         expect:
-        Steps.initAuthenticationSession(flow)
+        Steps.startAuthenticationInTara(flow)
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
         Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", additionalParamsMap)
         assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
@@ -199,7 +199,7 @@ class MobileIDAuthSpec extends TaraSpecification {
     @Feature("MID_AUTH_SUCCESS")
     def "poll mobile-ID authentication with session complete"() {
         expect:
-        Steps.initAuthenticationSession(flow)
+        Steps.startAuthenticationInTara(flow)
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
         Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", additionalParamsMap)
         assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
@@ -215,7 +215,7 @@ class MobileIDAuthSpec extends TaraSpecification {
     @Feature("MID_AUTH_STATUS_CHECK_ENDPOINT")
     def "poll mobile-ID authentication with invalid method post"() {
         expect:
-        Steps.initAuthenticationSession(flow)
+        Steps.startAuthenticationInTara(flow)
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
         Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", additionalParamsMap)
         assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
@@ -229,7 +229,7 @@ class MobileIDAuthSpec extends TaraSpecification {
     @Feature("MID_AUTH_CANCELED")
     def "cancel mobile-ID authentication"() {
         expect:
-        Steps.initAuthenticationSession(flow)
+        Steps.startAuthenticationInTara(flow)
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
         Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", additionalParamsMap)
         assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
@@ -247,7 +247,7 @@ class MobileIDAuthSpec extends TaraSpecification {
     @Feature("XSS_DETECTION_FILTER_ENABLED")
     def "Verify cancel mobile-ID authentication response headers"() {
         expect:
-        Steps.initAuthenticationSession(flow)
+        Steps.startAuthenticationInTara(flow)
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
         Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", additionalParamsMap)
         assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
@@ -260,7 +260,7 @@ class MobileIDAuthSpec extends TaraSpecification {
     @Feature("MID_AUTH_STATUS_CHECK_ENDPOINT")
     def "cancel mobile-ID authentication with invalid session ID"() {
         expect:
-        Steps.initAuthenticationSession(flow)
+        Steps.startAuthenticationInTara(flow)
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
         Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", additionalParamsMap)
         assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
@@ -278,7 +278,7 @@ class MobileIDAuthSpec extends TaraSpecification {
     @Feature("MID_AUTH_STATUS_CHECK_ENDPOINT")
     def "cancel mobile-ID authentication with invalid method get"() {
         expect:
-        Steps.initAuthenticationSession(flow)
+        Steps.startAuthenticationInTara(flow)
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
         Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", additionalParamsMap)
         assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())

@@ -26,8 +26,7 @@ class AuthInitSpec extends TaraSpecification {
     @Feature("AUTH_INIT_ENDPOINT")
     def "request initialize authentication"() {
         expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
-        Response initOIDCServiceSession = Steps.createOIDCSessionWithParameters(flow, paramsMap)
+        Response initOIDCServiceSession = Steps.startAuthenticationInOidc(flow)
         assertEquals("Correct HTTP status code is returned", 302, initOIDCServiceSession.statusCode())
         Response response = Steps.createLoginSession(flow, initOIDCServiceSession)
         assertEquals("Correct HTTP status code is returned", 200, response.statusCode())
@@ -46,7 +45,7 @@ class AuthInitSpec extends TaraSpecification {
     def "request initialize authentication language"() {
         expect:
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "openid", "et")
-        Response initOIDCServiceSession = Steps.createOIDCSessionWithParameters(flow, paramsMap)
+        Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
 
         assertEquals("Correct HTTP status code is returned", 302, initOIDCServiceSession.statusCode())
         Response response = Steps.createLoginSession(flow, initOIDCServiceSession)
@@ -64,7 +63,7 @@ class AuthInitSpec extends TaraSpecification {
         expect:
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
-        Response initOIDCServiceSession = Steps.createSession(flow)
+        Response initOIDCServiceSession = Steps.startAuthenticationInOidc(flow)
         String loginChallenge = Utils.getParamValueFromResponseHeader(initOIDCServiceSession, "login_challenge")
 
         if (paramValue1 instanceof Wildcard) {
@@ -99,7 +98,7 @@ class AuthInitSpec extends TaraSpecification {
         expect:
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
-        Response initOIDCServiceSession = Steps.createSession(flow)
+        Response initOIDCServiceSession = Steps.startAuthenticationInOidc(flow)
         String loginChallenge = Utils.getParamValueFromResponseHeader(initOIDCServiceSession, "login_challenge")
         def map1 = Utils.setParameter(paramsMap, "lang", "et")
         def map2 = Utils.setParameter(paramsMap, "login_challenge", loginChallenge)
@@ -120,7 +119,7 @@ class AuthInitSpec extends TaraSpecification {
         expect:
         LinkedHashMap<String, String> localeMap = (LinkedHashMap) Collections.emptyMap()
         def map1 = Utils.setParameter(localeMap, "lang", "ru")
-        Response initOIDCServiceSession = Steps.createSession(flow)
+        Response initOIDCServiceSession = Steps.startAuthenticationInOidc(flow)
         Response response = Steps.initLoginSession(flow, initOIDCServiceSession, localeMap)
         assertEquals("Correct HTTP status code is returned", 200, response.statusCode())
         assertEquals("Correct content type", "text/html;charset=UTF-8", response.getContentType())
@@ -139,7 +138,7 @@ class AuthInitSpec extends TaraSpecification {
         expect:
         LinkedHashMap<String, String> localeMap = (LinkedHashMap) Collections.emptyMap()
         def map1 = Utils.setParameter(localeMap, "lang", "en")
-        Response initOIDCServiceSession = Steps.createSession(flow)
+        Response initOIDCServiceSession = Steps.startAuthenticationInOidc(flow)
         Response response = Steps.initLoginSession(flow, initOIDCServiceSession, localeMap)
         assertEquals("Correct HTTP status code is returned", 200, response.statusCode())
         assertEquals("Correct content type", "text/html;charset=UTF-8", response.getContentType())
