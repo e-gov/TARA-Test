@@ -99,8 +99,7 @@ class AuthLegalPersonConfirmSpec extends TaraSpecification {
         assertEquals("Correct HTTP status code is returned", 200, initLegalResponse.statusCode())
         Steps.verifyResponseHeaders(initLegalResponse)
         Response legalPersonsResponse = Requests.getRequestWithSessionId(flow, flow.loginService.fullAuthLegalPersonUrl)
-        // TARA2-178
-        // Steps.verifyResponseHeaders(legalPersonsResponse)
+        Steps.verifyResponseHeaders(legalPersonsResponse)
         String legalPersonIdentifier = legalPersonsResponse.body().jsonPath().get("legalPersons[0].legalPersonIdentifier").toString()
         String legalName = legalPersonsResponse.body().jsonPath().get("legalPersons[0].legalName").toString()
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()

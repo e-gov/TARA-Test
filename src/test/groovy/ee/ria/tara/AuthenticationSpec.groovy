@@ -60,8 +60,7 @@ class AuthenticationSpec extends TaraSpecification {
         Response midPollResult = Steps.pollMidResponse(flow)
         assertEquals("Correct HTTP status code is returned", 200, midPollResult.statusCode())
         assertThat(midPollResult.body().jsonPath().get("status").toString(), Matchers.not(equalTo("PENDING")))
-        // TARA2-178
-        // Steps.verifyResponseHeaders(midPollResult)
+        Steps.verifyResponseHeaders(midPollResult)
         Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
         assertEquals("Correct HTTP status code is returned", 302, acceptResponse.statusCode())
         Steps.verifyResponseHeaders(acceptResponse)

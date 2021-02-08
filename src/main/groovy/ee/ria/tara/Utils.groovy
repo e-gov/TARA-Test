@@ -72,8 +72,11 @@ class Utils {
                 paramValue = it.split("=")[1]
             }
         }
-
-        return URLDecoder.decode(paramValue, "UTF-8")
+        if (paramValue != null) {
+            return URLDecoder.decode(paramValue, "UTF-8")
+        } else {
+            return null
+        }
     }
 
     static String encodeUrl(String inputString) {

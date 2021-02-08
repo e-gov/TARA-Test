@@ -103,6 +103,25 @@ class Steps {
         return consentResponse
     }
 
+    @Step("Authenticate with ID-Card")
+    static Response authenticateWithIdCard(Flow flow, String certificateFileName) {
+        String certificate = Utils.getCertificateAsString(certificateFileName)
+        HashMap<String, String> headersMap = (HashMap) Collections.emptyMap()
+        Utils.setParameter(headersMap, "XCLIENTCERTIFICATE", certificate)
+        Response response = Requests.idCardAuthentication(flow, headersMap)
+        assertThat("Correct response", response.body().jsonPath().get("status").toString(), equalTo("COMPLETED"))
+
+        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
+        assertEquals("Correct HTTP status code is returned", 302, acceptResponse.statusCode())
+        Response oidcServiceResponse = getOAuthCookies(flow, acceptResponse)
+        assertEquals("Correct HTTP status code is returned", 302, oidcServiceResponse.statusCode())
+
+        Response consentResponse = followRedirectWithSessionId(flow, oidcServiceResponse)
+        assertEquals("Correct HTTP status code is returned", 200, consentResponse.statusCode())
+        return consentResponse
+    }
+
+
     @Step("Getting OAuth2 cookies")
     static Response getOAuthCookies(flow, Response response) {
         Response oidcServiceResponse = followRedirectWithCookies(flow, response, flow.oidcService.cookies)

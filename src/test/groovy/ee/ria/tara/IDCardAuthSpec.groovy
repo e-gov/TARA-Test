@@ -87,7 +87,6 @@ class IDCardAuthSpec extends TaraSpecification {
         assertThat(claims.getClaim("acr"), equalTo("high"))
     }
 
-    @Ignore // TARA2-178
     @Unroll
     @Feature("DISALLOW_IFRAMES")
     @Feature("CSP_ENABLED")
