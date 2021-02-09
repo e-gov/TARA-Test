@@ -39,7 +39,7 @@ class ServiceErrorsSpec extends TaraSpecification {
 
     @Unroll
     @Feature("ERROR_CONTENT_JSON")
-    def "Verify error response"() {
+    def "Verify error response json"() {
         expect:
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         def map2 = Utils.setParameter(paramsMap, "error", "service_error")
@@ -58,6 +58,38 @@ class ServiceErrorsSpec extends TaraSpecification {
 
         assertThat("Supported locale", response.body().jsonPath().getString("locale"), Matchers.oneOf("et", "en", "ru"))
         assertTrue(response.body().jsonPath().getString("incident_nr").size() > 15)
+    }
+
+    @Unroll
+    @Feature("USER_ERRORS")
+    def "Verify error response html: general error"() {
+        expect:
+        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
+        def map1 = Utils.setParameter(paramsMap, "error", "service_error")
+        HashMap<String, String> headersMap = (HashMap) Collections.emptyMap()
+        def map2 = Utils.setParameter(headersMap, "Accept", "text/html")
+        Response response = Requests.getRequestWithHeadersAndParams(flow, flow.loginService.fullErrorUrl, headersMap, paramsMap, Collections.emptyMap())
+        assertEquals("Correct HTTP status code is returned", 500, response.statusCode())
+        assertEquals("Correct Content-Type is returned", "text/html;charset=UTF-8", response.getContentType())
+        assertTrue(response.body().htmlPath().getInt("**.find { strong -> strong.text() == 'Kasutaja tuvastamine ebaõnnestus.'}.size()") > 0)
+        assertTrue(response.body().htmlPath().getInt("**.find { p -> p.text() == 'Autentimine ebaõnnestus teenuse tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti.'}.size()") > 0)
+        assertTrue(response.body().htmlPath().getString("**.find { it.@role == 'alert'}.p.text()").contains("Intsidendi number:"))
+    }
+
+    @Unroll
+    @Feature("USER_ERRORS")
+    def "Verify error response html: invalid client"() {
+        expect:
+        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
+        def map1 = Utils.setParameter(paramsMap, "error", "invalid_client")
+        HashMap<String, String> headersMap = (HashMap) Collections.emptyMap()
+        def map2 = Utils.setParameter(headersMap, "Accept", "text/html")
+        Response response = Requests.getRequestWithHeadersAndParams(flow, flow.loginService.fullErrorUrl, headersMap, paramsMap, Collections.emptyMap())
+        assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
+        assertEquals("Correct Content-Type is returned", "text/html;charset=UTF-8", response.getContentType())
+        assertTrue(response.body().htmlPath().getInt("**.find { strong -> strong.text() == 'Kasutaja tuvastamine ebaõnnestus.'}.size()") > 0)
+        assertTrue(response.body().htmlPath().getInt("**.find { p -> p.text() == 'Kliendi autentimine ebaõnnestus. Tundmatu klient.'}.size()") > 0)
+        assertTrue(response.body().htmlPath().getString("**.find { it.@role == 'alert'}.p.text()").contains("Intsidendi number:"))
     }
 
 

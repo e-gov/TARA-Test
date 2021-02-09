@@ -209,6 +209,26 @@ class Requests {
                 .extract().response()
     }
 
+    @Step("Get request with headers and params")
+    static Response getRequestWithHeadersAndParams(Flow flow , String url
+                                           ,Map<String, String> headers
+                                           , Map<String, String> queryParams
+                                           , Map<String, String> additionalQueryParams) {
+        return given()
+                .filter(flow.cookieFilter)
+                .queryParams(queryParams)
+                .headers(headers)
+                .queryParams(additionalQueryParams)
+                .filter(new AllureRestAssured())
+                .log().cookies()
+                .relaxedHTTPSValidation()
+                .when()
+                .redirects().follow(false)
+                .urlEncodingEnabled(true)
+                .get(url)
+                .then()
+                .extract().response()
+    }
     @Step("Post request with cookies and params")
     static Response postRequestWithCookiesAndParams(Flow flow , String url
                                                    , Map<String, String> cookies
