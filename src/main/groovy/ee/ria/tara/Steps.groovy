@@ -224,6 +224,20 @@ class Steps {
         assertThat(response.getHeader("X-XSS-Protection"), equalTo("1; mode=block"))
     }
 
+    @Step("Get user info response with header parameter")
+    static Response getUserInfoResponseWithHeaderParam(Flow flow, String requestType, String accessToken) {
+        HashMap<String, String> headersMap = (HashMap) Collections.emptyMap()
+        headersMap.put("Authorization", "Bearer " +accessToken)
+        return Requests.getUserInfoWithHeaderParam (flow, requestType, headersMap)
+    }
+
+    @Step("Get user info response with query parameter")
+    static Response getUserInfoResponseWithQueryParam(Flow flow, String requestType, String accessToken) {
+        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
+        paramsMap.put("access_token", accessToken)
+        return Requests.getUserInfoWithQueryParam (flow, requestType, paramsMap)
+    }
+
     private static void addJsonAttachment(String name, String json) throws IOException {
         ObjectMapper mapper = new ObjectMapper()
         Object jsonObject = mapper.readValue(json, Object.class)

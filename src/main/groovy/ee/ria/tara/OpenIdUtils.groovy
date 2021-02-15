@@ -7,6 +7,7 @@ import com.nimbusds.jose.jwk.*
 import com.nimbusds.jwt.SignedJWT
 import org.apache.commons.codec.digest.DigestUtils
 import org.apache.commons.lang.RandomStringUtils
+import io.restassured.response.Response
 
 class OpenIdUtils {
     static Boolean isTokenSignatureValid(JWKSet jwkSet, SignedJWT signedJWT) throws JOSEException {
@@ -32,5 +33,14 @@ class OpenIdUtils {
         queryParams.put("state", flow.state)
         queryParams.put("nonce", flow.nonce)
         return queryParams
+    }
+
+    static Map<String, String> getErrorFromAuthorizationHeader(Response errorResponse) {
+        String[] errorList = errorResponse.getHeader("WWW-Authenticate").toString().split(",")
+        Map<String, String> myMap = new HashMap<String, String>()
+        for (String str : errorList) {
+            myMap.put(str.split("=")[0], str.split("=")[1])
+        }
+        return myMap
     }
 }

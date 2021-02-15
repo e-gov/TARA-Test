@@ -382,4 +382,30 @@ class Requests {
                 .then()
                 .extract().response()
     }
+
+    @Step("Get user info with header parameter")
+    static Response getUserInfoWithHeaderParam(Flow flow, String requestType, Map<String, String> headers) {
+        return given()
+                .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
+                .filter(new AllureRestAssured())
+                .headers(headers)
+                .when()
+                .urlEncodingEnabled(true)
+                .request(requestType, flow.openIdServiceConfiguration.getString("userinfo_endpoint"))
+                .then()
+                .extract().response()
+    }
+
+    @Step("Get user info with query parameter")
+    static Response getUserInfoWithQueryParam(Flow flow, String requestType, Map<String, String> queryParams) {
+        return given()
+                .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
+                .filter(new AllureRestAssured())
+                .params(queryParams)
+                .when()
+                .urlEncodingEnabled(true)
+                .request(requestType, flow.openIdServiceConfiguration.getString("userinfo_endpoint"))
+                .then()
+                .extract().response()
+    }
 }
