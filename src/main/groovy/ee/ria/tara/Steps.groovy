@@ -103,6 +103,24 @@ class Steps {
         return consentResponse
     }
 
+    @Step("Authenticate with Smart-ID")
+    static Response authenticateWithSid(Flow flow, String idCode) {
+        Response sidInit = initSidAuthSession(flow, flow.sessionId, idCode, Collections.emptyMap())
+        assertEquals("Correct HTTP status code is returned", 200, sidInit.statusCode())
+        Response sidPollResult = pollSidResponse(flow)
+        assertEquals("Correct HTTP status code is returned", 200, sidPollResult.statusCode())
+        assertThat(sidPollResult.body().jsonPath().get("status").toString(), Matchers.not(equalTo("PENDING")))
+        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
+        assertEquals("Correct HTTP status code is returned", 302, acceptResponse.statusCode())
+
+        Response oidcServiceResponse = getOAuthCookies(flow, acceptResponse)
+        assertEquals("Correct HTTP status code is returned", 302, oidcServiceResponse.statusCode())
+
+        Response consentResponse = followRedirectWithSessionId(flow, oidcServiceResponse)
+        assertEquals("Correct HTTP status code is returned", 200, consentResponse.statusCode())
+        return consentResponse
+    }
+
     @Step("Authenticate with ID-Card")
     static Response authenticateWithIdCard(Flow flow, String certificateFileName) {
         String certificate = Utils.getCertificateAsString(certificateFileName)

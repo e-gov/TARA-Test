@@ -40,6 +40,21 @@ class AuthenticationSpec extends TaraSpecification {
     }
 
     @Unroll
+    @Feature("AUTHENTICATION")
+    def "request authentication with Smart-ID"() {
+        expect:
+        Steps.startAuthenticationInTara(flow, "openid smartid")
+        Steps.authenticateWithSid(flow,"10101010005")
+        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true)
+        Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
+
+        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        assertThat(claims.getAudience().get(0), equalTo(flow.oidcClient.clientId))
+        assertThat(claims.getSubject(), equalTo("EE10101010005"))
+        assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo("DEMO"))
+    }
+
+    @Unroll
     @Feature("DISALLOW_IFRAMES")
     @Feature("CSP_ENABLED")
     @Feature("HSTS_ENABLED")
