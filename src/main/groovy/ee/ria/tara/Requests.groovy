@@ -66,6 +66,23 @@ class Requests {
         return response
     }
 
+    @Step("Smart-ID response poll request")
+    static Response pollSid(Flow flow) {
+        Response response =
+                given()
+                        .filter(flow.cookieFilter)
+                        .filter(new AllureRestAssured())
+                        .cookie("SESSION", flow.sessionId)
+                        .log().cookies()
+                        .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
+                        .when()
+                        .redirects().follow(false)
+                        .get(flow.loginService.fullSidPollUrl)
+                        .then()
+                        .extract().response()
+        return response
+    }
+
     @Step("Follow redirect request")
     static Response followRedirect(Flow flow, String location) {
         return given()

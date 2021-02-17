@@ -45,8 +45,8 @@ class Steps {
     }
 
     @Step("Start authentication in TARA and follow redirects")
-    static Response startAuthenticationInTara(Flow flow, String scopeList = "openid") {
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, scopeList)
+    static Response startAuthenticationInTara(Flow flow, String scopeList = "openid", String locale = "et") {
+        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, scopeList, locale)
         Response initOIDCServiceSession = startAuthenticationInOidcWithParams(flow, paramsMap)
         Response initLoginSession = createLoginSession(flow, initOIDCServiceSession)
         assertEquals("Correct HTTP status code is returned", 200, initLoginSession.statusCode())
@@ -121,6 +121,34 @@ class Steps {
         return consentResponse
     }
 
+    @Step("Initialize Smart-ID authentication session")
+    static Response initSidAuthSession(Flow flow, String sessionId
+                                       , Object idCode
+                                       , Map additionalParamsMap = Collections.emptyMap()) {
+        LinkedHashMap<String, String> formParamsMap = (LinkedHashMap) Collections.emptyMap()
+        Utils.setParameter(formParamsMap, "_csrf", flow.csrf)
+        if (!(idCode instanceof Wildcard)) {
+            Utils.setParameter(formParamsMap, "smartIdCode", idCode)
+        }
+        HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
+        Utils.setParameter(cookieMap, "SESSION", sessionId)
+        return Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullSidInitUrl, cookieMap, formParamsMap, additionalParamsMap)
+    }
+
+    @Step("Polling Smart-ID authentication response")
+    static Response pollSidResponse(Flow flow) {
+        int counter = 0
+        Response response = null
+        while (counter < 20) {
+            response = Requests.pollSid(flow)
+            if (response.body().jsonPath().get("status") != "PENDING") {
+                break
+            }
+            ++counter
+            sleep(2000L)
+        }
+        return response
+    }
 
     @Step("Getting OAuth2 cookies")
     static Response getOAuthCookies(flow, Response response) {

@@ -30,11 +30,14 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         Steps.startAuthenticationInTara(flow)
         Response response = Steps.authenticateWithMid(flow,"60001017716", "69100366")
         assertEquals("Correct HTTP status code is returned", 200, response.statusCode())
-        List<String> identityFields = response.body().htmlPath().getList("**.findAll {th -> th.@colspan == '1'}")
-        assertTrue(response.body().htmlPath().getList("**.findAll { it.@method == 'POST'}.button").contains("Nõustu"))
-        assertTrue(response.body().htmlPath().getList("**.findAll { it.@method == 'POST'}.button").contains("Keeldu"))
+        List<String> identityFields = response.body().htmlPath().getList("**.findAll {th -> th.@colspan == '1'}.b")
+        assertTrue(response.body().htmlPath().getList("**.findAll { it.@method == 'POST'}.button").contains("Nõustun"))
+        assertTrue(response.body().htmlPath().getList("**.findAll { it.@method == 'POST'}.button").contains("Keeldun"))
         assertTrue(identityFields.containsAll("Isikukood:", "Perenimi:", "Eesnimi:", "Sünniaeg:"))
-        assertTrue(identityFields.containsAll("60001017716", "TESTNUMBER", "ONE", "01.01.2000"))
+        assertThat(response.body().htmlPath().getString("**.find { it.@id == 'natural-person-id-code'}"), equalTo("60001017716"))
+        assertThat(response.body().htmlPath().getString("**.find { it.@id == 'natural-person-surname'}"), equalTo("TESTNUMBER"))
+        assertThat(response.body().htmlPath().getString("**.find { it.@id == 'natural-person-given-name'}"), equalTo("ONE"))
+        assertThat(response.body().htmlPath().getString("**.find { it.@id == 'natural-person-date-of-birth'}"), equalTo("01.01.2000"))
     }
 
     @Unroll
