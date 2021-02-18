@@ -146,7 +146,7 @@ class Steps {
         LinkedHashMap<String, String> formParamsMap = (LinkedHashMap) Collections.emptyMap()
         Utils.setParameter(formParamsMap, "_csrf", flow.csrf)
         if (!(idCode instanceof Wildcard)) {
-            Utils.setParameter(formParamsMap, "smartIdCode", idCode)
+            Utils.setParameter(formParamsMap, "idCode", idCode)
         }
         HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(cookieMap, "SESSION", sessionId)

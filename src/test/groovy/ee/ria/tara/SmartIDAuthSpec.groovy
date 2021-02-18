@@ -3,6 +3,7 @@ package ee.ria.tara
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
+import spock.lang.Ignore
 import spock.lang.Unroll
 import org.hamcrest.Matchers
 
@@ -29,6 +30,22 @@ class SmartIDAuthSpec extends TaraSpecification {
         assertEquals("Verification code exists", 4, controlCode.size())
     }
 
+    @Ignore // TARA2-165
+    @Unroll
+    @Feature("SID_AUTH_INIT_ENDPOINT")
+    def "initialize Smart-ID authentication with invalid method get"() {
+        expect:
+        Steps.startAuthenticationInTara(flow, "openid smartid")
+        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
+        def map1 = Utils.setParameter(paramsMap, "idCode", "10101010005")
+        HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
+        def map3 = Utils.setParameter(cookieMap, "SESSION", flow.sessionId)
+        HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
+        Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullSidInitUrl, cookieMap, paramsMap, additionalParamsMap)
+        assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
+        assertThat(response.body().jsonPath().get("message").toString(), Matchers.equalTo("Request method 'GET' not supported"))
+    }
+
     @Unroll
     @Feature("SID_AUTH_INIT_ENDPOINT")
     @Feature("SID_AUTH_CHECKS_IDCODE")
@@ -50,7 +67,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         "60001329939"  | _                       | _                                      | "wrong date inside idCode"   || "Isikukood ei ole korrektne."
         "6000"         | _                       | _                                      | "too short idCode"           || "Isikukood ei ole korrektne."
         "38500030556"  | _                       | _                                      | "invalid month in idCode"    || "Isikukood ei ole korrektne."
-        "60001017716"  | "smartIdCode"           | "60001017727"                          | "multiple idCode parameters" || "Multiple request parameters with the same name not allowed"
+        "60001017716"  | "idCode"           | "60001017727"                          | "multiple idCode parameters" || "Multiple request parameters with the same name not allowed"
         "60001017716"  | "_csrf"                 | "d7860443-a0cc-45db-ad68-3c9300c0b3bb" | "multiple _csrf parameters"  || "Multiple request parameters with the same name not allowed"
     }
 
@@ -157,6 +174,21 @@ class SmartIDAuthSpec extends TaraSpecification {
         assertEquals("Correct Mobile-ID status", "COMPLETED", response.body().jsonPath().get("status"))
     }
 
+    @Ignore // TARA2-165
+    @Unroll
+    @Feature("SID_AUTH_STATUS_CHECK_ENDPOINT")
+    @Feature("SID_AUTH_SUCCESS")
+    def "poll Smart-ID authentication with invalid method post"() {
+        expect:
+        Steps.startAuthenticationInTara(flow, "openid smartid")
+        HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
+        Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, "10101010005", additionalParamsMap)
+        assertEquals("Correct HTTP status code is returned", 200, initSidAuthenticationSession.statusCode())
+        Response response = Requests.postRequestWithSessionId(flow, flow.loginService.fullSidPollUrl)
+        assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
+        assertThat(response.body().jsonPath().get("message").toString(), Matchers.equalTo("Request method 'POST' not supported"))
+    }
+
     @Unroll
     @Feature("SID_AUTH_STATUS_CHECK_ENDPOINT")
     @Feature("SID_AUTH_CANCELED")
@@ -204,5 +236,20 @@ class SmartIDAuthSpec extends TaraSpecification {
         assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
         // _csrf is directly related with SESSION cookie
         assertEquals("Correct error message is returned", "Forbidden", response.body().jsonPath().get("message"))
+    }
+
+    @Ignore // TARA2-165
+    @Unroll
+    @Feature("SID_AUTH_STATUS_CHECK_ENDPOINT")
+    def "cancel Smart-ID authentication with invalid method get"() {
+        expect:
+        Steps.startAuthenticationInTara(flow, "openid smartid")
+        HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
+        Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, "10101010005", additionalParamsMap)
+        assertEquals("Correct HTTP status code is returned", 200, initSidAuthenticationSession.statusCode())
+
+        Response response = Requests.getRequestWithSessionId(flow, flow.loginService.fullSidCancelUrl)
+        assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
+        assertThat(response.body().jsonPath().get("message").toString(), Matchers.equalTo("Request method 'GET' not supported"))
     }
 }
