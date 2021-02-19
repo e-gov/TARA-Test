@@ -21,6 +21,10 @@ class TaraSpecification extends Specification {
     static String REQUEST_TYPE_POST = "post"
     static String REQUEST_TYPE_GET = "get"
     static String REJECT_ERROR_CODE = "user_cancel"
+    static String IDP_USERNAME = "xavi"
+    static String IDP_PASSWORD = "creus"
+    static String EIDASLOA = "E"
+    static String COUNTRY = "CA"
 
     def setupSpec() {
         InitializationService.initialize()

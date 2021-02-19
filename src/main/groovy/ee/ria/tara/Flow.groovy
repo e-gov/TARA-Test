@@ -21,6 +21,11 @@ class Flow {
     JWKSet jwkSet
     JsonPath openIdServiceConfiguration
 
+    String token
+    String nextEndpoint
+    String requestMessage
+    String relayState
+
     Flow(Properties properties) {
         this.properties = properties
         this.loginService = new LoginService(properties)
@@ -54,6 +59,8 @@ class LoginService {
     String authLegalPersonUrl
     String authLegalConfirmUrl
     String errorUrl
+    String eidasInitUrl
+    String eidasCallbackUrl
 
     @Lazy fullInitUrl = "${protocol}://${host}${portCheck()}${initUrl}"
     @Lazy fullMidInitUrl = "${protocol}://${host}${portCheck()}${midInitUrl}"
@@ -69,6 +76,8 @@ class LoginService {
     @Lazy fullConsentConfirmUrl = "${protocol}://${host}${portCheck()}${consentConfirmUrl}"
     @Lazy fullHeartbeatUrl = "${protocol}://${host}${portCheck()}${heartbeatUrl}"
     @Lazy fullErrorUrl = "${protocol}://${host}${portCheck()}${errorUrl}"
+    @Lazy fullEidasInitUrl = "${protocol}://${host}${portCheck()}${eidasInitUrl}"
+    @Lazy fullEidasCallbackUrl = "${protocol}://${host}${portCheck()}${eidasCallbackUrl}"
     @Lazy fullAuthLegalInitUrl = "${protocol}://${host}${portCheck()}${authLegalInitUrl}"
     @Lazy fullAuthLegalPersonUrl = "${protocol}://${host}${portCheck()}${authLegalPersonUrl}"
     @Lazy fullAuthLegalConfirmUrl = "${protocol}://${host}${portCheck()}${authLegalConfirmUrl}"
@@ -95,6 +104,8 @@ class LoginService {
         this.consentConfirmUrl = properties."loginservice.consentConfirmUrl"
         this.heartbeatUrl = properties."loginservice.heartbeatUrl"
         this.errorUrl = properties."loginservice.errorUrl"
+        this.eidasInitUrl = properties."loginservice.eidasInitUrl"
+        this.eidasCallbackUrl = properties."loginservice.eidasCallbackUrl"
         this.authLegalInitUrl = properties."loginservice.authLegalInitUrl"
         this.authLegalPersonUrl = properties."loginservice.authLegalPersonUrl"
         this.authLegalConfirmUrl = properties."loginservice.authLegalConfirmUrl"

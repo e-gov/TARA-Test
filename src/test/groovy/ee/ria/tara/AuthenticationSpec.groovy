@@ -55,6 +55,38 @@ class AuthenticationSpec extends TaraSpecification {
     }
 
     @Unroll
+    @Feature("AUTHENTICATION")
+    def "request authentication with Eidas"() {
+        expect:
+        Steps.startAuthenticationInTara(flow, "openid eidas")
+        String country = "CA"
+        Response initEidasAuthenticationSession = Steps.initEidasAuthSession(flow, flow.sessionId, country, Collections.emptyMap())
+        assertEquals("Correct HTTP status code is returned", 200, initEidasAuthenticationSession.statusCode())
+        assertEquals("Correct Content-Type is returned", "text/html;charset=UTF-8", initEidasAuthenticationSession.getContentType())
+        String buttonLabel = initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@type == 'submit'}.@value")
+        assertEquals("Continue button exists", "Continue", buttonLabel)
+
+        flow.setNextEndpoint(initEidasAuthenticationSession.body().htmlPath().getString("**.find { form -> form.@method == 'post' }.@action"))
+        flow.setRelayState(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'RelayState' }.@value"))
+        flow.setRequestMessage(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'SAMLRequest' }.@value"))
+        Response colleagueResponse = Steps.continueEidasAuthenticationFlow(flow, IDP_USERNAME, IDP_PASSWORD, EIDASLOA)
+        Response authorizationResponse = Steps.getAuthorizationResponseFromEidas(flow, colleagueResponse)
+        Response redirectionResponse = Steps.eidasRedirectAuthorizationResponse(flow, authorizationResponse)
+        Response acceptResponse = Steps.eidasAcceptAuthorizationResult(flow, redirectionResponse)
+        assertEquals("Correct HTTP status code is returned", 302, acceptResponse.statusCode())
+        Response oidcServiceResponse = Steps.getOAuthCookies(flow, acceptResponse)
+        Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
+        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true)
+        Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
+        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        assertThat(claims.getAudience().get(0), equalTo(flow.oidcClient.clientId))
+        assertThat(claims.getSubject(), equalTo("CACA/EE/12345"))
+        assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo("javier"))
+        assertThat(claims.getJSONObjectClaim("profile_attributes").get("family_name"), equalTo("Garcia"))
+        assertThat(claims.getJSONObjectClaim("profile_attributes").get("date_of_birth"), equalTo("1965-01-01"))
+    }
+
+    @Unroll
     @Feature("DISALLOW_IFRAMES")
     @Feature("CSP_ENABLED")
     @Feature("HSTS_ENABLED")
