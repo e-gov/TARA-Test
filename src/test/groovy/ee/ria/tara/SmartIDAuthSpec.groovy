@@ -4,13 +4,14 @@ import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import spock.lang.Ignore
+import spock.lang.IgnoreIf
 import spock.lang.Unroll
 import org.hamcrest.Matchers
 
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertThat
 
-@Ignore
+@IgnoreIf({ properties['test.deployment.env'] == "idp" })
 class SmartIDAuthSpec extends TaraSpecification {
     Flow flow = new Flow(props)
 
