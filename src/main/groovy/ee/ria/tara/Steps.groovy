@@ -47,11 +47,13 @@ class Steps {
     }
 
     @Step("Start authentication in TARA and follow redirects")
-    static Response startAuthenticationInTara(Flow flow, String scopeList = "openid", String locale = "et") {
+    static Response startAuthenticationInTara(Flow flow, String scopeList = "openid", String locale = "et", boolean checkStatusCode = true) {
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, scopeList, locale)
         Response initOIDCServiceSession = startAuthenticationInOidcWithParams(flow, paramsMap)
         Response initLoginSession = createLoginSession(flow, initOIDCServiceSession)
-        assertEquals("Correct HTTP status code is returned", 200, initLoginSession.statusCode())
+        if (checkStatusCode) {
+            assertEquals("Correct HTTP status code is returned", 200, initLoginSession.statusCode())
+        }
         return initLoginSession
     }
 
@@ -238,8 +240,6 @@ class Steps {
 
     @Step("Eidas iDP authorization request")
     static Response eidasIdpAuthorizationRequest(flow, Response response, String idpUsername, idpPassword, String eidasloa) {
-        // TODO endpoint from config
-        String endpointUrl = "https://eidas-caproxy:8081/IdP/Response"
         String callbackUrl = response.body().htmlPath().getString("**.find { it.@name == 'callback' }.@value")
         String smsspToken = response.body().htmlPath().get("**.find {it.@name == 'smsspToken'}.@value")
         String smsspTokenRequestJson = response.body().htmlPath().get("**.find {it.@id == 'jSonRequestDecoded'}")
@@ -251,7 +251,7 @@ class Steps {
         Utils.setParameter(paramsMap, "eidasnameid", "persistent")
         Utils.setParameter(paramsMap, "callback", callbackUrl)
         Utils.setParameter(paramsMap, "jSonRequestDecoded", smsspTokenRequestJson)
-        Response authorizationRequest =  Requests.postRequestWithParams(flow, endpointUrl, paramsMap, Collections.emptyMap())
+        Response authorizationRequest =  Requests.postRequestWithParams(flow, flow.foreignIdpProvider.fullResponseUrl, paramsMap, Collections.emptyMap())
         assertEquals("Correct HTTP status code is returned", 200, authorizationRequest.statusCode())
         return authorizationRequest
     }
@@ -269,11 +269,9 @@ class Steps {
 
     @Step("Eidas confirm consent")
     static Response eidasConfirmConsent(Flow flow, String binaryLightToken) {
-        // TODO endpoint from config here
-        String endpointUrl = "https://eidas-caproxy:8080/SpecificProxyService/AfterCitizenConsentResponse"
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(paramsMap, "binaryLightToken", binaryLightToken)
-        Response consentResponse =  Requests.postRequestWithParams(flow, endpointUrl, paramsMap, Collections.emptyMap())
+        Response consentResponse =  Requests.postRequestWithParams(flow, flow.foreignProxyService.fullConsentUrl, paramsMap, Collections.emptyMap())
         assertEquals("Correct HTTP status code is returned", 200, consentResponse.statusCode())
         return consentResponse
     }

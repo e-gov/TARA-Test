@@ -11,6 +11,8 @@ class Flow {
     OidcService oidcService
     LoginService loginService
     OidcClient oidcClient
+    ForeignIdpProvider foreignIdpProvider
+    ForeignProxyService foreignProxyService
     CookieFilter cookieFilter
     String sessionId
     String csrf
@@ -31,6 +33,8 @@ class Flow {
         this.loginService = new LoginService(properties)
         this.oidcService = new OidcService(properties)
         this.oidcClient = new OidcClient(properties)
+        this.foreignIdpProvider = new ForeignIdpProvider(properties)
+        this.foreignProxyService = new ForeignProxyService(properties)
     }
 }
 
@@ -182,4 +186,51 @@ class OidcService {
                 return ""
             }
         }
+}
+
+@Canonical
+class ForeignIdpProvider {
+    String host
+    String port
+    String protocol
+    String responseUrl
+    @Lazy fullResponseUrl = "${protocol}://${host}${portCheck()}${responseUrl}"
+
+    ForeignIdpProvider(Properties properties) {
+        this.host = properties."idp.host"
+        this.port = properties."idp.port"
+        this.protocol = properties."idp.protocol"
+        this.responseUrl = properties."idp.responseUrl"
+    }
+    private String portCheck() {
+        if (port != null && port.isInteger()) {
+            return ":${port}"
+        } else {
+            return ""
+        }
+    }
+}
+
+@Canonical
+class ForeignProxyService {
+    String host
+    String port
+    String protocol
+    String consentUrl
+
+    @Lazy fullConsentUrl = "${protocol}://${host}${portCheck()}${consentUrl}"
+
+    ForeignProxyService(Properties properties) {
+        this.host = properties."ca-proxyservice.host"
+        this.port = properties."ca-proxyservice.port"
+        this.protocol = properties."ca-proxyservice.protocol"
+        this.consentUrl = properties."ca-proxyservice.consentUrl"
+    }
+    private String portCheck() {
+        if (port != null && port.isInteger()) {
+            return ":${port}"
+        } else {
+            return ""
+        }
+    }
 }
