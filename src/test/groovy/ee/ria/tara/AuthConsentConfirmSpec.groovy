@@ -167,7 +167,9 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         Response response = Steps.submitConsent(flow, true)
         assertEquals("Correct HTTP status code is returned", 403, response.statusCode())
         assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
-        assertEquals("Correct error message is returned", "Forbidden", response.body().jsonPath().get("message"))
+        assertThat(response.body().jsonPath().get("error").toString(), equalTo("Forbidden"))
+        String message = "Keelatud päring. Päring esitati topelt, sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud."
+        assertThat(response.body().jsonPath().get("message").toString(), equalTo(message))
     }
 
     @Ignore // TARA2-76 , TARA2-165
@@ -198,7 +200,9 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         Response response = Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullConsentConfirmUrl, Collections.emptyMap(), paramsMap, Collections.emptyMap())
         assertEquals("Correct HTTP status code is returned", 403, response.statusCode())
         assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
-        assertEquals("Correct error message is returned", "Forbidden", response.body().jsonPath().get("message"))
+        assertThat(response.body().jsonPath().get("error").toString(), equalTo("Forbidden"))
+        String message = "Keelatud päring. Päring esitati topelt, sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud."
+        assertThat(response.body().jsonPath().get("message").toString(), equalTo(message))
     }
 
     @Unroll

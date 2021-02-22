@@ -37,10 +37,6 @@ class AuthInitLegalPersonSpec extends TaraSpecification {
         assertEquals("Correct HTTP status code is returned", 200, response.statusCode())
         assertEquals("Correct content type", "text/html;charset=UTF-8", response.getContentType())
         assertEquals("Correct header attribute Content-Language", "et", response.getHeader("Content-Language"))
-        assertThat(response.body().htmlPath().get("**.find { it.@id == 'legal-person-representative-id-code'}").toString(), equalTo("60001017705"))
-        assertThat(response.body().htmlPath().get("**.find { it.@id == 'legal-person-representative-last-name'}").toString(), equalTo("TESTNUMBER"))
-        assertThat(response.body().htmlPath().get("**.find { it.@id == 'legal-person-representative-given-name'}").toString(), equalTo("TEN"))
-        assertThat(response.body().htmlPath().get("**.find { it.@id == 'legal-person-representative-date-of-birth'}").toString(), equalTo("01.01.2000"))
         assertThat(response.body().htmlPath().get("**.find { it.@id == 'btn-select-legal-person'}").toString(), equalTo("Jätkan"))
     }
 

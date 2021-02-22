@@ -148,8 +148,9 @@ class AuthLegalPersonConfirmSpec extends TaraSpecification {
         Response response = Requests.postRequestWithParams(flow, flow.loginService.fullAuthLegalConfirmUrl, paramsMap, Collections.emptyMap())
         assertEquals("Correct HTTP status code is returned", 403, response.statusCode())
         assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
-        String message = "Forbidden"
-        assertThat(response.body().jsonPath().get("message").toString(), Matchers.equalTo(message))
+        assertThat(response.body().jsonPath().get("error").toString(), equalTo("Forbidden"))
+        String message = "Keelatud päring. Päring esitati topelt, sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud."
+        assertThat(response.body().jsonPath().get("message").toString(), equalTo(message))
     }
 
     @Unroll

@@ -39,6 +39,7 @@ class AuthenticationSpec extends TaraSpecification {
         assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo("ONE"))
     }
 
+    @Ignore // Etapp4
     @Unroll
     @Feature("AUTHENTICATION")
     def "request authentication with Smart-ID"() {
@@ -54,6 +55,7 @@ class AuthenticationSpec extends TaraSpecification {
         assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo("DEMO"))
     }
 
+    @Ignore //Etapp4
     @Unroll
     @Feature("AUTHENTICATION")
     def "request authentication with Eidas"() {
@@ -180,7 +182,9 @@ class AuthenticationSpec extends TaraSpecification {
         Response response = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
         assertEquals("Correct HTTP status code is returned", 403, response.statusCode())
         assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
-        assertEquals("Correct error message is returned", "Forbidden", response.body().jsonPath().get("message"))
+        assertThat(response.body().jsonPath().get("error").toString(), equalTo("Forbidden"))
+        String message = "Keelatud päring. Päring esitati topelt, sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud."
+        assertThat(response.body().jsonPath().get("message").toString(), equalTo(message))
         assertTrue(response.body().jsonPath().get("incident_nr").toString().size() > 15)
     }
 

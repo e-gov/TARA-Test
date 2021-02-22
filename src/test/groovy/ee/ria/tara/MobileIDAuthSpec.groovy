@@ -8,6 +8,8 @@ import spock.lang.Unroll
 import org.hamcrest.Matchers
 import org.apache.commons.lang.RandomStringUtils
 
+import static org.hamcrest.Matchers.equalTo
+import static org.hamcrest.Matchers.equalTo
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertThat
 
@@ -270,7 +272,9 @@ class MobileIDAuthSpec extends TaraSpecification {
         assertEquals("Correct HTTP status code is returned", 403, response.statusCode())
         assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
         // _csrf is directly related with SESSION cookie
-        assertEquals("Correct error message is returned", "Forbidden", response.body().jsonPath().get("message"))
+        assertThat(response.body().jsonPath().get("error").toString(), equalTo("Forbidden"))
+        String message = "Keelatud päring. Päring esitati topelt, sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud."
+        assertThat(response.body().jsonPath().get("message").toString(), equalTo(message))
     }
 
     @Ignore //TARA2-80 , TARA2-165

@@ -78,13 +78,13 @@ class Steps {
     static Response pollMidResponse(Flow flow) {
         int counter = 0
         Response response = null
-        while (counter < 10) {
+        while (counter < 12) {
+            sleep(2000L)
             response = Requests.pollMid(flow)
             if (response.body().jsonPath().get("status") != "PENDING") {
                 break
             }
             ++counter
-            sleep(2000L)
         }
         return response
     }
