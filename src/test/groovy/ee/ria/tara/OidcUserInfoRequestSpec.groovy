@@ -9,6 +9,7 @@ import spock.lang.Ignore
 import spock.lang.Unroll
 
 import static org.hamcrest.Matchers.equalTo
+import static org.hamcrest.Matchers.startsWith
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertThat
 
@@ -115,7 +116,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
 
     @Unroll
     @Feature("OIDC_USERINFO_RESPONSE_NOK")
-    def "Unsupported request types in header"() {
+    def "Unsupported request types in header #requestType"() {
         expect:
         Steps.startAuthenticationInTara(flow, "openid")
         Steps.authenticateWithIdCard(flow, "src/test/resources/joeorg-auth.pem")
@@ -144,10 +145,11 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         assertEquals("Correct HTTP status code is returned", 401, response.statusCode())
         assertThat("Correct Content-Type is returned", response.getContentType(), Matchers.startsWith("application/json"))
         assertEquals("Correct error is returned", "request_unauthorized", response.body().jsonPath().get("error"))
-        assertEquals("Correct error is returned", "Check that you provided valid credentials in the right format.", response.body().jsonPath().get("error_hint"))
         Map<String, String> errorMap = OpenIdUtils.getErrorFromAuthorizationHeader(response)
         assertEquals("Correct error text is returned","request_unauthorized", errorMap.get("error"))
-        assertEquals("Correct error description is returned", "The request could not be authorized", errorMap.get("error_description"))
+        assertEquals("Correct error description is returned", "The request could not be authorized.", errorMap.get("error_description"))
+        assertEquals("Correct error is returned", "Check that you provided valid credentials in the right format.", errorMap.get("error_hint"))
+
     }
 
     @Unroll
@@ -159,10 +161,10 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         assertEquals("Correct HTTP status code is returned", 401, response.statusCode())
         assertThat("Correct Content-Type is returned", response.getContentType(), Matchers.startsWith("application/json"))
         assertEquals("Correct error is returned", "request_unauthorized", response.body().jsonPath().get("error"))
-        assertEquals("Correct error is returned", "Check that you provided valid credentials in the right format.", response.body().jsonPath().get("error_hint"))
         Map<String, String> errorMap = OpenIdUtils.getErrorFromAuthorizationHeader(response)
         assertEquals("Correct error text is returned","request_unauthorized", errorMap.get("error"))
-        assertEquals("Correct error description is returned", "The request could not be authorized", errorMap.get("error_description"))
+        assertThat("Correct error description is returned", errorMap.get("error_description"), startsWith("The request could not be authorized."))
+        assertEquals("Correct error is returned", "Check that you provided valid credentials in the right format.", errorMap.get("error_hint"))
     }
 
     @Ignore
@@ -180,7 +182,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         // assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
         assertThat("Correct Content-Type is returned", response.getContentType(), Matchers.startsWith("application/json"))
         assertEquals("Correct error is returned", "request_unauthorized", response.body().jsonPath().get("error"))
-        assertEquals("Correct error is returned", "Check that you provided valid credentials in the right format.", response.body().jsonPath().get("error_hint"))
+        assertThat("Correct error_description is returned", response.body().jsonPath().getString("error_description"), Matchers.endsWith("Check that you provided valid credentials in the right format."))
 
         Map<String, String> errorMap = OpenIdUtils.getErrorFromAuthorizationHeader(response)
     //    assertEquals("Correct error text is returned","invalid_request", errorMap.get("error"))

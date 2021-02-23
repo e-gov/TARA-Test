@@ -5,6 +5,7 @@ import com.nimbusds.jwt.SignedJWT
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
+import org.hamcrest.Matchers
 import spock.lang.Ignore;
 import spock.lang.Unroll
 import com.nimbusds.jose.jwk.JWKSet
@@ -54,7 +55,7 @@ class OpenIdConnectSpec extends TaraSpecification {
         assertEquals("Correct HTTP status code is returned", 400, tokenResponse2.statusCode())
         assertThat("Correct Content-Type is returned", tokenResponse2.getContentType(), startsWith("application/json"))
         assertEquals("Correct error message is returned", "invalid_grant", tokenResponse2.body().jsonPath().get("error"))
-        assertEquals("Correct error hint is returned", "The authorization code has already been used.", tokenResponse2.body().jsonPath().get("error_hint"))
+        assertThat("Correct error_description is returned", tokenResponse2.body().jsonPath().getString("error_description"), Matchers.endsWith("The authorization code has already been used."))
     }
 
     @Ignore // Etapp 4
@@ -100,13 +101,15 @@ class OpenIdConnectSpec extends TaraSpecification {
         assertEquals("Correct HTTP status code is returned", statusCode, response.statusCode())
         assertThat("Correct Content-Type is returned", response.getContentType(), startsWith("application/json"))
         assertEquals("Correct error message is returned", error, response.body().jsonPath().get("error"))
-        assertThat("Correct error_hint value", response.body().jsonPath().get("error_hint"), startsWith(errorHint))
+        String errorDescription = response.body().jsonPath().get("error_description")
+        assertThat("Correct error_description suffix", errorDescription, startsWith(errorSuffix))
+        assertThat("Correct error_description preffix", errorDescription, Matchers.endsWith(errorPreffix))
 
         where:
-        paramName      || statusCode || error             || errorHint
-        "code"         || 400        || "invalid_request" || "Make sure that the various parameters are correct"
-        "grant_type"   || 400        || "invalid_request" || "Request parameter \"grant_type\"\" is missing"
-        "redirect_uri" || 400        || "invalid_request" || "Make sure that the various parameters are correct"
+        paramName      || statusCode || error             || errorSuffix || errorPreffix
+        "code"         || 400        || "invalid_request" || "The request is missing a required parameter" || "whitelisted the redirect_uri you specified."
+        "grant_type"   || 400        || "invalid_request" || "The request is missing a required parameter" || "Request parameter 'grant_type' is missing"
+        "redirect_uri" || 400        || "invalid_request" || "The request is missing a required parameter" || "whitelisted the redirect_uri you specified."
     }
 
 
@@ -123,13 +126,15 @@ class OpenIdConnectSpec extends TaraSpecification {
         assertEquals("Correct HTTP status code is returned", statusCode, response.statusCode())
         assertThat("Correct Content-Type is returned", response.getContentType(), startsWith("application/json"))
         assertEquals("Correct error message is returned", error, response.body().jsonPath().get("error"))
-        assertThat("Correct error_hint value", response.body().jsonPath().get("error_hint"), startsWith(errorHint))
+        String errorDescription = response.body().jsonPath().get("error_description")
+        assertThat("Correct error_description suffix", errorDescription, startsWith(errorSuffix))
+        assertThat("Correct error_description preffix", errorDescription, Matchers.endsWith(errorPreffix))
 
         where:
-        paramName      | paramValue                || statusCode || error             || errorHint
-        "redirect_uri" | "https://www.example.com" || 400        || "invalid_request" || "Make sure that the various parameters are correct"
-        "grant_type"   | "token"                   || 400        || "invalid_request" || "Make sure that the various parameters are correct"
-        "code"         | "45678"                   || 400        || "invalid_request" || "Make sure that the various parameters are correct"
+        paramName      | paramValue                || statusCode || error             || errorSuffix || errorPreffix
+        "redirect_uri" | "https://www.example.com" || 400        || "invalid_request" || "The request is missing a required parameter" || "whitelisted the redirect_uri you specified."
+        "grant_type"   | "token"                   || 400        || "invalid_request" || "The request is missing a required parameter" || "whitelisted the redirect_uri you specified."
+        "code"         | "45678"                   || 400        || "invalid_request" || "The request is missing a required parameter" || "whitelisted the redirect_uri you specified."
     }
 
     @Unroll

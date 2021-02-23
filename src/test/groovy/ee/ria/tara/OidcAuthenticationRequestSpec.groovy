@@ -44,15 +44,17 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
         Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
         assertEquals("Correct HTTP status code is returned", statusCode, initOIDCServiceSession.statusCode())
         assertEquals("Correct error message is returned", error, Utils.getParamValueFromResponseHeader(initOIDCServiceSession, "error"))
-        assertThat("Correct error_hint value", Utils.getParamValueFromResponseHeader(initOIDCServiceSession, "error_hint"), startsWith(errorHint))
+        String errorDescription = Utils.getParamValueFromResponseHeader(initOIDCServiceSession, "error_description")
+        assertThat("Correct error_description suffix", errorDescription, startsWith(errorSuffix))
+        assertThat("Correct error_description preffix", errorDescription, Matchers.endsWith(errorPreffix))
 
         where:
-        paramName       | paramValue                || statusCode || error                       || errorHint
-        "redirect_uri"  | "https://www.example.com" || 302        || "invalid_request"           || "The \"redirect_uri\" parameter does not match"
-        "scope"         | "my_scope"                || 302        || "invalid_scope"             || "The OAuth 2.0 Client is not allowed to request scope"
-        "scope"         | "openid,eidas"            || 302        || "invalid_scope"             || "The OAuth 2.0 Client is not allowed to request scope"
-        "response_type" | "token"                   || 302        || "unsupported_response_type" || "The client is not allowed to request response_type \"token\""
-        "client_id"     | "my_client"               || 302        || "invalid_client"            || "The requested OAuth 2.0 Client does not exist"
+        paramName       | paramValue                || statusCode || error                       || errorSuffix || errorPreffix
+        "redirect_uri"  | "https://www.example.com" || 302        || "invalid_request"           || "The request is missing a required parameter" || "pre-registered redirect urls."
+        "scope"         | "my_scope"                || 302        || "invalid_scope"             || "The requested scope is invalid" || " is not allowed to request scope 'my_scope'."
+        "scope"         | "openid,eidas"            || 302        || "invalid_scope"             || "The requested scope is invalid" || " is not allowed to request scope 'openid,eidas'."
+        "response_type" | "token"                   || 302        || "unsupported_response_type" || "The authorization server does not support obtaining a token" || "is not allowed to request response_type 'token'."
+        "client_id"     | "my_client"               || 302        || "invalid_client"            || "Client authentication failed" || "The requested OAuth 2.0 Client does not exist."
      //   "ui_locales"    | "zu"                      || 302        || "invalid_client"            || "The requested OAuth 2.0 Client does not exist"
      //   "acr_values"    | "medium"                  || 302        || "invalid_client"            || "The requested OAuth 2.0 Client does not exist"
     }
