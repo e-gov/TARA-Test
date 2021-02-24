@@ -70,7 +70,7 @@ class IDCardAuthSpec extends TaraSpecification {
 
         Response consentResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
 
-        if (consentResponse.getStatusCode().is(200)) {
+        if (consentResponse.getStatusCode() == 200) {
             consentResponse = Steps.submitConsent(flow, true)
             assertEquals("Correct HTTP status code is returned", 302, consentResponse.statusCode())
             Steps.verifyResponseHeaders(consentResponse)

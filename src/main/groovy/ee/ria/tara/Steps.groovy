@@ -389,7 +389,7 @@ class Steps {
 
     @Step("Confirm or reject consent and finish authentication process")
     static Response submitConsentAndFollowRedirects(Flow flow, boolean consentGiven, Response consentResponse) {
-        if (consentResponse.getStatusCode().is(200)) {
+        if (consentResponse.getStatusCode() == 200) {
             consentResponse = Steps.submitConsent(flow, consentGiven)
             assertEquals("Correct HTTP status code is returned", 302, consentResponse.statusCode())
 
