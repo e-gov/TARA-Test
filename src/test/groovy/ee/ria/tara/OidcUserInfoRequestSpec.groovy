@@ -28,8 +28,8 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
     def "Test all input parameters and verify the structure and element coherence compared to TARA1 on responses"() {
         expect:
         Steps.startAuthenticationInTara(flow)
-        Steps.authenticateWithMid(flow,"60001017716", "69100366")
-        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true)
+        Response midAuthResponse = Steps.authenticateWithMid(flow,"60001017716", "69100366")
+        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
         Response userInfoResponse //= Steps.getUserInfoResponse(flow, authenticationFinishedResponse)
         // We need only to test that the input and output of the first request in most cases
         assertThat(userInfoResponse, equalTo("TARA1 response"))
@@ -45,8 +45,8 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         Steps.startAuthenticationInTara(flow)
         String idCode = "60001017716"
         String phoneNo = "69100366"
-        Steps.authenticateWithMid(flow,idCode, phoneNo)
-        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true)
+        Response midAuthResponse = Steps.authenticateWithMid(flow,idCode, phoneNo)
+        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
         String accessToken = tokenResponse.body().jsonPath().getString("access_token")
         Response userInfoResponse = Steps.getUserInfoResponseWithQueryParam(flow, REQUEST_TYPE_GET, accessToken)
@@ -74,9 +74,9 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
     def "Verify user info response with ID card and email scope"() {
         expect:
         Steps.startAuthenticationInTara(flow, "openid") // openid email
-        Steps.authenticateWithIdCard(flow, "src/test/resources/joeorg-auth.pem")
+        Response idCardAuthResponse = Steps.authenticateWithIdCard(flow, "src/test/resources/joeorg-auth.pem")
 
-        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true)
+        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, idCardAuthResponse)
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
         String accessToken = tokenResponse.body().jsonPath().getString("access_token")
         Response userInfoResponse = Steps.getUserInfoResponseWithHeaderParam(flow, REQUEST_TYPE_GET, accessToken)
@@ -103,8 +103,8 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         Steps.startAuthenticationInTara(flow, "openid") // phone
         String idCode = "60001017716"
         String phoneNo = "69100366"
-        Steps.authenticateWithMid(flow,idCode, phoneNo)
-        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true)
+        Response midAuthResponse = Steps.authenticateWithMid(flow,idCode, phoneNo)
+        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
         String accessToken = tokenResponse.body().jsonPath().getString("access_token")
         Response userInfoResponse = Steps.getUserInfoResponseWithQueryParam(flow, REQUEST_TYPE_GET, accessToken)
@@ -119,9 +119,9 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
     def "Unsupported request types in header #requestType"() {
         expect:
         Steps.startAuthenticationInTara(flow, "openid")
-        Steps.authenticateWithIdCard(flow, "src/test/resources/joeorg-auth.pem")
+        Response idCardAuthResponse = Steps.authenticateWithIdCard(flow, "src/test/resources/joeorg-auth.pem")
 
-        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true)
+        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, idCardAuthResponse)
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
         String accessToken = tokenResponse.body().jsonPath().getString("access_token")
         Response userInfoResponse = Steps.getUserInfoResponseWithHeaderParam(flow, requestType, accessToken)

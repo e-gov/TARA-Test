@@ -6,6 +6,7 @@ import io.restassured.response.Response
 import org.apache.commons.lang.RandomStringUtils
 import org.hamcrest.Matchers
 import spock.lang.Ignore
+import spock.lang.IgnoreIf
 import spock.lang.Unroll
 
 import java.nio.charset.StandardCharsets
@@ -15,6 +16,7 @@ import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertThat
 import static org.junit.Assert.assertTrue
 
+@IgnoreIf({ properties['test.deployment.env'] != "idp" })
 class AuthConsentConfirmSpec extends TaraSpecification {
     Flow flow = new Flow(props)
 

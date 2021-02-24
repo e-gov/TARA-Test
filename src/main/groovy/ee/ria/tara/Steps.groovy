@@ -103,7 +103,7 @@ class Steps {
         assertEquals("Correct HTTP status code is returned", 302, oidcServiceResponse.statusCode())
 
         Response consentResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
-        assertEquals("Correct HTTP status code is returned", 200, consentResponse.statusCode())
+
         return consentResponse
     }
 
@@ -139,7 +139,7 @@ class Steps {
         assertEquals("Correct HTTP status code is returned", 302, oidcServiceResponse.statusCode())
 
         Response consentResponse = followRedirectWithSessionId(flow, oidcServiceResponse)
-        assertEquals("Correct HTTP status code is returned", 200, consentResponse.statusCode())
+
         return consentResponse
     }
 
@@ -388,10 +388,13 @@ class Steps {
     }
 
     @Step("Confirm or reject consent and finish authentication process")
-    static Response submitConsentAndFollowRedirects(Flow flow, boolean consentGiven) {
-        Response consentConfirmResponse = Steps.submitConsent(flow, consentGiven)
-        assertEquals("Correct HTTP status code is returned", 302, consentConfirmResponse.statusCode())
-        return Steps.followRedirectWithCookies(flow, consentConfirmResponse, flow.oidcService.cookies)
+    static Response submitConsentAndFollowRedirects(Flow flow, boolean consentGiven, Response consentResponse) {
+        if (consentResponse.getStatusCode().is(200)) {
+            consentResponse = Steps.submitConsent(flow, consentGiven)
+            assertEquals("Correct HTTP status code is returned", 302, consentResponse.statusCode())
+
+        }
+        return Steps.followRedirectWithCookies(flow, consentResponse, flow.oidcService.cookies)
     }
 
     @Step("Get identity token")

@@ -154,9 +154,9 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
     def "Authentication request with email scope"() {
         expect:
         Steps.startAuthenticationInTara(flow, "openid email")
-        Steps.authenticateWithIdCard(flow, "src/test/resources/joeorg-auth.pem")
+        Response idCardAuthResponse = Steps.authenticateWithIdCard(flow, "src/test/resources/joeorg-auth.pem")
 
-        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true)
+        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, idCardAuthResponse)
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
 
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
@@ -172,8 +172,8 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
     def "Authentication request with phone scope"() {
         expect:
         Steps.startAuthenticationInTara(flow, "openid phone")
-        Steps.authenticateWithMid(flow,"60001017716", "69100366")
-        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true)
+        Response midAuthResponse = Steps.authenticateWithMid(flow,"60001017716", "69100366")
+        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
 
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()

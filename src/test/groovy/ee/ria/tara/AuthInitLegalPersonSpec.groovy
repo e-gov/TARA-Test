@@ -5,12 +5,14 @@ import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import org.hamcrest.Matchers
 import spock.lang.Ignore
+import spock.lang.IgnoreIf
 import spock.lang.Unroll
 
 import static org.hamcrest.Matchers.equalTo
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertThat
 
+@IgnoreIf({ properties['test.deployment.env'] != "idp" })
 class AuthInitLegalPersonSpec extends TaraSpecification {
     Flow flow = new Flow(props)
 

@@ -29,8 +29,8 @@ class OpenIdConnectSpec extends TaraSpecification {
     def "Metadata and token key ID matches"() {
         expect:
         Steps.startAuthenticationInTara(flow)
-        Steps.authenticateWithMid(flow,"60001017727" , "69200366")
-        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true)
+        Response midAuthResponse = Steps.authenticateWithMid(flow,"60001017727" , "69200366")
+        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
         assertEquals("Correct HTTP status code is returned", 200, tokenResponse.statusCode())
         String keyID = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getHeader().getKeyID()
@@ -45,8 +45,8 @@ class OpenIdConnectSpec extends TaraSpecification {
         assertEquals("Correct HTTP status code is returned", 302, initOIDCServiceSession.statusCode())
         Response initLoginSession = Steps.createLoginSession(flow, initOIDCServiceSession)
         assertEquals("Correct HTTP status code is returned", 200, initLoginSession.statusCode())
-        Steps.authenticateWithMid(flow,"60001017727" , "69200366")
-        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true)
+        Response midAuthResponse = Steps.authenticateWithMid(flow,"60001017727" , "69200366")
+        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
         String authorizationCode = Utils.getParamValueFromResponseHeader(authenticationFinishedResponse, "code")
         // 1
         Requests.getWebToken(flow, authorizationCode)
@@ -78,8 +78,8 @@ class OpenIdConnectSpec extends TaraSpecification {
         assertEquals("Correct HTTP status code is returned", 302, initOIDCServiceSession.statusCode())
         Response initLoginSession = Steps.createLoginSession(flow, initOIDCServiceSession)
         assertEquals("Correct HTTP status code is returned", 200, initLoginSession.statusCode())
-        Steps.authenticateWithMid(flow,"60001017727" , "69200366")
-        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true)
+        Response midAuthResponse = Steps.authenticateWithMid(flow,"60001017727" , "69200366")
+        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
         String authorizationCode = Utils.getParamValueFromResponseHeader(authenticationFinishedResponse, "code")
 
         Response response = Requests.getWebToken(flow, authorizationCode + "e")
@@ -149,8 +149,8 @@ class OpenIdConnectSpec extends TaraSpecification {
         Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
         Response initLoginSession = Steps.createLoginSession(flow, initOIDCServiceSession)
         assertEquals("Correct HTTP status code is returned", 200, initLoginSession.statusCode())
-        Steps.authenticateWithMid(flow,"60001017716", "69100366")
-        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true)
+        Response midAuthResponse = Steps.authenticateWithMid(flow,"60001017716", "69100366")
+        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
 
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()

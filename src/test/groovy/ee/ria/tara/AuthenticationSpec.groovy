@@ -29,8 +29,8 @@ class AuthenticationSpec extends TaraSpecification {
     def "request authentication"() {
         expect:
         Steps.startAuthenticationInTara(flow)
-        Steps.authenticateWithMid(flow,"60001017716", "69100366")
-        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true)
+        Response midAuthResponse = Steps.authenticateWithMid(flow,"60001017716", "69100366")
+        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
 
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
@@ -45,8 +45,8 @@ class AuthenticationSpec extends TaraSpecification {
     def "request authentication with Smart-ID"() {
         expect:
         Steps.startAuthenticationInTara(flow, "openid smartid")
-        Steps.authenticateWithSid(flow,"10101010005")
-        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true)
+        Response sidAuthResponse = Steps.authenticateWithSid(flow,"10101010005")
+        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, sidAuthResponse)
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
 
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
@@ -77,8 +77,8 @@ class AuthenticationSpec extends TaraSpecification {
         Response acceptResponse = Steps.eidasAcceptAuthorizationResult(flow, redirectionResponse)
         assertEquals("Correct HTTP status code is returned", 302, acceptResponse.statusCode())
         Response oidcServiceResponse = Steps.getOAuthCookies(flow, acceptResponse)
-        Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
-        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true)
+        Response redirectResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
+        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, redirectResponse)
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat(claims.getAudience().get(0), equalTo(flow.oidcClient.clientId))
@@ -117,14 +117,15 @@ class AuthenticationSpec extends TaraSpecification {
         assertEquals("Correct HTTP status code is returned", 302, oidcServiceResponse.statusCode())
 
         Response consentResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
-        assertEquals("Correct HTTP status code is returned", 200, consentResponse.statusCode())
         Steps.verifyResponseHeaders(consentResponse)
 
-        Response consentConfirmResponse = Steps.submitConsent(flow, true)
-        assertEquals("Correct HTTP status code is returned", 302, consentConfirmResponse.statusCode())
-        Steps.verifyResponseHeaders(consentConfirmResponse)
+        if (consentResponse.getStatusCode().is(200)) {
+            consentResponse = Steps.submitConsent(flow, true)
+            assertEquals("Correct HTTP status code is returned", 302, consentResponse.statusCode())
+            Steps.verifyResponseHeaders(consentResponse)
+        }
 
-        Response oidcserviceResponse = Steps.followRedirectWithCookies(flow, consentConfirmResponse, flow.oidcService.cookies)
+        Response oidcserviceResponse = Steps.followRedirectWithCookies(flow, consentResponse, flow.oidcService.cookies)
         assertEquals("Correct HTTP status code is returned", 302, oidcserviceResponse.statusCode())
         String authorizationCode = Utils.getParamValueFromResponseHeader(oidcserviceResponse, "code")
         Response tokenResponse = Requests.getWebToken(flow, authorizationCode)

@@ -18,7 +18,7 @@ class SmartIDAuthSpec extends TaraSpecification {
     def setup() {
         flow.cookieFilter = new CookieFilter()
     }
-
+    @IgnoreIf({ System.properties['os.name'] == "Windows 10" })
     @Unroll
     @Feature("SID_AUTH_INIT_ENDPOINT")
     def "initialize Smart-ID authentication"() {
