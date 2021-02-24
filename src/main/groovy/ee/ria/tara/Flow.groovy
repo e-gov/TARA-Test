@@ -78,7 +78,7 @@ class LoginService {
     @Lazy fullAuthRejectUrl = "${protocol}://${host}${portCheck()}${authRejectUrl}"
     @Lazy fullConsentUrl = "${protocol}://${host}${portCheck()}${consentUrl}"
     @Lazy fullConsentConfirmUrl = "${protocol}://${host}${portCheck()}${consentConfirmUrl}"
-    @Lazy fullHeartbeatUrl = "${protocol}://${host}${portCheck()}${heartbeatUrl}"
+    @Lazy fullHeartbeatUrl = "${nodeProtocol}://${nodeHost}:${nodePort}${heartbeatUrl}"
     @Lazy fullErrorUrl = "${protocol}://${host}${portCheck()}${errorUrl}"
     @Lazy fullEidasInitUrl = "${protocol}://${host}${portCheck()}${eidasInitUrl}"
     @Lazy fullEidasCallbackUrl = "${protocol}://${host}${portCheck()}${eidasCallbackUrl}"
