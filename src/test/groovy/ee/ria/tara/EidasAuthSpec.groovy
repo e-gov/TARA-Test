@@ -52,7 +52,7 @@ class EidasAuthSpec extends TaraSpecification {
 
         where:
         country | paramName | paramValue || statusCode || label                       || errorMessage
-    //    _       | _         | _          || 400        || "missing country parameter" || "Required String parameter 'country' is not present"
+        _       | _         | _          || 400        || "missing country parameter" || "Required String parameter 'country' is not present"
         "bg"    | _         | _          || 400        || "country code is not in list" || "Antud riigikood ei ole lubatud. Lubatud riigikoodid on: CA"
         "BG"    | _         | _          || 400        || "capitalized country code is not in list" || "Antud riigikood ei ole lubatud. Lubatud riigikoodid on: CA"
         "ca"    | _         | _          || 400        || "country code must be capitalized" || "Antud riigikood ei ole lubatud. Lubatud riigikoodid on: CA"
@@ -106,26 +106,40 @@ class EidasAuthSpec extends TaraSpecification {
         assertThat(initEidasAuthenticationSession.body().jsonPath().get("message"), Matchers.containsString(errorMessage))
     }
 
- //   @Ignore // TARA2-121
     @Unroll
     @Feature("AUTH_INIT_WITH_EIDASONLY_AND_COUNTRY")
     def "initialize Eidas authentication with eidasonly scope: #label"() {
         expect:
         Response response = Steps.startAuthenticationInTara(flow, scope, "et", false)
         assertEquals("Correct HTTP status code is returned", statusCode, response.statusCode())
-        assertThat("Redirection to Eidas init endpoint", response.getHeader("location"), Matchers.containsString("/auth/eidas/init"))
+        String formUrl = response.body().htmlPath().getString("**.find { form -> form.@method == 'post' }.@action")
+        assertThat("Correct domestic connector service url form", formUrl, equalTo(flow.domesticConnectorService.fullAuthenticationRequestUrl.toString()))
+        String eidasCountry = response.body().htmlPath().getString("**.find { it.@name == 'country' }.@value")
+        assertThat("Correct Eidas country is selected", eidasCountry, equalTo(expectedCountry))
 
         where:
-        scope                                                        || statusCode || label
-        "openid eidas:country:ca eidasonly"                          || 302        || "direct redirection into ca Eidas network"
-        "openid eidasonly eidas:country:ca"                          || 302        || "direct redirection into ca Eidas network"
-        "openid smartid eidasonly eidas:country:ca"                  || 302        || "direct redirection into ca Eidas network"
-        "openid smartid eidasonly eidas:country:ca eidas:country:fi" || 302        || "direct redirection into ca Eidas network"
-        "openid smartid eidasonly eidas:country:CA eidas:country:fi" || 302        || "direct redirection into fi Eidas network"
-        "openid smartid eidasonly eidas:country:fi eidas:country:ca" || 302        || "direct redirection into fi Eidas network"
-        "openid smartid eidas:country:ca"                            || 302        || "Smart-ID in TARA selection"
-        "openid eidasonly eidas:country:"                            || 302        || "Eidas in TARA selection"
-        "openid eidasonly eidas:country:gb"                          || 302        || "Eidas in TARA selection"
+        scope                                                        || statusCode || expectedCountry || label
+        "openid eidas:country:ca eidasonly"                          || 200        || "CA" || "direct redirection into ca Eidas network"
+        "openid eidasonly eidas:country:ca"                          || 200        || "CA" || "direct redirection into ca Eidas network"
+        "openid smartid eidasonly eidas:country:ca"                  || 200        || "CA" || "direct redirection into ca Eidas network"
+        "openid smartid eidasonly eidas:country:ca eidas:country:de" || 200        || "CA" || "direct redirection into ca Eidas network"
+        // TARA2-121   "openid smartid eidasonly eidas:country:DE eidas:country:ca" || 200        || "CA" || "direct redirection into ca Eidas network"
+        // TARA2-121    "openid smartid eidasonly eidas:country:de eidas:country:ca" || 200        || "DE" || "direct redirection into ca Eidas network"
+    }
+
+    @Unroll
+    @Feature("AUTH_INIT_WITH_EIDASONLY_AND_COUNTRY")
+    def "initialize Eidas authentication with eidas scope: #label"() {
+        expect:
+        Response response = Steps.startAuthenticationInTara(flow, scope, "et", false)
+        assertEquals("Correct HTTP status code is returned", statusCode, response.statusCode())
+        assertTrue(response.htmlPath().getInt("**.findAll { it.'@data-tab' == '"+ authType +"' }.size()") > 0)
+
+        where:
+        scope                                                        || statusCode || authType || label
+        "openid smartid eidas:country:ca"                            || 200        || "smart-id" || "Smart-ID in TARA selection"
+// TARA2-121       "openid eidasonly eidas:country:"                            || 200        || "eu-citizen" || "Eidas in TARA selection"
+// TARA2-121       "openid eidasonly eidas:country:gb"                          || 200        || "eu-citizen" || "Eidas in TARA selection"
     }
 
 
