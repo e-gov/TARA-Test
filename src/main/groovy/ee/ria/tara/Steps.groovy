@@ -319,7 +319,7 @@ class Steps {
     }
 
     @Step("Eidas redirect authorization response to service provider")
-    static Response eidasRedirectAuthorizationResponse(Flow flow, Response response) {
+    static Response eidasRedirectAuthorizationResponse(Flow flow, Response response, boolean checkStatusCode = true) {
         String endpointUrl = response.body().htmlPath().get("**.find {it.@method == 'post'}.@action")
         String samlResponse = response.body().htmlPath().get("**.find {it.@name == 'SAMLResponse'}.@value")
         String relayState = response.body().htmlPath().get("**.find {it.@name == 'RelayState'}.@value")
@@ -327,7 +327,9 @@ class Steps {
         Utils.setParameter(paramsMap, "SAMLResponse" , samlResponse)
         Utils.setParameter(paramsMap, "RelayState", relayState)
         Response redirectionResponse = Requests.postRequestWithParams(flow, endpointUrl, paramsMap, Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 200, redirectionResponse.statusCode())
+        if (checkStatusCode) {
+            assertEquals("Correct HTTP status code is returned", 200, redirectionResponse.statusCode())
+        }
         return redirectionResponse
     }
 
