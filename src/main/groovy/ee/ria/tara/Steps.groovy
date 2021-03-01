@@ -121,7 +121,7 @@ class Steps {
         assertEquals("Correct HTTP status code is returned", 302, oidcServiceResponse.statusCode())
 
         Response consentResponse = followRedirectWithSessionId(flow, oidcServiceResponse)
-        assertEquals("Correct HTTP status code is returned", 200, consentResponse.statusCode())
+
         return consentResponse
     }
 
@@ -151,6 +151,9 @@ class Steps {
         Utils.setParameter(formParamsMap, "_csrf", flow.csrf)
         if (!(idCode instanceof Wildcard)) {
             Utils.setParameter(formParamsMap, "idCode", idCode)
+
+            // TODO remove after feature branch merge
+            Utils.setParameter(formParamsMap, "smartIdCode", idCode)
         }
         HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(cookieMap, "SESSION", sessionId)
@@ -391,12 +394,12 @@ class Steps {
 
     @Step("Confirm or reject consent and finish authentication process")
     static Response submitConsentAndFollowRedirects(Flow flow, boolean consentGiven, Response consentResponse) {
-        if (consentResponse.getStatusCode() == 200) {
-            consentResponse = Steps.submitConsent(flow, consentGiven)
+        if (consentResponse.getStatusCode().toInteger() == 200) {
+            consentResponse = submitConsent(flow, consentGiven)
             assertEquals("Correct HTTP status code is returned", 302, consentResponse.statusCode())
 
         }
-        return Steps.followRedirectWithCookies(flow, consentResponse, flow.oidcService.cookies)
+        return followRedirectWithCookies(flow, consentResponse, flow.oidcService.cookies)
     }
 
     @Step("Get identity token")

@@ -6,13 +6,16 @@ import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import org.hamcrest.Matchers
 import spock.lang.Ignore
+import spock.lang.IgnoreIf
 import spock.lang.Unroll
 
 import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.Matchers.startsWith
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertThat
+import static org.junit.Assert.assertTrue
 
+@IgnoreIf({ properties['test.deployment.env'] == "idp" })
 class OidcUserInfoRequestSpec extends TaraSpecification {
     Flow flow = new Flow(props)
 
@@ -71,9 +74,10 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
     @Feature("OIDC_USERINFO_REQUEST_VALIDATION")
     @Feature("OIDC_USERINFO_RESPONSE_OK")
     @Feature("OIDC_USERINFO_CLAIMS")
-    def "Verify user info response with ID card and email scope"() {
+    @Feature("OIDC_SCOPE_EMAIL")
+    def "Verify user info response: auth id-card, email scope"() {
         expect:
-        Steps.startAuthenticationInTara(flow, "openid") // openid email
+        Steps.startAuthenticationInTara(flow, "openid email")
         Response idCardAuthResponse = Steps.authenticateWithIdCard(flow, "src/test/resources/joeorg-auth.pem")
 
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, idCardAuthResponse)
@@ -86,21 +90,84 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         assertThat(userInfoResponse.getBody().jsonPath().getString("acr"),  equalTo("high"))
         assertThat(userInfoResponse.getBody().jsonPath().getList("amr")[0].toString(), equalTo("idcard"))
         assertThat(userInfoResponse.getBody().jsonPath().getString("sub"),  equalTo("EE38001085718"))
-        // TODO remove profile_attributes level
+        // TODO remove profile_attributes level TARA2-153
         assertThat(userInfoResponse.getBody().jsonPath().getString("profile_attributes.date_of_birth"),  equalTo("1980-01-08"))
         assertThat(userInfoResponse.getBody().jsonPath().getString("profile_attributes.family_name"),  equalTo("JÕEORG"))
         assertThat(userInfoResponse.getBody().jsonPath().getString("profile_attributes.given_name"),  equalTo("JAAK-KRISTJAN"))
-        // assertThat(userInfoResponse.getBody().jsonPath().getString("email"), equalTo("38001085718@eesti.ee"))
+        assertThat(userInfoResponse.getBody().jsonPath().getString("profile_attributes.email"), equalTo("38001085718@eesti.ee"))
+        assertEquals(false, userInfoResponse.getBody().jsonPath().getBoolean("profile_attributes.email_verified"))
+    }
+    @Unroll
+    @Feature("OIDC_USERINFO_ENDPOINT")
+    @Feature("OIDC_USERINFO_REQUEST_VALIDATION")
+    @Feature("OIDC_USERINFO_RESPONSE_OK")
+    @Feature("OIDC_USERINFO_CLAIMS")
+    @Feature("OIDC_SCOPE_PHONE")
+    def "Verify user info response: auth id-card, phone scope"() {
+        expect:
+        Steps.startAuthenticationInTara(flow, "openid email")
+        Response idCardAuthResponse = Steps.authenticateWithIdCard(flow, "src/test/resources/joeorg-auth.pem")
+
+        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, idCardAuthResponse)
+        Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
+        String accessToken = tokenResponse.body().jsonPath().getString("access_token")
+        Response userInfoResponse = Steps.getUserInfoResponseWithHeaderParam(flow, REQUEST_TYPE_GET, accessToken)
+        assertEquals("Correct HTTP status code is returned", 200, userInfoResponse.statusCode())
+        assertEquals("Correct Content-Type is returned", "application/json; charset=utf-8", userInfoResponse.getContentType())
+
+        assertThat(userInfoResponse.getBody().jsonPath().getString("acr"),  equalTo("high"))
+        assertThat(userInfoResponse.getBody().jsonPath().getList("amr")[0].toString(), equalTo("idcard"))
+        assertThat(userInfoResponse.getBody().jsonPath().getString("sub"),  equalTo("EE38001085718"))
+        // TODO remove profile_attributes level TARA2-153
+        assertThat(userInfoResponse.getBody().jsonPath().getString("profile_attributes.date_of_birth"),  equalTo("1980-01-08"))
+        assertThat(userInfoResponse.getBody().jsonPath().getString("profile_attributes.family_name"),  equalTo("JÕEORG"))
+        assertThat(userInfoResponse.getBody().jsonPath().getString("profile_attributes.given_name"),  equalTo("JAAK-KRISTJAN"))
+        assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.phone_number") == null)
+        // TARA2-154
+        // assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.phone_number_verified") == null)
     }
 
- //   @Ignore
+    @Ignore //TARA2-154
+    @Unroll
+    @Feature("OIDC_USERINFO_ENDPOINT")
+    @Feature("OIDC_USERINFO_REQUEST_VALIDATION")
+    @Feature("OIDC_USERINFO_RESPONSE_OK")
+    @Feature("OIDC_USERINFO_CLAIMS")
+    def "Verify user info response: auth id-card, openid scope"() {
+        expect:
+        Steps.startAuthenticationInTara(flow, "openid")
+        Response idCardAuthResponse = Steps.authenticateWithIdCard(flow, "src/test/resources/joeorg-auth.pem")
+
+        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, idCardAuthResponse)
+        Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
+        String accessToken = tokenResponse.body().jsonPath().getString("access_token")
+        Response userInfoResponse = Steps.getUserInfoResponseWithHeaderParam(flow, REQUEST_TYPE_GET, accessToken)
+        assertEquals("Correct HTTP status code is returned", 200, userInfoResponse.statusCode())
+        assertEquals("Correct Content-Type is returned", "application/json; charset=utf-8", userInfoResponse.getContentType())
+
+        assertThat(userInfoResponse.getBody().jsonPath().getString("acr"),  equalTo("high"))
+        assertThat(userInfoResponse.getBody().jsonPath().getList("amr")[0].toString(), equalTo("idcard"))
+        assertThat(userInfoResponse.getBody().jsonPath().getString("sub"),  equalTo("EE38001085718"))
+        // TODO remove profile_attributes level TARA2-153
+        assertThat(userInfoResponse.getBody().jsonPath().getString("profile_attributes.date_of_birth"),  equalTo("1980-01-08"))
+        assertThat(userInfoResponse.getBody().jsonPath().getString("profile_attributes.family_name"),  equalTo("JÕEORG"))
+        assertThat(userInfoResponse.getBody().jsonPath().getString("profile_attributes.given_name"),  equalTo("JAAK-KRISTJAN"))
+
+        assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.email") == null)
+        assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.email_verified") == null)
+        assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.phone_number") == null)
+        assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.phone_number_verified") == null)
+    }
+
+
     @Unroll
     @Feature("OIDC_USERINFO_ENDPOINT")
     @Feature("OIDC_USERINFO_RESPONSE_OK")
     @Feature("OIDC_USERINFO_CLAIMS")
-    def "Verify user info response with Mobile-ID and phone scope"() {
+    @Feature("OIDC_SCOPE_PHONE")
+    def "Verify user info response: auth mID, phone scope"() {
         expect:
-        Steps.startAuthenticationInTara(flow, "openid") // phone
+        Steps.startAuthenticationInTara(flow, "openid phone")
         String idCode = "60001017716"
         String phoneNo = "69100366"
         Response midAuthResponse = Steps.authenticateWithMid(flow,idCode, phoneNo)
@@ -110,8 +177,129 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         Response userInfoResponse = Steps.getUserInfoResponseWithQueryParam(flow, REQUEST_TYPE_GET, accessToken)
         assertEquals("Correct HTTP status code is returned", 200, userInfoResponse.statusCode())
         assertEquals("Correct Content-Type is returned", "application/json; charset=utf-8", userInfoResponse.getContentType())
-        // assertThat(userInfoResponse.getBody().jsonPath().getString("phone_number"), equalTo(phoneNo))
-        // assertThat(userInfoResponse.getBody().jsonPath().getString("phone_number_verified"), equalTo(phoneNo))
+        // TODO remove profile_attributes level TARA2-153
+        assertThat(userInfoResponse.getBody().jsonPath().getString("profile_attributes.given_name"),  equalTo("ONE"))
+        assertThat(userInfoResponse.getBody().jsonPath().getString("profile_attributes.phone_number"), Matchers.containsString(phoneNo))
+        assertEquals(true, userInfoResponse.getBody().jsonPath().getBoolean("profile_attributes.phone_number_verified"))
+        // TARA2-154 assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.email_verified") == null)
+    }
+
+    @Ignore // TARA2-154
+    @Unroll
+    @Feature("OIDC_USERINFO_ENDPOINT")
+    @Feature("OIDC_USERINFO_RESPONSE_OK")
+    @Feature("OIDC_USERINFO_CLAIMS")
+    def "Verify user info response: auth mID, openid scope"() {
+        expect:
+        Steps.startAuthenticationInTara(flow, "openid")
+        String idCode = "60001017716"
+        String phoneNo = "69100366"
+        Response midAuthResponse = Steps.authenticateWithMid(flow,idCode, phoneNo)
+        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
+        Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
+        String accessToken = tokenResponse.body().jsonPath().getString("access_token")
+        Response userInfoResponse = Steps.getUserInfoResponseWithQueryParam(flow, REQUEST_TYPE_GET, accessToken)
+        assertEquals("Correct HTTP status code is returned", 200, userInfoResponse.statusCode())
+        assertEquals("Correct Content-Type is returned", "application/json; charset=utf-8", userInfoResponse.getContentType())
+        // TODO remove profile_attributes level TARA2-153
+        assertThat(userInfoResponse.getBody().jsonPath().getString("profile_attributes.given_name"),  equalTo("ONE"))
+        assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.email") == null)
+        assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.email_verified") == null)
+        assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.phone_number") == null)
+        assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.phone_number_verified") == null)
+
+    }
+
+    @Ignore //TARA2-154
+    @Unroll
+    @Feature("OIDC_USERINFO_ENDPOINT")
+    @Feature("OIDC_USERINFO_RESPONSE_OK")
+    @Feature("OIDC_USERINFO_CLAIMS")
+    def "Verify user info response: auth mID, email scope"() {
+        expect:
+        Steps.startAuthenticationInTara(flow, "openid email")
+        String idCode = "60001017716"
+        String phoneNo = "69100366"
+        Response midAuthResponse = Steps.authenticateWithMid(flow,idCode, phoneNo)
+        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
+        Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
+        String accessToken = tokenResponse.body().jsonPath().getString("access_token")
+        Response userInfoResponse = Steps.getUserInfoResponseWithQueryParam(flow, REQUEST_TYPE_GET, accessToken)
+        assertEquals("Correct HTTP status code is returned", 200, userInfoResponse.statusCode())
+        assertEquals("Correct Content-Type is returned", "application/json; charset=utf-8", userInfoResponse.getContentType())
+        // TODO remove profile_attributes level TARA2-153
+        assertThat(userInfoResponse.getBody().jsonPath().getString("profile_attributes.given_name"),  equalTo("ONE"))
+        assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.email") == null)
+        assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.email_verified") == null)
+    }
+
+    @Unroll
+    @Feature("OIDC_USERINFO_ENDPOINT")
+    @Feature("OIDC_USERINFO_RESPONSE_OK")
+    @Feature("OIDC_USERINFO_CLAIMS")
+    @Feature("OIDC_SCOPE_EMAIL")
+    def "Verify user info response: auth Smart-ID, email scope"() {
+        expect:
+        Steps.startAuthenticationInTara(flow, "openid email")
+        Response sidAuthResponse = Steps.authenticateWithSid(flow,"10101010005")
+        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, sidAuthResponse)
+        Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
+        String accessToken = tokenResponse.body().jsonPath().getString("access_token")
+        Response userInfoResponse = Steps.getUserInfoResponseWithQueryParam(flow, REQUEST_TYPE_GET, accessToken)
+        assertEquals("Correct HTTP status code is returned", 200, userInfoResponse.statusCode())
+        assertEquals("Correct Content-Type is returned", "application/json; charset=utf-8", userInfoResponse.getContentType())
+        // TODO remove profile_attributes level TARA2-153
+        assertThat(userInfoResponse.getBody().jsonPath().getString("profile_attributes.given_name"),  equalTo("DEMO"))
+        assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.email") == null)
+        assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.email_verified") == null)
+        assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.phone_number") == null)
+        assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.phone_number_verified") == null)
+    }
+
+    @Ignore //TARA2-154
+    @Unroll
+    @Feature("OIDC_USERINFO_ENDPOINT")
+    @Feature("OIDC_USERINFO_RESPONSE_OK")
+    @Feature("OIDC_USERINFO_CLAIMS")
+    def "Verify user info response: auth Smart-ID, phone scope"() {
+        expect:
+        Steps.startAuthenticationInTara(flow, "openid smartid phone") // smartid
+        Response sidAuthResponse = Steps.authenticateWithSid(flow,"10101010005")
+        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, sidAuthResponse)
+        Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
+        String accessToken = tokenResponse.body().jsonPath().getString("access_token")
+        Response userInfoResponse = Steps.getUserInfoResponseWithQueryParam(flow, REQUEST_TYPE_GET, accessToken)
+        assertEquals("Correct HTTP status code is returned", 200, userInfoResponse.statusCode())
+        assertEquals("Correct Content-Type is returned", "application/json; charset=utf-8", userInfoResponse.getContentType())
+        // TODO remove profile_attributes level TARA2-153
+        assertThat(userInfoResponse.getBody().jsonPath().getString("profile_attributes.given_name"),  equalTo("DEMO"))
+        assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.email") == null)
+        assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.email_verified") == null)
+        assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.phone_number") == null)
+        assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.phone_number_verified") == null)
+    }
+
+    @Unroll
+    @Feature("OIDC_USERINFO_ENDPOINT")
+    @Feature("OIDC_USERINFO_RESPONSE_OK")
+    @Feature("OIDC_USERINFO_CLAIMS")
+    def "Verify user info response: auth Smart-ID, openid scope"() {
+        expect:
+        Steps.startAuthenticationInTara(flow, "openid smartid") // smartid
+        Response sidAuthResponse = Steps.authenticateWithSid(flow,"10101010005")
+        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, sidAuthResponse)
+        Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
+        String accessToken = tokenResponse.body().jsonPath().getString("access_token")
+        Response userInfoResponse = Steps.getUserInfoResponseWithQueryParam(flow, REQUEST_TYPE_GET, accessToken)
+        assertEquals("Correct HTTP status code is returned", 200, userInfoResponse.statusCode())
+        assertEquals("Correct Content-Type is returned", "application/json; charset=utf-8", userInfoResponse.getContentType())
+        // TODO remove profile_attributes level TARA2-153
+        assertThat(userInfoResponse.getBody().jsonPath().getString("profile_attributes.given_name"),  equalTo("DEMO"))
+        assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.email") == null)
+        assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.phone_number") == null)
+        // TARA2-154
+        // assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.email_verified") == null)
+        // assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.phone_number_verified") == null)
     }
 
     @Unroll
