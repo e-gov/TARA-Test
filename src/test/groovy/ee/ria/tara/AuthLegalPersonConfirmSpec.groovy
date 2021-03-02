@@ -29,6 +29,7 @@ class AuthLegalPersonConfirmSpec extends TaraSpecification {
     @Unroll
     @Feature("LEGAL_PERSON_SELECTION_ENDPOINT")
     @Feature("UI_CONSENT_VIEW")
+    @Feature("OIDC_ID_TOKEN")
     def "legal person selection request"() {
         expect:
         Response initClientAuthenticationSession = Steps.startAuthenticationInTara(flow, "openid legalperson")
