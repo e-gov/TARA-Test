@@ -89,7 +89,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         where:
         idCode        | label            || errorMessage
         "10101010016" | "User cancelled" || "Autentimine katkestati kasutaja poolt."
-        // Strange timeout issue     "10101010027" | "Timeout"        || "Timeout"
+        "10101010027" | "Timeout"        || "Timeout"
     }
 
     @Unroll
@@ -108,7 +108,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         where:
         idCode        | label            || errorMessage
         "10101010016" | "User cancelled" || "Authentication was cancelled by user."
-        //  "10101010027" | "Timeout"        || "Authentication request timed out."
+        "10101010027" | "Timeout"        || "Authentication request timed out."
     }
 
     @Unroll
@@ -127,7 +127,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         where:
         idCode        | label            || errorMessage
         "10101010016" | "User cancelled" || "Пользователь рервал аутентификацию."
-        // "10101010027" | "Timeout"        || "Истекло время запроса."
+        "10101010027" | "Timeout"        || "Истекло время запроса."
     }
 
     @Unroll
