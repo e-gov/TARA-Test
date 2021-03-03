@@ -98,6 +98,20 @@ class Requests {
                 .extract().response()
     }
 
+    @Step("Simple get request")
+    static Response getRequest(String location) {
+        return given()
+                .filter(new AllureRestAssured())
+                .relaxedHTTPSValidation()
+                .log().cookies()
+                .when()
+                .redirects().follow(false)
+                .urlEncodingEnabled(true)
+                .get(location)
+                .then()
+                .extract().response()
+    }
+
     @Step("Login service get request with session id")
     static Response getRequestWithSessionId(Flow flow, String location) {
         return given()

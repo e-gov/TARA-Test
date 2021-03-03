@@ -138,6 +138,7 @@ class OidcService {
     @Lazy fullAuthenticationRequestUrl = "${protocol}://${host}${portCheck()}${authenticationRequestUrl}"
     @Lazy fullJwksUrl = "${protocol}://${host}${portCheck()}${jwksUrl}"
     @Lazy fullConfigurationUrl = "${protocol}://${host}${portCheck()}${configurationUrl}"
+    @Lazy baseUrl = "${protocol}://${host}${portCheck()}"
 
     OidcService(Properties properties) {
         this.host = properties."oidcservice.host"
