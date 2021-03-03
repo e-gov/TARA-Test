@@ -85,6 +85,7 @@ class OidcIdendityTokenRequestSpec extends TaraSpecification {
         assertTrue("Correct at_hash claim exists", claims.getStringClaim("at_hash").size()  > 20)
     }
 
+    @IgnoreIf({ properties['test.deployment.env'] == "idp" })
     @Unroll
     @Feature("OIDC_ID_TOKEN")
     def "Verify ID token with optional elements by phone scope"() {
