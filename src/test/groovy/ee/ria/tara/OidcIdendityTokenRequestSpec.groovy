@@ -7,11 +7,7 @@ import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import org.hamcrest.Matchers
 
-import java.time.ZonedDateTime
-import java.time.Duration
-import java.time.ZoneId
-import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
+import spock.lang.IgnoreIf
 import spock.lang.Ignore
 import spock.lang.Unroll
 
@@ -108,6 +104,7 @@ class OidcIdendityTokenRequestSpec extends TaraSpecification {
         assertThat("Phone_number_verified claim exists", claims.getJSONObjectClaim("profile_attributes").get("phone_number_verified"), equalTo(true))
     }
 
+    @IgnoreIf({ properties['test.deployment.env'] == "idp" })
     @Unroll
     @Feature("OIDC_ID_TOKEN")
     def "Verify ID token with optional elements by email scope"() {
