@@ -81,7 +81,6 @@ class MobileIDAuthSpec extends TaraSpecification {
         "69100366"                                | "60001017716"  | "_csrf"                 | "d7860443-a0cc-45db-ad68-3c9300c0b3bb" | "multiple _csrf parameters"           || "Multiple request parameters with the same name not allowed"
     }
 
-    @Ignore // TARA2-195
     @Unroll
     @Feature("MID_AUTH_POLL_RESPONSE_COMPLETE")
     @Feature("MID_VALID_INPUT_TEL")
@@ -110,7 +109,6 @@ class MobileIDAuthSpec extends TaraSpecification {
         RandomStringUtils.random(15, false, true) | "60001019939" | _                       | _                        | "Telephone number length check"                  || "Kasutajal pole Mobiil-ID lepingut."
     }
 
-    @Ignore // TARA2-195
     @Unroll
     @Feature("MID_AUTH_POLL_RESPONSE_COMPLETE")
     def "initialize mobile-ID authentication with scenario: #label ru"() {
@@ -139,7 +137,6 @@ class MobileIDAuthSpec extends TaraSpecification {
 
     }
 
-    @Ignore // TARA2-195
     @Unroll
     @Feature("MID_AUTH_POLL_RESPONSE_COMPLETE")
     def "initialize mobile-ID authentication with scenario: #label en"() {

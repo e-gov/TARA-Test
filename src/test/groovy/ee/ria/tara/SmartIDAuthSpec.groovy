@@ -18,7 +18,7 @@ class SmartIDAuthSpec extends TaraSpecification {
     def setup() {
         flow.cookieFilter = new CookieFilter()
     }
-    @IgnoreIf({ System.properties['os.name'] == "Windows 10" })
+
     @Unroll
     @Feature("SID_AUTH_INIT_ENDPOINT")
     def "initialize Smart-ID authentication"() {
@@ -89,7 +89,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         where:
         idCode        | label            || errorMessage
         "10101010016" | "User cancelled" || "Autentimine katkestati kasutaja poolt."
-        "10101010027" | "Timeout"        || "Timeout"
+        "10101010027" | "Timeout"        || "Autentimise päring aegus."
     }
 
     @Unroll
@@ -236,8 +236,10 @@ class SmartIDAuthSpec extends TaraSpecification {
         Response response = Requests.postRequestWithSessionId(flow, flow.loginService.fullSidCancelUrl)
         assertEquals("Correct HTTP status code is returned", 403, response.statusCode())
         assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
-        // _csrf is directly related with SESSION cookie
-        assertEquals("Correct error message is returned", "Forbidden", response.body().jsonPath().get("message"))
+
+        assertEquals("Correct error text is returned", "Forbidden", response.body().jsonPath().get("error"))
+        String errorMessage = "Keelatud päring. Päring esitati topelt, sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud."
+        assertEquals("Correct error message is returned", errorMessage, response.body().jsonPath().get("message"))
     }
 
     @Ignore // TARA2-165
