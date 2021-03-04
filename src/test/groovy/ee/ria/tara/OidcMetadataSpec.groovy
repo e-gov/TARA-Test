@@ -53,6 +53,7 @@ class OidcMetadataSpec extends TaraSpecification {
         //    "/.well-known" || 200
     }
 
+    @Ignore // TARA2-151
     @Unroll
     @Feature("OIDC_DISCOVERY_CONTENT")
     def "Verify discovery content"() {

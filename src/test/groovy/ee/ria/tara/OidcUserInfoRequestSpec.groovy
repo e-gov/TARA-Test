@@ -68,7 +68,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         assertThat(userInfoResponse.getBody().jsonPath().getString("profile_attributes.family_name"),  equalTo("TESTNUMBER"))
         assertThat(userInfoResponse.getBody().jsonPath().getString("profile_attributes.given_name"),  equalTo("ONE"))
     }
-
+    @Ignore // TARA2-154
     @Unroll
     @Feature("OIDC_USERINFO_ENDPOINT")
     @Feature("OIDC_USERINFO_REQUEST_VALIDATION")
@@ -97,6 +97,8 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         assertThat(userInfoResponse.getBody().jsonPath().getString("profile_attributes.email"), equalTo("38001085718@eesti.ee"))
         assertEquals(false, userInfoResponse.getBody().jsonPath().getBoolean("profile_attributes.email_verified"))
     }
+
+    @Ignore // TARA2-154
     @Unroll
     @Feature("OIDC_USERINFO_ENDPOINT")
     @Feature("OIDC_USERINFO_REQUEST_VALIDATION")
@@ -159,7 +161,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.phone_number_verified") == null)
     }
 
-
+    @Ignore // TARA2-154
     @Unroll
     @Feature("OIDC_USERINFO_ENDPOINT")
     @Feature("OIDC_USERINFO_RESPONSE_OK")
@@ -233,6 +235,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.email_verified") == null)
     }
 
+    @Ignore // TARA2-154
     @Unroll
     @Feature("OIDC_USERINFO_ENDPOINT")
     @Feature("OIDC_USERINFO_RESPONSE_OK")

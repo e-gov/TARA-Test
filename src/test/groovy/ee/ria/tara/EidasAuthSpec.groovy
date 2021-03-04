@@ -15,7 +15,8 @@ import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertThat
 import static org.junit.Assert.assertTrue
 
-@IgnoreIf({ properties['test.deployment.env'] == "idp" })
+// @IgnoreIf({ properties['test.deployment.env'] == "idp" })
+@Ignore // TARA2-121
 class EidasAuthSpec extends TaraSpecification {
     Flow flow = new Flow(props)
 
