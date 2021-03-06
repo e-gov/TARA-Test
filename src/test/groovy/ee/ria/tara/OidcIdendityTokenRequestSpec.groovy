@@ -16,7 +16,7 @@ import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertThat
 import static org.junit.Assert.assertTrue
 
-@Ignore // TARA2-115
+@IgnoreIf({ properties['test.deployment.env'] == "idp" })
 class OidcIdendityTokenRequestSpec extends TaraSpecification {
     Flow flow = new Flow(props)
 
@@ -51,7 +51,7 @@ class OidcIdendityTokenRequestSpec extends TaraSpecification {
         assertEquals("Correct scope value", "openid", tokenResponse.body().jsonPath().getString("scope"))
         assertTrue("Access token element exists", tokenResponse.body().jsonPath().getString("access_token").size() > 32)
         assertTrue("Expires in element exists", tokenResponse.body().jsonPath().getInt("expires_in") > 60)
-        assertTrue("ID token element exists", tokenResponse.body().jsonPath().getString("id_token").size() > 1300)
+        assertTrue("ID token element exists", tokenResponse.body().jsonPath().getString("id_token").size() > 1000)
     }
 
     @Unroll
@@ -71,22 +71,20 @@ class OidcIdendityTokenRequestSpec extends TaraSpecification {
         assertThat("Correct issuer claim", claims.getIssuer(), equalTo(flow.openIdServiceConfiguration.get("issuer")))
         assertThat(claims.getAudience().get(0), equalTo(flow.oidcClient.clientId))
         Date date = new Date()
-        // TODO Etapp4
-   //     assertThat("Expected current: " + date + " to be after nbf: " + claims.getNotBeforeTime(), date.after(claims.getNotBeforeTime()), is(true))
+        assertThat("Expected current: " + date + " to be after nbf: " + claims.getNotBeforeTime(), date.after(claims.getNotBeforeTime()), Matchers.is(true))
         assertTrue("Correct iat claim", Math.abs(date.getTime() - claims.getDateClaim("iat").getTime()) < 10000L)
         assertThat("Correct subject claim", claims.getSubject(), equalTo("EE" + idCode))
 
         assertThat("Correct date of birth", claims.getJSONObjectClaim("profile_attributes").get("date_of_birth"),  equalTo("2000-01-01"))
         assertThat("Correct given name", claims.getJSONObjectClaim("profile_attributes").get("given_name"),  equalTo("ONE"))
         assertThat("Correct family name", claims.getJSONObjectClaim("profile_attributes").get("family_name"),  equalTo("TESTNUMBER"))
-        assertThat("Correct amr value", claims.getStringArrayClaim("amr").getAt(0).toString(), Matchers.oneOf("smartid", "eIDAS", "idcard", "mID"))
+        assertThat("Correct amr value", claims.getStringArrayClaim("amr")[0].toString(), Matchers.oneOf("smartid", "eIDAS", "idcard", "mID"))
         // TODO TARA2-182
         // assertThat("Correct state value", claims.getStringClaim("state"), equalTo(flow.getState()))
         assertThat("Correct LoA level", claims.getStringClaim("acr"), equalTo("high"))
         assertTrue("Correct at_hash claim exists", claims.getStringClaim("at_hash").size()  > 20)
     }
 
-    @IgnoreIf({ properties['test.deployment.env'] == "idp" })
     @Unroll
     @Feature("OIDC_ID_TOKEN")
     def "Verify ID token with optional elements by phone scope"() {
@@ -102,11 +100,10 @@ class OidcIdendityTokenRequestSpec extends TaraSpecification {
         assertEquals("Correct scope value", scopeList, tokenResponse.body().jsonPath().getString("scope"))
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat("Correct subject claim", claims.getSubject(), equalTo("EE" + idCode))
-        assertThat("Phone_number claim exists", claims.getJSONObjectClaim("profile_attributes").get("phone_number"), equalTo("+372" + phoneNo))
-        assertThat("Phone_number_verified claim exists", claims.getJSONObjectClaim("profile_attributes").get("phone_number_verified"), equalTo(true))
+        assertThat("Phone_number claim exists", claims.getStringClaim("phone_number"), equalTo("+372" + phoneNo))
+        assertThat("Phone_number_verified claim exists", claims.getBooleanClaim("phone_number_verified"), equalTo(true))
     }
 
-    @IgnoreIf({ properties['test.deployment.env'] == "idp" })
     @Unroll
     @Feature("OIDC_ID_TOKEN")
     def "Verify ID token with optional elements by email scope"() {
@@ -120,7 +117,7 @@ class OidcIdendityTokenRequestSpec extends TaraSpecification {
         assertEquals("Correct scope value", scopeList, tokenResponse.body().jsonPath().getString("scope"))
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat("Correct subject claim", claims.getSubject(), equalTo("EE38001085718"))
-        assertThat("Phone_number claim exists", claims.getJSONObjectClaim("profile_attributes").get("email"), equalTo("38001085718@eesti.ee"))
-        assertThat("Phone_number_verified claim exists", claims.getJSONObjectClaim("profile_attributes").get("email_verified"), equalTo(false))
+        assertThat("Phone_number claim exists", claims.getStringClaim("email"), equalTo("38001085718@eesti.ee"))
+        assertThat("Phone_number_verified claim exists", claims.getBooleanClaim("email_verified"), equalTo(false))
     }
 }
