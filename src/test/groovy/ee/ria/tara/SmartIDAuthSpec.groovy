@@ -191,7 +191,6 @@ class SmartIDAuthSpec extends TaraSpecification {
     @Ignore // TARA2-165
     @Unroll
     @Feature("SID_AUTH_STATUS_CHECK_ENDPOINT")
-    @Feature("SID_AUTH_SUCCESS")
     def "poll Smart-ID authentication with invalid method post"() {
         expect:
         Steps.startAuthenticationInTara(flow, "openid smartid")

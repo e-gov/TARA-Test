@@ -58,17 +58,17 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
 
         assertThat(userInfoResponse.getBody().jsonPath().getString("acr"),  equalTo("high"))
         assertThat(userInfoResponse.getBody().jsonPath().getList("amr")[0].toString(), equalTo("mID"))
-        // TARA2-153
-        // long authTime = userInfoResponse.getBody().jsonPath().getLong("auth_time")
-        // LocalDateTime ldt = Instant.ofEpochSecond(authTime).atZone(ZoneId.systemDefault()).toLocalDateTime()
-        // TODO compare auth_time
+        Date date = new Date()
+        long authTime = userInfoResponse.getBody().jsonPath().getLong("auth_time")
+        // 10 seconds
+        assertTrue("Correct auth_time", Math.abs(date.getTime()/1000 - authTime) < 10L)
+
         assertThat(userInfoResponse.getBody().jsonPath().getString("sub"),  equalTo("EE" + idCode))
-        // TODO remove profile_attributes level
-        assertThat(userInfoResponse.getBody().jsonPath().getString("profile_attributes.date_of_birth"),  equalTo("2000-01-01"))
-        assertThat(userInfoResponse.getBody().jsonPath().getString("profile_attributes.family_name"),  equalTo("TESTNUMBER"))
-        assertThat(userInfoResponse.getBody().jsonPath().getString("profile_attributes.given_name"),  equalTo("ONE"))
+        assertThat(userInfoResponse.getBody().jsonPath().getString("date_of_birth"),  equalTo("2000-01-01"))
+        assertThat(userInfoResponse.getBody().jsonPath().getString("family_name"),  equalTo("TESTNUMBER"))
+        assertThat(userInfoResponse.getBody().jsonPath().getString("given_name"),  equalTo("ONE"))
     }
-    @Ignore // TARA2-154
+
     @Unroll
     @Feature("OIDC_USERINFO_ENDPOINT")
     @Feature("OIDC_USERINFO_REQUEST_VALIDATION")
@@ -90,15 +90,14 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         assertThat(userInfoResponse.getBody().jsonPath().getString("acr"),  equalTo("high"))
         assertThat(userInfoResponse.getBody().jsonPath().getList("amr")[0].toString(), equalTo("idcard"))
         assertThat(userInfoResponse.getBody().jsonPath().getString("sub"),  equalTo("EE38001085718"))
-        // TODO remove profile_attributes level TARA2-153
-        assertThat(userInfoResponse.getBody().jsonPath().getString("profile_attributes.date_of_birth"),  equalTo("1980-01-08"))
-        assertThat(userInfoResponse.getBody().jsonPath().getString("profile_attributes.family_name"),  equalTo("JÕEORG"))
-        assertThat(userInfoResponse.getBody().jsonPath().getString("profile_attributes.given_name"),  equalTo("JAAK-KRISTJAN"))
-        assertThat(userInfoResponse.getBody().jsonPath().getString("profile_attributes.email"), equalTo("38001085718@eesti.ee"))
-        assertEquals(false, userInfoResponse.getBody().jsonPath().getBoolean("profile_attributes.email_verified"))
+
+        assertThat(userInfoResponse.getBody().jsonPath().getString("date_of_birth"),  equalTo("1980-01-08"))
+        assertThat(userInfoResponse.getBody().jsonPath().getString("family_name"),  equalTo("JÕEORG"))
+        assertThat(userInfoResponse.getBody().jsonPath().getString("given_name"),  equalTo("JAAK-KRISTJAN"))
+        assertThat(userInfoResponse.getBody().jsonPath().getString("email"), equalTo("38001085718@eesti.ee"))
+        assertEquals(false, userInfoResponse.getBody().jsonPath().getBoolean("email_verified"))
     }
 
-    @Ignore // TARA2-154
     @Unroll
     @Feature("OIDC_USERINFO_ENDPOINT")
     @Feature("OIDC_USERINFO_REQUEST_VALIDATION")
@@ -120,16 +119,14 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         assertThat(userInfoResponse.getBody().jsonPath().getString("acr"),  equalTo("high"))
         assertThat(userInfoResponse.getBody().jsonPath().getList("amr")[0].toString(), equalTo("idcard"))
         assertThat(userInfoResponse.getBody().jsonPath().getString("sub"),  equalTo("EE38001085718"))
-        // TODO remove profile_attributes level TARA2-153
-        assertThat(userInfoResponse.getBody().jsonPath().getString("profile_attributes.date_of_birth"),  equalTo("1980-01-08"))
-        assertThat(userInfoResponse.getBody().jsonPath().getString("profile_attributes.family_name"),  equalTo("JÕEORG"))
-        assertThat(userInfoResponse.getBody().jsonPath().getString("profile_attributes.given_name"),  equalTo("JAAK-KRISTJAN"))
-        assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.phone_number") == null)
-        // TARA2-154
-        // assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.phone_number_verified") == null)
+
+        assertThat(userInfoResponse.getBody().jsonPath().getString("date_of_birth"),  equalTo("1980-01-08"))
+        assertThat(userInfoResponse.getBody().jsonPath().getString("family_name"),  equalTo("JÕEORG"))
+        assertThat(userInfoResponse.getBody().jsonPath().getString("given_name"),  equalTo("JAAK-KRISTJAN"))
+        assertTrue(userInfoResponse.getBody().jsonPath().getString("phone_number") == null)
+        assertTrue(userInfoResponse.getBody().jsonPath().getString("phone_number_verified") == null)
     }
 
-    @Ignore //TARA2-154
     @Unroll
     @Feature("OIDC_USERINFO_ENDPOINT")
     @Feature("OIDC_USERINFO_REQUEST_VALIDATION")
@@ -150,18 +147,16 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         assertThat(userInfoResponse.getBody().jsonPath().getString("acr"),  equalTo("high"))
         assertThat(userInfoResponse.getBody().jsonPath().getList("amr")[0].toString(), equalTo("idcard"))
         assertThat(userInfoResponse.getBody().jsonPath().getString("sub"),  equalTo("EE38001085718"))
-        // TODO remove profile_attributes level TARA2-153
-        assertThat(userInfoResponse.getBody().jsonPath().getString("profile_attributes.date_of_birth"),  equalTo("1980-01-08"))
-        assertThat(userInfoResponse.getBody().jsonPath().getString("profile_attributes.family_name"),  equalTo("JÕEORG"))
-        assertThat(userInfoResponse.getBody().jsonPath().getString("profile_attributes.given_name"),  equalTo("JAAK-KRISTJAN"))
+        assertThat(userInfoResponse.getBody().jsonPath().getString("date_of_birth"),  equalTo("1980-01-08"))
+        assertThat(userInfoResponse.getBody().jsonPath().getString("family_name"),  equalTo("JÕEORG"))
+        assertThat(userInfoResponse.getBody().jsonPath().getString("given_name"),  equalTo("JAAK-KRISTJAN"))
 
-        assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.email") == null)
-        assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.email_verified") == null)
-        assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.phone_number") == null)
-        assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.phone_number_verified") == null)
+        assertTrue(userInfoResponse.getBody().jsonPath().getString("email") == null)
+        assertTrue(userInfoResponse.getBody().jsonPath().getString("email_verified") == null)
+        assertTrue(userInfoResponse.getBody().jsonPath().getString("phone_number") == null)
+        assertTrue(userInfoResponse.getBody().jsonPath().getString("phone_number_verified") == null)
     }
 
-    @Ignore // TARA2-154
     @Unroll
     @Feature("OIDC_USERINFO_ENDPOINT")
     @Feature("OIDC_USERINFO_RESPONSE_OK")
@@ -179,14 +174,13 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         Response userInfoResponse = Steps.getUserInfoResponseWithQueryParam(flow, REQUEST_TYPE_GET, accessToken)
         assertEquals("Correct HTTP status code is returned", 200, userInfoResponse.statusCode())
         assertEquals("Correct Content-Type is returned", "application/json; charset=utf-8", userInfoResponse.getContentType())
-        // TODO remove profile_attributes level TARA2-153
-        assertThat(userInfoResponse.getBody().jsonPath().getString("profile_attributes.given_name"),  equalTo("ONE"))
-        assertThat(userInfoResponse.getBody().jsonPath().getString("profile_attributes.phone_number"), Matchers.containsString(phoneNo))
-        assertEquals(true, userInfoResponse.getBody().jsonPath().getBoolean("profile_attributes.phone_number_verified"))
-        // TARA2-154 assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.email_verified") == null)
+
+        assertThat(userInfoResponse.getBody().jsonPath().getString("given_name"),  equalTo("ONE"))
+        assertThat(userInfoResponse.getBody().jsonPath().getString("phone_number"), Matchers.containsString(phoneNo))
+        assertEquals(true, userInfoResponse.getBody().jsonPath().getBoolean("phone_number_verified"))
+        assertTrue(userInfoResponse.getBody().jsonPath().getString("email_verified") == null)
     }
 
-    @Ignore // TARA2-154
     @Unroll
     @Feature("OIDC_USERINFO_ENDPOINT")
     @Feature("OIDC_USERINFO_RESPONSE_OK")
@@ -203,16 +197,15 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         Response userInfoResponse = Steps.getUserInfoResponseWithQueryParam(flow, REQUEST_TYPE_GET, accessToken)
         assertEquals("Correct HTTP status code is returned", 200, userInfoResponse.statusCode())
         assertEquals("Correct Content-Type is returned", "application/json; charset=utf-8", userInfoResponse.getContentType())
-        // TODO remove profile_attributes level TARA2-153
-        assertThat(userInfoResponse.getBody().jsonPath().getString("profile_attributes.given_name"),  equalTo("ONE"))
-        assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.email") == null)
-        assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.email_verified") == null)
-        assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.phone_number") == null)
-        assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.phone_number_verified") == null)
+
+        assertThat(userInfoResponse.getBody().jsonPath().getString("given_name"),  equalTo("ONE"))
+        assertTrue(userInfoResponse.getBody().jsonPath().getString("email") == null)
+        assertTrue(userInfoResponse.getBody().jsonPath().getString("email_verified") == null)
+        assertTrue(userInfoResponse.getBody().jsonPath().getString("phone_number") == null)
+        assertTrue(userInfoResponse.getBody().jsonPath().getString("phone_number_verified") == null)
 
     }
 
-    @Ignore //TARA2-154
     @Unroll
     @Feature("OIDC_USERINFO_ENDPOINT")
     @Feature("OIDC_USERINFO_RESPONSE_OK")
@@ -229,13 +222,12 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         Response userInfoResponse = Steps.getUserInfoResponseWithQueryParam(flow, REQUEST_TYPE_GET, accessToken)
         assertEquals("Correct HTTP status code is returned", 200, userInfoResponse.statusCode())
         assertEquals("Correct Content-Type is returned", "application/json; charset=utf-8", userInfoResponse.getContentType())
-        // TODO remove profile_attributes level TARA2-153
-        assertThat(userInfoResponse.getBody().jsonPath().getString("profile_attributes.given_name"),  equalTo("ONE"))
-        assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.email") == null)
-        assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.email_verified") == null)
+
+        assertThat(userInfoResponse.getBody().jsonPath().getString("given_name"),  equalTo("ONE"))
+        assertTrue(userInfoResponse.getBody().jsonPath().getString("email") == null)
+        assertTrue(userInfoResponse.getBody().jsonPath().getString("email_verified") == null)
     }
 
-    @Ignore // TARA2-154
     @Unroll
     @Feature("OIDC_USERINFO_ENDPOINT")
     @Feature("OIDC_USERINFO_RESPONSE_OK")
@@ -243,7 +235,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
     @Feature("OIDC_SCOPE_EMAIL")
     def "Verify user info response: auth Smart-ID, email scope"() {
         expect:
-        Steps.startAuthenticationInTara(flow, "openid email")
+        Steps.startAuthenticationInTara(flow, "openid email smartid") // extra smartid
         Response sidAuthResponse = Steps.authenticateWithSid(flow,"10101010005")
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, sidAuthResponse)
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
@@ -251,15 +243,14 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         Response userInfoResponse = Steps.getUserInfoResponseWithQueryParam(flow, REQUEST_TYPE_GET, accessToken)
         assertEquals("Correct HTTP status code is returned", 200, userInfoResponse.statusCode())
         assertEquals("Correct Content-Type is returned", "application/json; charset=utf-8", userInfoResponse.getContentType())
-        // TODO remove profile_attributes level TARA2-153
-        assertThat(userInfoResponse.getBody().jsonPath().getString("profile_attributes.given_name"),  equalTo("DEMO"))
-        assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.email") == null)
-        assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.email_verified") == null)
-        assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.phone_number") == null)
-        assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.phone_number_verified") == null)
+
+        assertThat(userInfoResponse.getBody().jsonPath().getString("given_name"),  equalTo("DEMO"))
+        assertTrue(userInfoResponse.getBody().jsonPath().getString("email") == null)
+        assertTrue(userInfoResponse.getBody().jsonPath().getString("email_verified") == null)
+        assertTrue(userInfoResponse.getBody().jsonPath().getString("phone_number") == null)
+        assertTrue(userInfoResponse.getBody().jsonPath().getString("phone_number_verified") == null)
     }
 
-    @Ignore //TARA2-154
     @Unroll
     @Feature("OIDC_USERINFO_ENDPOINT")
     @Feature("OIDC_USERINFO_RESPONSE_OK")
@@ -274,12 +265,12 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         Response userInfoResponse = Steps.getUserInfoResponseWithQueryParam(flow, REQUEST_TYPE_GET, accessToken)
         assertEquals("Correct HTTP status code is returned", 200, userInfoResponse.statusCode())
         assertEquals("Correct Content-Type is returned", "application/json; charset=utf-8", userInfoResponse.getContentType())
-        // TODO remove profile_attributes level TARA2-153
-        assertThat(userInfoResponse.getBody().jsonPath().getString("profile_attributes.given_name"),  equalTo("DEMO"))
-        assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.email") == null)
-        assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.email_verified") == null)
-        assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.phone_number") == null)
-        assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.phone_number_verified") == null)
+
+        assertThat(userInfoResponse.getBody().jsonPath().getString("given_name"),  equalTo("DEMO"))
+        assertTrue(userInfoResponse.getBody().jsonPath().getString("email") == null)
+        assertTrue(userInfoResponse.getBody().jsonPath().getString("email_verified") == null)
+        assertTrue(userInfoResponse.getBody().jsonPath().getString("phone_number") == null)
+        assertTrue(userInfoResponse.getBody().jsonPath().getString("phone_number_verified") == null)
     }
 
     @Unroll
@@ -296,13 +287,12 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         Response userInfoResponse = Steps.getUserInfoResponseWithQueryParam(flow, REQUEST_TYPE_GET, accessToken)
         assertEquals("Correct HTTP status code is returned", 200, userInfoResponse.statusCode())
         assertEquals("Correct Content-Type is returned", "application/json; charset=utf-8", userInfoResponse.getContentType())
-        // TODO remove profile_attributes level TARA2-153
-        assertThat(userInfoResponse.getBody().jsonPath().getString("profile_attributes.given_name"),  equalTo("DEMO"))
-        assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.email") == null)
-        assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.phone_number") == null)
-        // TARA2-154
-        // assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.email_verified") == null)
-        // assertTrue(userInfoResponse.getBody().jsonPath().getString("profile_attributes.phone_number_verified") == null)
+
+        assertThat(userInfoResponse.getBody().jsonPath().getString("given_name"),  equalTo("DEMO"))
+        assertTrue(userInfoResponse.getBody().jsonPath().getString("email") == null)
+        assertTrue(userInfoResponse.getBody().jsonPath().getString("phone_number") == null)
+        assertTrue(userInfoResponse.getBody().jsonPath().getString("email_verified") == null)
+        assertTrue(userInfoResponse.getBody().jsonPath().getString("phone_number_verified") == null)
     }
 
     @Unroll
@@ -350,7 +340,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         String accessToken = "access.Token.12345"
         Response response = Steps.getUserInfoResponseWithQueryParam(flow, REQUEST_TYPE_GET, accessToken)
         assertEquals("Correct HTTP status code is returned", 401, response.statusCode())
-        assertThat("Correct Content-Type is returned", response.getContentType(), Matchers.startsWith("application/json"))
+        assertThat("Correct Content-Type is returned", response.getContentType(), startsWith("application/json"))
         assertEquals("Correct error is returned", "request_unauthorized", response.body().jsonPath().get("error"))
         Map<String, String> errorMap = OpenIdUtils.getErrorFromAuthorizationHeader(response)
         assertEquals("Correct error text is returned","request_unauthorized", errorMap.get("error"))
