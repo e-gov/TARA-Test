@@ -53,7 +53,6 @@ class OidcMetadataSpec extends TaraSpecification {
         //    "/.well-known" || 200
     }
 
-    @Ignore // TARA2-151
     @Unroll
     @Feature("OIDC_DISCOVERY_CONTENT")
     def "Verify discovery content"() {
@@ -61,7 +60,7 @@ class OidcMetadataSpec extends TaraSpecification {
         JsonPath jsonResponse = Requests.getOpenidConfiguration(flow.oidcService.fullConfigurationUrl)
         assertEquals("Correct issuer", (flow.oidcService.baseUrl.toString() + "/"), jsonResponse.get("issuer"))
         List<String> scopesSupported = jsonResponse.getList("scopes_supported")
-        def scopeList = ["openid", "idcard", "mid", "smartid"] //, "eidas", "eidasonly", "email", "phone"]
+        def scopeList = ["openid", "idcard", "mid", "smartid", "email", "phone"] //, "eidas", "eidasonly"]
         scopeList.each {
             assertTrue("Scope supported. Contains $it", scopesSupported.contains(it))
         }
@@ -71,14 +70,13 @@ class OidcMetadataSpec extends TaraSpecification {
         assertEquals("Supported claim types", "normal", jsonResponse.getList("claim_types_supported")[0])
 
         List<String> claimsSupported = jsonResponse.getList("claims_supported")
-        // TODO TARA2-151
-        def claimsList = ["sub", "profile_attributes.given_name", "profile_attributes.family_name", "profile_attributes.date_of_birth"]
-        claimsList.add("profile_attributes.represents_legal_person.name")
-        claimsList.add("profile_attributes.represents_legal_person.registry_code")
-//        claimsList.add("email")
-//        claimsList.add("email_verified")
-//        claimsList.add("phonenumber")
-//        claimsList.add("phonenumber_verified")
+        def claimsList = ["sub", "given_name", "family_name", "date_of_birth"]
+        claimsList.add("represents_legal_person.name")
+        claimsList.add("represents_legal_person.registry_code")
+        claimsList.add("email")
+        claimsList.add("email_verified")
+        claimsList.add("phonenumber")
+        claimsList.add("phonenumber_verified")
         claimsList.each {
             assertTrue("Claim supported. Contains $it", claimsSupported.contains(it))
         }
