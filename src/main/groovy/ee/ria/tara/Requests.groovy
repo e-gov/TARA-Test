@@ -11,24 +11,6 @@ import static io.restassured.config.EncoderConfig.encoderConfig
 
 class Requests {
 
-    @Step("Init auth request")
-    static Response initAuthRequest(Flow flow, String scopeList = "openid") {
-        Response response =
-                given()
-                        .filter(flow.cookieFilter)
-                        .filter(new AllureRestAssured())
-                        .queryParam("scope", scopeList)
-                        .queryParam("ui_locales", "et")
-                        .log().cookies()
-                        .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
-                        .when()
-                        .redirects().follow(false)
-                        .get(flow.oidcClient.fullRequestUrl)
-                        .then()
-                        .extract().response()
-        return response
-    }
-
     @Step("Mobile-ID authentication init request")
     static Response startMidAuthentication(Flow flow, String idCode, String phoneNo) {
         Response response =

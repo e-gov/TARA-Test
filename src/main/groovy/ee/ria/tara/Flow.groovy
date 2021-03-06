@@ -170,14 +170,12 @@ class OidcService {
         HashMap <String, String> cookies
 
         @Lazy fullResponseUrl = "${protocol}://${host}${portCheck()}${responseUrl}"
-        @Lazy fullRequestUrl = "${protocol}://${host}${portCheck()}${requestUrl}"
 
         OidcClient(Properties properties) {
             this.host = properties."oidcclient.host"
             this.port = properties."oidcclient.port"
             this.protocol = properties."oidcclient.protocol"
             this.responseUrl = properties."oidcclient.responseUrl"
-            this.requestUrl = properties."oidcclient.requestUrl"
             this.clientId = properties."oidcclient.clientId"
             this.clientSecret = properties."oidcclient.secret"
             this.cookies = new HashMap<String, String>()
