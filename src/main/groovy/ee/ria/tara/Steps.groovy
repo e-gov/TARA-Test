@@ -75,11 +75,11 @@ class Steps {
     }
 
     @Step("Polling Mobile-ID authentication response")
-    static Response pollMidResponse(Flow flow) {
+    static Response pollMidResponse(Flow flow, long pollingIntevalMillis = 2000L) {
         int counter = 0
         Response response = null
         while (counter < 12) {
-            sleep(2000L)
+            sleep(pollingIntevalMillis)
             response = Requests.pollMid(flow)
             if (response.body().jsonPath().get("status") != "PENDING") {
                 break
