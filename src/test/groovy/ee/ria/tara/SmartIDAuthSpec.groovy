@@ -23,25 +23,13 @@ class SmartIDAuthSpec extends TaraSpecification {
     @Feature("SID_AUTH_INIT_ENDPOINT")
     def "initialize Smart-ID authentication"() {
         expect:
-        Steps.startAuthenticationInTara(flow, "openid smartid")
+        Steps.startAuthenticationInTara(flow, "openid")
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
         Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, "10101010005", additionalParamsMap)
         assertEquals("Correct HTTP status code is returned", 200, initSidAuthenticationSession.statusCode())
         assertEquals("Correct Content-Type is returned", "text/html;charset=UTF-8", initSidAuthenticationSession.getContentType())
         String controlCode = initSidAuthenticationSession.body().htmlPath().getString("**.find { p -> p.@class == 'control-code' }.text()")
         assertEquals("Verification code exists", 4, controlCode.size())
-    }
-
-    @Unroll
-    @Feature("SID_AUTH_CHECKS_SESSION")
-    def "initialize Smart-ID authentication with openid scope"() {
-        expect:
-        Steps.startAuthenticationInTara(flow, "openid")
-        HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
-        Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, "10101010005", additionalParamsMap)
-        assertEquals("Correct HTTP status code is returned", 400, initSidAuthenticationSession.statusCode())
-        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", initSidAuthenticationSession.getContentType())
-        assertThat(initSidAuthenticationSession.body().jsonPath().get("message"), Matchers.startsWith("Ebakorrektne päring."))
     }
 
     @Ignore // TARA2-165
@@ -181,8 +169,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
         Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, "10101010005", additionalParamsMap)
         assertEquals("Correct HTTP status code is returned", 200, initSidAuthenticationSession.statusCode())
-        sleep(13000)
-        Response response = Requests.pollSid(flow)
+        Response response = Steps.pollSidResponse(flow)
         assertEquals("Correct HTTP status code is returned", 200, response.statusCode())
         assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
         assertEquals("Correct Mobile-ID status", "COMPLETED", response.body().jsonPath().get("status"))
