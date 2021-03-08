@@ -151,9 +151,6 @@ class Steps {
         Utils.setParameter(formParamsMap, "_csrf", flow.csrf)
         if (!(idCode instanceof Wildcard)) {
             Utils.setParameter(formParamsMap, "idCode", idCode)
-
-            // TODO remove after feature branch merge
-            Utils.setParameter(formParamsMap, "smartIdCode", idCode)
         }
         HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(cookieMap, "SESSION", sessionId)
@@ -425,8 +422,7 @@ class Steps {
         assertThat(signedJWT.getJWTClaimsSet().getIssuer(), equalTo(flow.openIdServiceConfiguration.get("issuer")))
         Date date = new Date()
         assertThat("Expected current: " + date + " to be before exp: " + signedJWT.getJWTClaimsSet().getExpirationTime(), date.before(signedJWT.getJWTClaimsSet().getExpirationTime()), is(true))
-        // TODO Etapp 4
-        // assertThat("Expected current: " + date + " to be after nbf: " + signedJWT.getJWTClaimsSet().getNotBeforeTime(), date.after(signedJWT.getJWTClaimsSet().getNotBeforeTime()), is(true))
+        assertThat("Expected current: " + date + " to be after nbf: " + signedJWT.getJWTClaimsSet().getNotBeforeTime(), date.after(signedJWT.getJWTClaimsSet().getNotBeforeTime()), is(true))
         if (!flow.getNonce().isEmpty()) {
             assertThat(signedJWT.getJWTClaimsSet().getStringClaim("nonce"), equalTo(flow.getNonce()))
         }

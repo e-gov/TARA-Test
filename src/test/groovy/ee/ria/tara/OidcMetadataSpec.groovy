@@ -48,7 +48,7 @@ class OidcMetadataSpec extends TaraSpecification {
         where:
         path || statusCode
         "/.well-known/openid-configuration" || 200
-        // TARA2-151
+        // TARA2-219
         //     "/oidc/.well-known" || 200
         //    "/.well-known" || 200
     }

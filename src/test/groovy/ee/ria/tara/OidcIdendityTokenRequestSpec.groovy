@@ -72,6 +72,7 @@ class OidcIdendityTokenRequestSpec extends TaraSpecification {
         assertThat(claims.getAudience().get(0), equalTo(flow.oidcClient.clientId))
         Date date = new Date()
         assertThat("Expected current: " + date + " to be after nbf: " + claims.getNotBeforeTime(), date.after(claims.getNotBeforeTime()), Matchers.is(true))
+        // 10 seconds
         assertTrue("Correct iat claim", Math.abs(date.getTime() - claims.getDateClaim("iat").getTime()) < 10000L)
         assertThat("Correct subject claim", claims.getSubject(), equalTo("EE" + idCode))
 
