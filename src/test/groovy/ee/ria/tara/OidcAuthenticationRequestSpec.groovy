@@ -129,12 +129,12 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
         Response response = Steps.followRedirect(flow, initOIDCServiceSession)
         assertEquals("Correct HTTP status code is returned", 200, response.statusCode())
         assertThat("Correct ID-Card scope value", isIdCardPresent(response), is(idCard))
-        assertThat("Correct MID scope value", isMidPresent(response), is(mID));
-        assertThat("Correct Smart-ID scope value", isSmartIdPresent(response), is(smartID));
-        assertThat("Correct Eidas scope value", isEidasPresent(response), is(eidas));
-        assertThat("Correct Eidas only scope value", isEidasOnlyPresent(response), is(eidasOnly));
-        assertThat("Correct e-mail scope value", isEmailPresent(response), is(email));
-        assertThat("Correct phone scope value", isPhonePresent(response), is(phone));
+        assertThat("Correct MID scope value", isMidPresent(response), is(mID))
+        assertThat("Correct Smart-ID scope value", isSmartIdPresent(response), is(smartID))
+        assertThat("Correct Eidas scope value", isEidasPresent(response), is(eidas))
+        assertThat("Correct Eidas only scope value", isEidasOnlyPresent(response), is(eidasOnly))
+        assertThat("Correct e-mail scope value", isEmailPresent(response), is(email))
+        assertThat("Correct phone scope value", isPhonePresent(response), is(phone))
 
         where:
         scopes            | label                  || idCard || mID   || eidas || smartID || eidasOnly || email || phone
@@ -148,26 +148,24 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
 //        "phone"           | "with phone"           || false  || false || false || false   || false     || false || true
     }
 
-    @Ignore // Not yet implemented
     @Unroll
+    @Feature("OIDC_SCOPE_EMAIL")
     @Feature("https://e-gov.github.io/TARA-Doku/TechnicalSpecification#41-authentication-request")
     def "Authentication request with email scope"() {
         expect:
         Steps.startAuthenticationInTara(flow, "openid email")
         Response idCardAuthResponse = Steps.authenticateWithIdCard(flow, "src/test/resources/joeorg-auth.pem")
-
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, idCardAuthResponse)
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
 
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
-        assertThat(claims.getStringArrayClaim("amr")[0], equalTo("idcard"));
-        // TODO
-//        assertThat(claims.getClaim("email"), equalTo("38001085718@eesti.ee"));
-//        assertThat(claims.getClaim("email_verified"), equalTo(false));
+        assertThat(claims.getStringArrayClaim("amr")[0], equalTo("idcard"))
+        assertThat(claims.getClaim("email"), equalTo("38001085718@eesti.ee"))
+        assertThat(claims.getClaim("email_verified"), equalTo(false))
     }
 
-    @Ignore // Not yet implemented
     @Unroll
+    @Feature("OIDC_SCOPE_PHONE")
     @Feature("https://e-gov.github.io/TARA-Doku/TechnicalSpecification#41-authentication-request")
     def "Authentication request with phone scope"() {
         expect:
@@ -180,10 +178,8 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
         assertThat(claims.getAudience().get(0), equalTo(flow.oidcClient.clientId))
         assertThat(claims.getSubject(), equalTo("EE60001017716"))
         assertThat(claims.getStringArrayClaim("amr")[0], equalTo("mID"))
-
-        // TODO
-        //        assertThat(claims.getClaim("phone_number"), equalTo("+37269100366"));
-        //        assertThat(claims.getClaim("phone_number_verified"), equalTo(true));
+        assertThat(claims.getClaim("phone_number"), equalTo("+37269100366"))
+        assertThat(claims.getClaim("phone_number_verified"), equalTo(true))
     }
 
 }
