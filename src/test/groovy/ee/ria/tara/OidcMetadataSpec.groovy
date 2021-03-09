@@ -2,6 +2,7 @@ package ee.ria.tara
 
 import com.nimbusds.jose.jwk.JWKSet
 import io.qameta.allure.Feature
+import io.restassured.filter.cookie.CookieFilter
 import io.restassured.path.json.JsonPath
 import io.restassured.response.Response
 import spock.lang.Ignore
@@ -16,6 +17,9 @@ import static org.junit.Assert.assertThat
 @IgnoreIf({ properties['test.deployment.env'] == "idp" })
 class OidcMetadataSpec extends TaraSpecification {
     Flow flow = new Flow(props)
+    def setup() {
+        flow.cookieFilter = new CookieFilter()
+    }
 
     @Ignore()
     @Unroll
@@ -87,12 +91,55 @@ class OidcMetadataSpec extends TaraSpecification {
         localesList.each {
             assertTrue("Locale $it supported", localesSupported.contains(it))
         }
-        // TARA2-151
+        // TARA2-151 , TARA2-219
 //        assertEquals("Correct token endpoint", (flow.oidcService.baseUrl + "/oidc/token"), jsonResponse.getString("token_endpoint"))
 //        assertEquals("Correct userinfo endpoint", (flow.oidcService.baseUrl + "/oidc/profile"), jsonResponse.getString("userinfo_endpoint"))
-//        assertEquals("Correct authorization endpoint", (flow.oidcService.baseUrl + "/oidc/authorization"), jsonResponse.getString("userinfo_endpoint"))
+//        assertEquals("Correct authorization endpoint", (flow.oidcService.baseUrl + "/oidc/authorization"), jsonResponse.getString("authorization_endpoint"))
 //        assertEquals("Correct jwks uri", (flow.oidcService.baseUrl + "/oidc/jwks"), jsonResponse.getString("jwks_uri"))
     }
 
+    @Unroll
+    @Feature("OIDC_ENDPOINTS")
+    def "Verify authorization endpoint"() {
+        expect:
+        JsonPath jsonResponse = Requests.getOpenidConfiguration(flow.oidcService.fullConfigurationUrl)
+        Response authorizationResponse = Requests.getRequest(jsonResponse.getString("authorization_endpoint"))
+        assertEquals("Correct HTTP status code is returned", 302, authorizationResponse.statusCode())
+        String errorDescription = Utils.getParamValueFromResponseHeader(authorizationResponse, "error")
+        assertEquals("Correct value for authorization endpoint", "invalid_client", errorDescription)
+    }
+
+    @Unroll
+    @Feature("OIDC_ENDPOINTS")
+    def "Verify token endpoint"() {
+        expect:
+        flow.setOpenIdServiceConfiguration(Requests.getOpenidConfiguration(flow.oidcService.fullConfigurationUrl))
+        Response tokenResponse = Requests.getWebToken(flow, "123456")
+        assertEquals("Correct HTTP status code is returned", 400, tokenResponse.statusCode())
+        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", tokenResponse.getContentType())
+        assertEquals("Correct error message is returned", "invalid_grant", tokenResponse.body().jsonPath().get("error"))
+    }
+
+    @Unroll
+    @Feature("OIDC_ENDPOINTS")
+    def "Verify user info endpoint"() {
+        expect:
+        flow.setOpenIdServiceConfiguration(Requests.getOpenidConfiguration(flow.oidcService.fullConfigurationUrl))
+        Response userInfoResponse = Steps.getUserInfoResponseWithHeaderParam(flow, REQUEST_TYPE_GET, "456789")
+        assertEquals("Correct HTTP status code is returned", 401, userInfoResponse.statusCode())
+        Map<String, String> errorMap = OpenIdUtils.getErrorFromAuthorizationHeader(userInfoResponse)
+        assertEquals("Correct error text is returned","request_unauthorized", errorMap.get("error"))
+        assertEquals("Correct error description is returned", "The request could not be authorized.", errorMap.get("error_description"))
+    }
+
+    @Unroll
+    @Feature("OIDC_ENDPOINTS")
+    def "Verify keystore endpoint"() {
+        expect:
+        JsonPath jsonResponse = Requests.getOpenidConfiguration(flow.oidcService.fullConfigurationUrl)
+        Response response = Requests.getRequest(jsonResponse.getString("jwks_uri"))
+        assertTrue("Correct n size", response.getBody().jsonPath().getString("keys.n").size() > 300)
+        assertTrue("Correct e size", response.getBody().jsonPath().getString("keys.e").size() > 3)
+    }
 
 }

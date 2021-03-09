@@ -60,27 +60,27 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
     }
 
     @Unroll
-    @Feature("https://e-gov.github.io/TARA-Doku/TechnicalSpecification#41-authentication-request")
+    @Feature("OIDC_LANGUAGE_SELECTION")
     def "Authentication request with different ui_locales: #label"() {
         expect:
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "openid")
-        def value = paramsMap.put(paramName, paramValue)
+        def value = Utils.setParameter(paramsMap, paramName, paramValue)
         Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
         Response response = Steps.followRedirect(flow, initOIDCServiceSession)
         assertEquals("Correct HTTP status code is returned", 200, response.statusCode())
         response.then().body("html.head.title", equalTo(expectedValue))
 
         where:
-        paramName    | paramValue | label || expectedValue
-        "ui_locales" | "zu"       | "Fallback into default language et" || "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
-        "ui_locales" | "et"       | "Estonian" || "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
-        "ui_locales" | "ru"       | "Russian" || "Национальный сервис аутентификации - Для безопасной аутентификации в э-услугах"
-        "ui_locales" | "en"       | "English" || "National authentication service - Secure authentication for e-services"
-      // Not implemented yet
-     //   "ui_locales" | "fi ru en"       | "Select first supported locale from list" || "Национальный сервис аутентификации - Для безопасной аутентификации в э-услугах"
-     //   "ui_locales" | "ET"       | "Estonian with big letters" || "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
-     //   "ui_locales" | "RU"       | "Russian with big letters" || "Национальный сервис аутентификации - Для безопасной аутентификации в э-услугах"
-     //   "ui_locales" | "EN"       | "English with big letters" || "National authentication service - Secure authentication for e-services"
+        paramName    | paramValue | label                                     || expectedValue
+        "ui_locales" | "zu"       | "Fallback into default language et"       || "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
+        "ui_locales" | "et"       | "Estonian"                                || "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
+        "ui_locales" | "ru"       | "Russian"                                 || "Национальный сервис аутентификации - Для безопасной аутентификации в э-услугах"
+        "ui_locales" | "en"       | "English"                                 || "National authentication service - Secure authentication for e-services"
+        "ui_locales" | "fi ru en" | "Select first supported locale from list" || "Национальный сервис аутентификации - Для безопасной аутентификации в э-услугах"
+        "ui_locales" | "ET"       | "Estonian with big letters"               || "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
+        "ui_locales" | "RU"       | "Russian with big letters"                || "Национальный сервис аутентификации - Для безопасной аутентификации в э-услугах"
+        "ui_locales" | "EN"       | "English with big letters"                || "National authentication service - Secure authentication for e-services"
+        "ui_locales" | _          | "Without locale parameter"                || "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
     }
 
     @Unroll
@@ -96,6 +96,7 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
 
     @Unroll
     @Feature("https://e-gov.github.io/TARA-Doku/TechnicalSpecification#41-authentication-request")
+    @Feature("TECHNICAL_ERRORS")
     def "Authentication request with invalid acr_values parameter value"() {
         expect:
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "openid")
@@ -107,21 +108,10 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
         assertThat(response.body().jsonPath().get("message").toString(), startsWith("Autentimine ebaõnnestus teenuse tehnilise vea tõttu."))
     }
 
-    @Ignore // Not yet implemented
     @Unroll
-    @Feature("https://e-gov.github.io/TARA-Doku/TechnicalSpecification#41-authentication-request")
-    def "Authentication request with acr_values parameter value low"() {
-        expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "openid")
-        def value = paramsMap.put("acr_values", "low")
-        Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
-        Response response = Steps.followRedirect(flow, initOIDCServiceSession)
-        assertEquals("Correct HTTP status code is returned", 200, response.statusCode())
-        // Idee: Sobivaid autentimismeetodeid ei eksisteeri low jaoks
-    }
-
-    @Unroll
-    @Feature("https://e-gov.github.io/TARA-Doku/TechnicalSpecification#41-authentication-request")
+    @Feature("OIDC_SCOPE_IDCARD")
+    @Feature("OIDC_SCOPE_MID")
+    @Feature("OIDC_SCOPE_SMARTID")
     def "Authentication request with different scopes: #label"() {
         expect:
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "openid " + scopes)
@@ -131,21 +121,13 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
         assertThat("Correct ID-Card scope value", isIdCardPresent(response), is(idCard))
         assertThat("Correct MID scope value", isMidPresent(response), is(mID))
         assertThat("Correct Smart-ID scope value", isSmartIdPresent(response), is(smartID))
-        assertThat("Correct Eidas scope value", isEidasPresent(response), is(eidas))
-        assertThat("Correct Eidas only scope value", isEidasOnlyPresent(response), is(eidasOnly))
-        assertThat("Correct e-mail scope value", isEmailPresent(response), is(email))
-        assertThat("Correct phone scope value", isPhonePresent(response), is(phone))
 
         where:
-        scopes            | label                  || idCard || mID   || eidas || smartID || eidasOnly || email || phone
-        "idcard"          | "with idcard"          || true   || false || false || false   || false     || false || false
-        "mid"             | "with mid"             || false  || true  || false || false   || false     || false || false
-//        "eidas"           | "with eidas"           || false  || false || true  || false   || false     || false || false
-//        "smartid"         | "with smartid"         || false  || false || false || true    || false     || false || false
-//        "eidasonly"       | "with eidasonly"       || false  || false || false || false   || true      || false || false
-//        "eidas:country:CA eidasonly" | "with eidas eidasonly" || false  || false || true  || false   || true      || false || false
-//        "email"           | "with email"           || false  || false || false || false   || false     || true  || false
-//        "phone"           | "with phone"           || false  || false || false || false   || false     || false || true
+        scopes            | label                  || idCard || mID   || smartID
+        "idcard"          | "with idcard"          || true   || false || false
+        "mid"             | "with mid"             || false  || true  || false
+        "smartid"         | "with smartid"         || false  || false || true
+
     }
 
     @Unroll

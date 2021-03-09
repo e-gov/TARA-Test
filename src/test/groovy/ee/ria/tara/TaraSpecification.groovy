@@ -67,16 +67,6 @@ class TaraSpecification extends Specification {
         return false;
     }
 
-    protected static Boolean isEmailPresent(Response response) {
-        // TODO
-        return false;
-    }
-
-    protected static Boolean isPhonePresent(Response response) {
-        // TODO
-        return false;
-    }
-
     protected static Boolean isSmartIdPresent(Response response) {
         return response.htmlPath().getInt("**.findAll { it.'@data-tab' == 'smart-id' }.size()") > 0;
     }
