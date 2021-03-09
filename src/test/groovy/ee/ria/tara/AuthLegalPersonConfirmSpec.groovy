@@ -125,8 +125,7 @@ class AuthLegalPersonConfirmSpec extends TaraSpecification {
         def map1 = Utils.setParameter(paramsMap, "legal_person_identifier", "123456789")
         Response response = Requests.getRequestWithParams(flow, flow.loginService.fullAuthLegalConfirmUrl, paramsMap, Collections.emptyMap())
         assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
-        // TODO "application/json;charset=UTF-8"
-        assertEquals("Correct Content-Type is returned", "application/json", response.getContentType())
+        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
         assertThat(response.body().jsonPath().get("message").toString(), Matchers.equalTo("Request method 'GET' not supported"))
     }
 

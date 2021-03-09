@@ -110,8 +110,7 @@ class AuthLegalPersonSpec extends TaraSpecification {
         Response response = Requests.followRedirectWithSessionIdAndCookies(flow, flow.loginService.fullAuthLegalPersonUrl, cookiesMap)
         assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
 
-        // TODO "application/json;charset=UTF-8"
-        assertEquals("Correct Content-Type is returned", "application/json", response.getContentType())
+        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
         assertEquals("Correct error message is returned", "Teie sessiooni ei leitud! Sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"))
     }
 }

@@ -261,7 +261,6 @@ class Requests {
                 .extract().response()
     }
 
-    // TODO remove method?
     @Step("Post request with params")
     static Response postRequestWithParams(Flow flow , String url
                                                     , Map<String, String> formParams
