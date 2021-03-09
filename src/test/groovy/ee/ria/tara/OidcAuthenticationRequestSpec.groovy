@@ -7,6 +7,7 @@ import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import spock.lang.Ignore
+import spock.lang.IgnoreIf
 import spock.lang.Unroll
 
 import static org.hamcrest.CoreMatchers.is
@@ -108,6 +109,19 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
         assertThat(response.body().jsonPath().get("message").toString(), startsWith("Autentimine ebaõnnestus teenuse tehnilise vea tõttu."))
     }
 
+    @Unroll
+    @Feature("OIDC_SCOPE_EMPTY")
+    def "Authentication request with empty scope"() {
+        expect:
+        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "")
+        Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
+        Response response = Steps.followRedirect(flow, initOIDCServiceSession)
+        assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
+        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
+        assertThat(response.body().jsonPath().get("message").toString(), startsWith("Päringus puudub scope parameeter."))
+    }
+
+    @IgnoreIf({ properties['test.deployment.env'] == "idp" })
     @Unroll
     @Feature("OIDC_SCOPE_IDCARD")
     @Feature("OIDC_SCOPE_MID")
