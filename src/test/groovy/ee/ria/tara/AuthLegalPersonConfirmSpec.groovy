@@ -33,44 +33,14 @@ class AuthLegalPersonConfirmSpec extends TaraSpecification {
     def "legal person selection request"() {
         expect:
         Response initClientAuthenticationSession = Steps.startAuthenticationInTara(flow, "openid legalperson")
-        Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001019906", "00000766", Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
-        Response pollResponse = Steps.pollMidResponse(flow)
-        assertEquals("Correct HTTP status code is returned", 200, pollResponse.statusCode())
-        assertThat(pollResponse.body().jsonPath().get("status").toString(), Matchers.not(equalTo("PENDING")))
-        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
-        assertEquals("Correct HTTP status code is returned", 302, acceptResponse.statusCode())
-
-        Response initLegalResponse = Steps.followRedirectWithSessionId(flow, acceptResponse)
-        assertEquals("Correct HTTP status code is returned", 200, initLegalResponse.statusCode())
-
-        Response legalPersonsResponse = Requests.getRequestWithSessionId(flow, flow.loginService.fullAuthLegalPersonUrl)
+        Response initLegalPersonResponse = Steps.authInitAsLegalPerson(flow, "60001019906", "00000766")
+        Response legalPersonsResponse = Steps.loadLegalPersonsList(flow)
         String legalPersonIdentifier = legalPersonsResponse.body().jsonPath().get("legalPersons[0].legalPersonIdentifier").toString()
         String legalName = legalPersonsResponse.body().jsonPath().get("legalPersons[0].legalName").toString()
-        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        def map1 = Utils.setParameter(paramsMap, "legal_person_identifier", legalPersonIdentifier)
-        def map3 = Utils.setParameter(paramsMap, "_csrf", flow.csrf)
-        HashMap<String, String> cookiesMap = (HashMap) Collections.emptyMap()
-        def map2 = Utils.setParameter(cookiesMap, "SESSION", flow.sessionId)
 
-        Response response = Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullAuthLegalConfirmUrl, cookiesMap, paramsMap, Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 302, response.statusCode())
-        String location = response.getHeader("location")
-        assertThat(response.getHeader("location"), Matchers.containsString(flow.oidcService.fullAuthenticationRequestUrl))
-        Response oidcServiceResponse = Steps.getOAuthCookies(flow, response)
-        assertEquals("Correct HTTP status code is returned", 302, oidcServiceResponse.statusCode())
-
-        Response consentResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
-        assertEquals("Correct HTTP status code is returned", 200, consentResponse.statusCode())
-
-        Response consentConfirmResponse = Steps.submitConsent(flow, true)
-        assertEquals("Correct HTTP status code is returned", 302, consentConfirmResponse.statusCode())
-        assertThat("Session cookie is invalidated", consentConfirmResponse.getCookie("SESSION"), equalTo(""))
-
-        Response oidcserviceResponse = Steps.followRedirectWithCookies(flow, consentConfirmResponse, flow.oidcService.cookies)
-        assertEquals("Correct HTTP status code is returned", 302, oidcserviceResponse.statusCode())
-        String authorizationCode = Utils.getParamValueFromResponseHeader(oidcserviceResponse, "code")
-        Response tokenResponse = Requests.getWebToken(flow, authorizationCode)
+        Response response = Steps.selectLegalPersonAndConfirmIt(flow, legalPersonIdentifier)
+        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, response)
+        Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
 
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat(claims.getAudience().get(0), equalTo(flow.oidcClient.clientId))
@@ -90,28 +60,11 @@ class AuthLegalPersonConfirmSpec extends TaraSpecification {
     def "Verify legal person response headers"() {
         expect:
         Response initClientAuthenticationSession = Steps.startAuthenticationInTara(flow, "openid legalperson")
-        Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001019906", "00000766", Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
-        Response pollResponse = Steps.pollMidResponse(flow)
-        assertEquals("Correct HTTP status code is returned", 200, pollResponse.statusCode())
-        assertThat(pollResponse.body().jsonPath().get("status").toString(), Matchers.not(equalTo("PENDING")))
-        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
-        assertEquals("Correct HTTP status code is returned", 302, acceptResponse.statusCode())
-
-        Response initLegalResponse = Steps.followRedirectWithSessionId(flow, acceptResponse)
-        assertEquals("Correct HTTP status code is returned", 200, initLegalResponse.statusCode())
-        Steps.verifyResponseHeaders(initLegalResponse)
-        Response legalPersonsResponse = Requests.getRequestWithSessionId(flow, flow.loginService.fullAuthLegalPersonUrl)
-        Steps.verifyResponseHeaders(legalPersonsResponse)
+        Response initLegalPersonResponse = Steps.authInitAsLegalPerson(flow, "60001019906", "00000766")
+        Response legalPersonsResponse = Steps.loadLegalPersonsList(flow)
         String legalPersonIdentifier = legalPersonsResponse.body().jsonPath().get("legalPersons[0].legalPersonIdentifier").toString()
         String legalName = legalPersonsResponse.body().jsonPath().get("legalPersons[0].legalName").toString()
-        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        def map1 = Utils.setParameter(paramsMap, "legal_person_identifier", legalPersonIdentifier)
-        def map3 = Utils.setParameter(paramsMap, "_csrf", flow.csrf)
-        HashMap<String, String> cookiesMap = (HashMap) Collections.emptyMap()
-        def map2 = Utils.setParameter(cookiesMap, "SESSION", flow.sessionId)
-
-        Response response = Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullAuthLegalConfirmUrl, cookiesMap, paramsMap, Collections.emptyMap())
+        Response response = Steps.selectLegalPerson(flow, legalPersonIdentifier)
         assertEquals("Correct HTTP status code is returned", 302, response.statusCode())
         Steps.verifyResponseHeaders(response)
     }
@@ -134,16 +87,9 @@ class AuthLegalPersonConfirmSpec extends TaraSpecification {
     def "legal person selection request with no session and invalid parameter value"() {
         expect:
         Response initClientAuthenticationSession = Steps.startAuthenticationInTara(flow, "openid legalperson")
-        Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001019906", "00000766", Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
-        Response pollResponse = Steps.pollMidResponse(flow)
-        assertEquals("Correct HTTP status code is returned", 200, pollResponse.statusCode())
-        assertThat(pollResponse.body().jsonPath().get("status").toString(), Matchers.not(equalTo("PENDING")))
-        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
-        assertEquals("Correct HTTP status code is returned", 302, acceptResponse.statusCode())
+        Response initLegalPersonResponse = Steps.authInitAsLegalPerson(flow, "60001019906", "00000766")
+        Response legalPersonsResponse = Steps.loadLegalPersonsList(flow)
 
-        Response initLegalResponse = Steps.followRedirectWithSessionId(flow, acceptResponse)
-        assertEquals("Correct HTTP status code is returned", 200, initLegalResponse.statusCode())
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         def map1 = Utils.setParameter(paramsMap, "legal_person_identifier", "123456789")
         def map3 = Utils.setParameter(paramsMap, "_csrf", flow.csrf)
@@ -160,18 +106,9 @@ class AuthLegalPersonConfirmSpec extends TaraSpecification {
     def "legal person selection request with invalid parameter value: #label"() {
         expect:
         Response initClientAuthenticationSession = Steps.startAuthenticationInTara(flow, "openid legalperson")
-        Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001019906", "00000766", Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
-        Response pollResponse = Steps.pollMidResponse(flow)
-        assertEquals("Correct HTTP status code is returned", 200, pollResponse.statusCode())
-        assertThat(pollResponse.body().jsonPath().get("status").toString(), Matchers.not(equalTo("PENDING")))
-        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
-        assertEquals("Correct HTTP status code is returned", 302, acceptResponse.statusCode())
+        Response initLegalPersonResponse = Steps.authInitAsLegalPerson(flow, "60001019906", "00000766")
+        Response legalPersonsResponse = Steps.loadLegalPersonsList(flow)
 
-        Response initLegalResponse = Steps.followRedirectWithSessionId(flow, acceptResponse)
-        assertEquals("Correct HTTP status code is returned", 200, initLegalResponse.statusCode())
-
-        Response legalPersonsResponse = Requests.getRequestWithSessionId(flow, flow.loginService.fullAuthLegalPersonUrl)
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         def map1 = Utils.setParameter(paramsMap, "legal_person_identifier", legalPersonIdentifier)
         def map3 = Utils.setParameter(paramsMap, "_csrf", flow.csrf)
@@ -195,20 +132,13 @@ class AuthLegalPersonConfirmSpec extends TaraSpecification {
     def "legal person selection request with multiple legal_person_identifier values"() {
         expect:
         Response initClientAuthenticationSession = Steps.startAuthenticationInTara(flow, "openid legalperson")
-        Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001019906", "00000766", Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
-        Response pollResponse = Steps.pollMidResponse(flow)
-        assertEquals("Correct HTTP status code is returned", 200, pollResponse.statusCode())
-        assertThat(pollResponse.body().jsonPath().get("status").toString(), Matchers.not(equalTo("PENDING")))
-        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
-        assertEquals("Correct HTTP status code is returned", 302, acceptResponse.statusCode())
+        Response initLegalPersonResponse = Steps.authInitAsLegalPerson(flow, "60001019906", "00000766")
+        Response legalPersonsResponse = Steps.loadLegalPersonsList(flow)
 
-        Response initLegalResponse = Steps.followRedirectWithSessionId(flow, acceptResponse)
-        assertEquals("Correct HTTP status code is returned", 200, initLegalResponse.statusCode())
         HashMap<String, String> cookiesMap = (HashMap)Collections.emptyMap()
         def map2 = Utils.setParameter(cookiesMap, "SESSION", flow.sessionId)
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        def map1 = Utils.setParameter(paramsMap, "legal_person_identifier", "12341234")
+        def map1 = Utils.setParameter(paramsMap, "legal_person_identifier", "12597552")
         def map3 = Utils.setParameter(paramsMap, "_csrf", flow.csrf)
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
         def map4 = Utils.setParameter(additionalParamsMap, "legal_person_identifier", "10910878")

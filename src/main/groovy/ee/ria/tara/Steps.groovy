@@ -457,6 +457,52 @@ class Steps {
         return Requests.getUserInfoWithQueryParam (flow, requestType, paramsMap)
     }
 
+    @Step("Autheticate with mID and init legal person authorization")
+    static Response authInitAsLegalPerson(Flow flow, String idCode, String phoneNo) {
+        Response initMidAuthenticationSession = initMidAuthSession(flow, flow.sessionId, idCode, phoneNo, Collections.emptyMap())
+        assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
+        Response pollResponse = pollMidResponse(flow)
+        assertEquals("Correct HTTP status code is returned", 200, pollResponse.statusCode())
+        assertThat(pollResponse.body().jsonPath().get("status").toString(), Matchers.not(equalTo("PENDING")))
+        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
+        assertEquals("Correct HTTP status code is returned", 302, acceptResponse.statusCode())
+
+        Response initLegalResponse = followRedirectWithSessionId(flow, acceptResponse)
+        assertEquals("Correct HTTP status code is returned", 200, initLegalResponse.statusCode())
+        return initLegalResponse
+    }
+
+    @Step("Load legal persons list")
+    static Response loadLegalPersonsList(Flow flow) {
+        Requests.getRequestWithSessionId(flow, flow.loginService.fullAuthLegalPersonUrl)
+    }
+
+    @Step("Select legal person and confirm it")
+    static Response selectLegalPersonAndConfirmIt(Flow flow, String legalPersonIdentifier) {
+        Response response = selectLegalPerson(flow, legalPersonIdentifier)
+        String location = response.getHeader("location")
+        assertThat(location, containsString(flow.oidcService.fullAuthenticationRequestUrl))
+        Response oidcServiceResponse = getOAuthCookies(flow, response)
+        assertEquals("Correct HTTP status code is returned", 302, oidcServiceResponse.statusCode())
+
+        Response consentResponse = followRedirectWithSessionId(flow, oidcServiceResponse)
+        assertEquals("Correct HTTP status code is returned", 200, consentResponse.statusCode())
+        return consentResponse
+    }
+
+    @Step("Select legal person from list")
+    static Response selectLegalPerson(Flow flow, String legalPersonIdentifier) {
+        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
+        def map1 = Utils.setParameter(paramsMap, "legal_person_identifier", legalPersonIdentifier)
+        def map3 = Utils.setParameter(paramsMap, "_csrf", flow.csrf)
+        HashMap<String, String> cookiesMap = (HashMap) Collections.emptyMap()
+        def map2 = Utils.setParameter(cookiesMap, "SESSION", flow.sessionId)
+
+        Response response = Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullAuthLegalConfirmUrl, cookiesMap, paramsMap, Collections.emptyMap())
+        assertEquals("Correct HTTP status code is returned", 302, response.statusCode())
+        return response
+    }
+
     private static void addJsonAttachment(String name, String json) throws IOException {
         ObjectMapper mapper = new ObjectMapper()
         Object jsonObject = mapper.readValue(json, Object.class)

@@ -44,6 +44,23 @@ class AuthInitLegalPersonSpec extends TaraSpecification {
     }
 
     @Unroll
+    @Feature("DISALLOW_IFRAMES")
+    @Feature("CSP_ENABLED")
+    @Feature("HSTS_ENABLED")
+    @Feature("SECURE_COOKIE_HANDLING")
+    @Feature("CACHE_POLICY")
+    @Feature("NOSNIFF")
+    @Feature("XSS_DETECTION_FILTER_ENABLED")
+    def "request initialize legal person authentication with security checks"() {
+        expect:
+        Steps.startAuthenticationInTara(flow, "openid legalperson")
+        Response response = Steps.authInitAsLegalPerson(flow, "60001017705", "69000366")
+        assertEquals("Correct HTTP status code is returned", 200, response.statusCode())
+        assertEquals("Correct content type", "text/html;charset=UTF-8", response.getContentType())
+        Steps.verifyResponseHeaders(response)
+    }
+
+    @Unroll
     @Feature("LEGAL_PERSON_INIT_START_ENDPOINT")
     def "request initialize legal person authentication with invalid session ID"() {
         expect:
