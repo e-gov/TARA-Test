@@ -31,7 +31,7 @@ class EidasAuthSpec extends TaraSpecification {
     def "initialize Eidas authentication"() {
         expect:
         Steps.startAuthenticationInTara(flow, "openid eidas")
-        Response initEidasAuthenticationSession = Steps.initEidasAuthSession(flow, flow.sessionId, COUNTRY, Collections.emptyMap())
+        Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, COUNTRY, Collections.emptyMap())
         assertEquals("Correct HTTP status code is returned", 200, initEidasAuthenticationSession.statusCode())
         assertEquals("Correct Content-Type is returned", "text/html;charset=UTF-8", initEidasAuthenticationSession.getContentType())
         String buttonLabel = initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@type == 'submit'}.@value")
@@ -46,7 +46,7 @@ class EidasAuthSpec extends TaraSpecification {
         Steps.startAuthenticationInTara(flow, "openid eidas")
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
         def map = Utils.setParameter(additionalParamsMap, paramName, paramValue)
-        Response initEidasAuthenticationSession = Steps.initEidasAuthSession(flow, flow.sessionId, country, additionalParamsMap)
+        Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, country, additionalParamsMap)
         assertEquals("Correct HTTP status code is returned", statusCode, initEidasAuthenticationSession.statusCode())
         assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", initEidasAuthenticationSession.getContentType())
         assertThat(initEidasAuthenticationSession.body().jsonPath().getString("message"), Matchers.containsString(errorMessage))
@@ -102,7 +102,7 @@ class EidasAuthSpec extends TaraSpecification {
         Steps.startAuthenticationInTara(flow, "openid eidas")
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
         def map = Utils.setParameter(additionalParamsMap, "country", COUNTRY)
-        Response initEidasAuthenticationSession = Steps.initEidasAuthSession(flow, flow.sessionId, COUNTRY, additionalParamsMap)
+        Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, COUNTRY, additionalParamsMap)
         assertEquals("Correct HTTP status code is returned", 400, initEidasAuthenticationSession.statusCode())
         assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", initEidasAuthenticationSession.getContentType())
         String errorMessage = "Multiple request parameters with the same name not allowed"
@@ -150,7 +150,7 @@ class EidasAuthSpec extends TaraSpecification {
     def "Eidas callback request. Use relayState twice"() {
         expect:
         Steps.startAuthenticationInTara(flow, "openid eidas")
-        Response initEidasAuthenticationSession = Steps.initEidasAuthSession(flow, flow.sessionId, COUNTRY, Collections.emptyMap())
+        Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, COUNTRY, Collections.emptyMap())
         assertEquals("Correct HTTP status code is returned", 200, initEidasAuthenticationSession.statusCode())
         assertEquals("Correct Content-Type is returned", "text/html;charset=UTF-8", initEidasAuthenticationSession.getContentType())
         String buttonLabel = initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@type == 'submit'}.@value")
@@ -159,12 +159,12 @@ class EidasAuthSpec extends TaraSpecification {
         flow.setNextEndpoint(initEidasAuthenticationSession.body().htmlPath().getString("**.find { form -> form.@method == 'post' }.@action"))
         flow.setRelayState(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'RelayState' }.@value"))
         flow.setRequestMessage(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'SAMLRequest' }.@value"))
-        Response colleagueResponse = Steps.continueEidasAuthenticationFlow(flow, IDP_USERNAME, IDP_PASSWORD, EIDASLOA)
-        Response authorizationResponse = Steps.getAuthorizationResponseFromEidas(flow, colleagueResponse)
+        Response colleagueResponse = EidasSteps.continueEidasAuthenticationFlow(flow, IDP_USERNAME, IDP_PASSWORD, EIDASLOA)
+        Response authorizationResponse = EidasSteps.getAuthorizationResponseFromEidas(flow, colleagueResponse)
         // 1
-        Steps.eidasRedirectAuthorizationResponse(flow, authorizationResponse)
+        EidasSteps.eidasRedirectAuthorizationResponse(flow, authorizationResponse)
         // 2
-        Response redirectionResponse2 = Steps.eidasRedirectAuthorizationResponse(flow, authorizationResponse, false)
+        Response redirectionResponse2 = EidasSteps.eidasRedirectAuthorizationResponse(flow, authorizationResponse, false)
         assertEquals("Correct HTTP status code is returned", 400, redirectionResponse2.statusCode())
         assertThat("Correct Content-Type is returned", redirectionResponse2.getContentType(), Matchers.startsWith("application/json"))
         assertEquals("Correct error is returned", "Bad Request", redirectionResponse2.body().jsonPath().get("error"))
@@ -177,7 +177,7 @@ class EidasAuthSpec extends TaraSpecification {
     def "Authentication with Eidas. Callback with multiple param values #label"() {
         expect:
         Steps.startAuthenticationInTara(flow, "openid eidas")
-        Response initEidasAuthenticationSession = Steps.initEidasAuthSession(flow, flow.sessionId, COUNTRY, Collections.emptyMap())
+        Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, COUNTRY, Collections.emptyMap())
         assertEquals("Correct HTTP status code is returned", 200, initEidasAuthenticationSession.statusCode())
         assertEquals("Correct Content-Type is returned", "text/html;charset=UTF-8", initEidasAuthenticationSession.getContentType())
         String buttonLabel = initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@type == 'submit'}.@value")
@@ -186,8 +186,8 @@ class EidasAuthSpec extends TaraSpecification {
         flow.setNextEndpoint(initEidasAuthenticationSession.body().htmlPath().getString("**.find { form -> form.@method == 'post' }.@action"))
         flow.setRelayState(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'RelayState' }.@value"))
         flow.setRequestMessage(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'SAMLRequest' }.@value"))
-        Response colleagueResponse = Steps.continueEidasAuthenticationFlow(flow, IDP_USERNAME, IDP_PASSWORD, EIDASLOA)
-        Response response = Steps.getAuthorizationResponseFromEidas(flow, colleagueResponse)
+        Response colleagueResponse = EidasSteps.continueEidasAuthenticationFlow(flow, IDP_USERNAME, IDP_PASSWORD, EIDASLOA)
+        Response response = EidasSteps.getAuthorizationResponseFromEidas(flow, colleagueResponse)
         String endpointUrl = response.body().htmlPath().get("**.find {it.@method == 'post'}.@action")
         String samlResponse = response.body().htmlPath().get("**.find {it.@name == 'SAMLResponse'}.@value")
         String relayState = response.body().htmlPath().get("**.find {it.@name == 'RelayState'}.@value")
@@ -216,7 +216,7 @@ class EidasAuthSpec extends TaraSpecification {
     def "Authentication with Eidas. Callback with missing params #label"() {
         expect:
         Steps.startAuthenticationInTara(flow, "openid eidas")
-        Response initEidasAuthenticationSession = Steps.initEidasAuthSession(flow, flow.sessionId, COUNTRY, Collections.emptyMap())
+        Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, COUNTRY, Collections.emptyMap())
         assertEquals("Correct HTTP status code is returned", 200, initEidasAuthenticationSession.statusCode())
         assertEquals("Correct Content-Type is returned", "text/html;charset=UTF-8", initEidasAuthenticationSession.getContentType())
         String buttonLabel = initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@type == 'submit'}.@value")
@@ -225,8 +225,8 @@ class EidasAuthSpec extends TaraSpecification {
         flow.setNextEndpoint(initEidasAuthenticationSession.body().htmlPath().getString("**.find { form -> form.@method == 'post' }.@action"))
         flow.setRelayState(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'RelayState' }.@value"))
         flow.setRequestMessage(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'SAMLRequest' }.@value"))
-        Response colleagueResponse = Steps.continueEidasAuthenticationFlow(flow, IDP_USERNAME, IDP_PASSWORD, EIDASLOA)
-        Response response = Steps.getAuthorizationResponseFromEidas(flow, colleagueResponse)
+        Response colleagueResponse = EidasSteps.continueEidasAuthenticationFlow(flow, IDP_USERNAME, IDP_PASSWORD, EIDASLOA)
+        Response response = EidasSteps.getAuthorizationResponseFromEidas(flow, colleagueResponse)
         String endpointUrl = response.body().htmlPath().get("**.find {it.@method == 'post'}.@action")
         String samlResponse = response.body().htmlPath().get("**.find {it.@name == 'SAMLResponse'}.@value")
         String relayState = response.body().htmlPath().get("**.find {it.@name == 'RelayState'}.@value")
@@ -252,7 +252,7 @@ class EidasAuthSpec extends TaraSpecification {
     def "Authentication with Eidas. Callback with invalid #label"() {
         expect:
         Steps.startAuthenticationInTara(flow, "openid eidas")
-        Response initEidasAuthenticationSession = Steps.initEidasAuthSession(flow, flow.sessionId, COUNTRY, Collections.emptyMap())
+        Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, COUNTRY, Collections.emptyMap())
         assertEquals("Correct HTTP status code is returned", 200, initEidasAuthenticationSession.statusCode())
         assertEquals("Correct Content-Type is returned", "text/html;charset=UTF-8", initEidasAuthenticationSession.getContentType())
         String buttonLabel = initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@type == 'submit'}.@value")
@@ -261,8 +261,8 @@ class EidasAuthSpec extends TaraSpecification {
         flow.setNextEndpoint(initEidasAuthenticationSession.body().htmlPath().getString("**.find { form -> form.@method == 'post' }.@action"))
         flow.setRelayState(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'RelayState' }.@value"))
         flow.setRequestMessage(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'SAMLRequest' }.@value"))
-        Response colleagueResponse = Steps.continueEidasAuthenticationFlow(flow, IDP_USERNAME, IDP_PASSWORD, EIDASLOA)
-        Response response = Steps.getAuthorizationResponseFromEidas(flow, colleagueResponse)
+        Response colleagueResponse = EidasSteps.continueEidasAuthenticationFlow(flow, IDP_USERNAME, IDP_PASSWORD, EIDASLOA)
+        Response response = EidasSteps.getAuthorizationResponseFromEidas(flow, colleagueResponse)
         String endpointUrl = response.body().htmlPath().get("**.find {it.@method == 'post'}.@action")
         String samlResponse = response.body().htmlPath().get("**.find {it.@name == 'SAMLResponse'}.@value")
         String relayState = response.body().htmlPath().get("**.find {it.@name == 'RelayState'}.@value")

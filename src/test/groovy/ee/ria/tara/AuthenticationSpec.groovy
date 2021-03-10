@@ -64,7 +64,7 @@ class AuthenticationSpec extends TaraSpecification {
         expect:
         Steps.startAuthenticationInTara(flow, "openid eidas")
         String country = "CA"
-        Response initEidasAuthenticationSession = Steps.initEidasAuthSession(flow, flow.sessionId, country, Collections.emptyMap())
+        Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, country, Collections.emptyMap())
         assertEquals("Correct HTTP status code is returned", 200, initEidasAuthenticationSession.statusCode())
         assertEquals("Correct Content-Type is returned", "text/html;charset=UTF-8", initEidasAuthenticationSession.getContentType())
         String buttonLabel = initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@type == 'submit'}.@value")
@@ -73,10 +73,10 @@ class AuthenticationSpec extends TaraSpecification {
         flow.setNextEndpoint(initEidasAuthenticationSession.body().htmlPath().getString("**.find { form -> form.@method == 'post' }.@action"))
         flow.setRelayState(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'RelayState' }.@value"))
         flow.setRequestMessage(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'SAMLRequest' }.@value"))
-        Response colleagueResponse = Steps.continueEidasAuthenticationFlow(flow, IDP_USERNAME, IDP_PASSWORD, EIDASLOA)
-        Response authorizationResponse = Steps.getAuthorizationResponseFromEidas(flow, colleagueResponse)
-        Response redirectionResponse = Steps.eidasRedirectAuthorizationResponse(flow, authorizationResponse)
-        Response acceptResponse = Steps.eidasAcceptAuthorizationResult(flow, redirectionResponse)
+        Response colleagueResponse = EidasSteps.continueEidasAuthenticationFlow(flow, IDP_USERNAME, IDP_PASSWORD, EIDASLOA)
+        Response authorizationResponse = EidasSteps.getAuthorizationResponseFromEidas(flow, colleagueResponse)
+        Response redirectionResponse = EidasSteps.eidasRedirectAuthorizationResponse(flow, authorizationResponse)
+        Response acceptResponse = EidasSteps.eidasAcceptAuthorizationResult(flow, redirectionResponse)
         assertEquals("Correct HTTP status code is returned", 302, acceptResponse.statusCode())
         Response oidcServiceResponse = Steps.getOAuthCookies(flow, acceptResponse)
         Response redirectResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
