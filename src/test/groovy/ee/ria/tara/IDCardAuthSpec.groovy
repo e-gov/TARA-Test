@@ -81,7 +81,7 @@ class IDCardAuthSpec extends TaraSpecification {
         assertEquals("Correct HTTP status code is returned", 302, oidcserviceResponse.statusCode())
         String authorizationCode = Utils.getParamValueFromResponseHeader(oidcserviceResponse, "code")
         Response tokenResponse = Requests.getWebToken(flow, authorizationCode)
-
+        assertEquals("Correct HTTP status code is returned", 200, tokenResponse.statusCode())
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat(claims.getAudience().get(0), equalTo(flow.oidcClient.clientId))
         assertThat(claims.getSubject(), equalTo("EE38001085718"))
