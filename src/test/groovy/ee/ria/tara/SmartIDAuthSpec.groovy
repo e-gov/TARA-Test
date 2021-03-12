@@ -82,7 +82,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         assertEquals("Correct HTTP status code is returned", 200, initSidAuthenticationSession.statusCode())
         Response pollResponse = Steps.pollSidResponse(flow)
         String messageText = "Correct HTTP status code is returned. Response body: " + pollResponse.body().jsonPath().prettify()
-        assertEquals(messageText, 401, pollResponse.statusCode())
+        assertEquals(messageText, 400, pollResponse.statusCode())
         assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", pollResponse.getContentType())
         assertThat(pollResponse.body().jsonPath().get("message"), Matchers.startsWith(errorMessage))
 
