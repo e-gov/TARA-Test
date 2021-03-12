@@ -56,8 +56,7 @@ class AuthenticationSpec extends TaraSpecification {
         assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo("DEMO"))
     }
 
- //   @IgnoreIf({ properties['test.deployment.env'] == "idp" })
-    @Ignore // TARA2-121
+    @IgnoreIf({ properties['test.deployment.env'] == "idp" })
     @Unroll
     @Feature("AUTHENTICATION")
     def "request authentication with Eidas"() {

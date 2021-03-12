@@ -15,8 +15,7 @@ import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertThat
 import static org.junit.Assert.assertTrue
 
-// @IgnoreIf({ properties['test.deployment.env'] == "idp" })
-@Ignore // TARA2-121
+@IgnoreIf({ properties['test.deployment.env'] == "idp" })
 class EidasAuthSpec extends TaraSpecification {
     Flow flow = new Flow(props)
 
@@ -68,16 +67,16 @@ class EidasAuthSpec extends TaraSpecification {
         expect:
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         def map = Utils.setParameter(paramsMap, "country", COUNTRY)
-        Response response = Requests.getRequestWithParams(flow, flow.loginService.fullEidasInitUrl, paramsMap, Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
+        Response response = Requests.postRequestWithParams(flow, flow.loginService.fullEidasInitUrl, paramsMap, Collections.emptyMap())
+        assertEquals("Correct HTTP status code is returned", 403, response.statusCode())
         assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
-        assertEquals("Correct error message is returned", "Teie sessiooni ei leitud! Sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"))
+        assertEquals("Correct error message is returned", "Keelatud päring. Päring esitati topelt, sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"))
     }
 
     @Ignore //TARA2-165
     @Unroll
     @Feature("EIDAS_AUTH_INIT_ENDPOINT")
-    def "initialize Eidas authentication with invalid method post"() {
+    def "initialize Eidas authentication with invalid method get"() {
         expect:
         Steps.startAuthenticationInTara(flow, "openid eidas")
         HashMap<String, String> cookiesMap = (HashMap) Collections.emptyMap()
@@ -85,14 +84,14 @@ class EidasAuthSpec extends TaraSpecification {
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         def map2 = Utils.setParameter(paramsMap, "country", COUNTRY)
         def map3 = Utils.setParameter(paramsMap, "_csrf", flow.csrf)
-        Response response = Requests.postRequestWithCookiesAndParams(flow,
+        Response response = Requests.getRequestWithCookiesAndParams(flow,
                 flow.loginService.fullEidasInitUrl,
                 cookiesMap,
                 paramsMap,
                 Collections.emptyMap())
         assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
         assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
-        assertThat(response.body().jsonPath().get("message").toString(), equalTo("Request method 'POST' not supported"))
+        assertThat(response.body().jsonPath().get("message").toString(), equalTo("Request method 'GET' not supported"))
     }
 
     @Unroll
@@ -116,7 +115,7 @@ class EidasAuthSpec extends TaraSpecification {
         Response response = Steps.startAuthenticationInTara(flow, scope, "et", false)
         assertEquals("Correct HTTP status code is returned", statusCode, response.statusCode())
         String formUrl = response.body().htmlPath().getString("**.find { form -> form.@method == 'post' }.@action")
-        assertThat("Correct domestic connector service url form", formUrl, equalTo(flow.domesticConnectorService.fullAuthenticationRequestUrl.toString()))
+        assertThat("Correct domestic connector service url form", formUrl, equalTo(flow.loginService.eidasInitUrl.toString()))
         String eidasCountry = response.body().htmlPath().getString("**.find { it.@name == 'country' }.@value")
         assertThat("Correct Eidas country is selected", eidasCountry, equalTo(expectedCountry))
 
@@ -168,7 +167,7 @@ class EidasAuthSpec extends TaraSpecification {
         assertEquals("Correct HTTP status code is returned", 400, redirectionResponse2.statusCode())
         assertThat("Correct Content-Type is returned", redirectionResponse2.getContentType(), Matchers.startsWith("application/json"))
         assertEquals("Correct error is returned", "Bad Request", redirectionResponse2.body().jsonPath().get("error"))
-        assertThat("Correct error message is returned", redirectionResponse2.body().jsonPath().getString("message"), Matchers.endsWith("Ebakorrektne päring. Vale sessiooni staatus."))
+        assertThat("Correct error message is returned", redirectionResponse2.body().jsonPath().getString("message"), Matchers.endsWith("Ebakorrektne päring."))
         assertTrue(redirectionResponse2.body().jsonPath().get("incident_nr").toString().size() > 15)
     }
 
@@ -289,7 +288,7 @@ class EidasAuthSpec extends TaraSpecification {
         samlResponseValue                           | relayStateValue || statusCode || error                   || label                      || errorMessage
         "AB-"                                       | "default"       || 500        || "Internal Server Error" || "SAMLResponse short value" || "Autentimine ebaõnnestus teenuse tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti."
         RandomStringUtils.random(11000, true, true) | "default"       || 500        || "Internal Server Error" || "SAMLResponse long value"  || "Autentimine ebaõnnestus teenuse tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti."
-        "default"                                   | "-DC@"          || 400        || "Bad Request"           || "RelayState short value"   || "Autentimine ebaõnnestus teenuse tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti."
+        "default"                                   | "DC@"          || 400        || "Bad Request"           || "RelayState short value"   || "Ebakorrektne päring."
 
     }
 }

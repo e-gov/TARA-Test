@@ -15,9 +15,10 @@ class EidasSteps {
         if (!(country instanceof Wildcard)) {
             Utils.setParameter(queryParamsMap, "country", country)
         }
+        Utils.setParameter(queryParamsMap, "_csrf", flow.csrf)
         HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(cookieMap, "SESSION", sessionId)
-        return Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullEidasInitUrl, cookieMap, queryParamsMap, additionalParamsMap)
+        return Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullEidasInitUrl, cookieMap, queryParamsMap, additionalParamsMap)
     }
 
     @Step("Eidas service provider request")
