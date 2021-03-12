@@ -125,6 +125,17 @@ class EidasSteps {
 
     @Step("Continue authentication on abroad")
     static Response continueEidasAuthenticationFlow(Flow flow, String idpUsername, idpPassword, String eidasloa) {
+        Response authorizationResponse = continueEidasFlow(flow, idpUsername, idpPassword, eidasloa)
+        String binaryLightToken = authorizationResponse.body().htmlPath().get("**.find {it.@id == 'binaryLightToken'}.@value")
+        Response consentResponse = eidasConfirmConsent(flow, binaryLightToken)
+        String endpointUrl2 = consentResponse.body().htmlPath().getString("**.find { it.@id == 'redirectForm' }.@action")
+        String token2 = consentResponse.body().htmlPath().getString("**.find { it.@id == 'token' }.@value")
+        Response eidasProxyResponse2 = eidasProxyServiceRequest(flow, endpointUrl2, token2)
+        return eidasColleagueResponse(flow, eidasProxyResponse2)
+    }
+
+    @Step("Continue Eidas flow")
+    static Response continueEidasFlow(Flow flow, String idpUsername, idpPassword, String eidasloa) {
         Response serviceProviderResponse = eidasServiceProviderRequest(flow, flow.nextEndpoint, flow.relayState, flow.requestMessage)
         Response specificconnectorResponse = eidasSpecificConnectorRequest(flow, serviceProviderResponse)
         Response colleagueResponse = eidasColleagueRequest(flow, specificconnectorResponse)
@@ -135,12 +146,7 @@ class EidasSteps {
         Response initIdpResponse = eidasIdpRequest(flow, eidasProxyResponse)
         Response authorizationRequest = eidasIdpAuthorizationRequest(flow, initIdpResponse, idpUsername, idpPassword, eidasloa)
         Response authorizationResponse = eidasIdpAuthorizationResponse(flow, authorizationRequest)
-        String binaryLightToken = authorizationResponse.body().htmlPath().get("**.find {it.@id == 'binaryLightToken'}.@value")
-        Response consentResponse = eidasConfirmConsent(flow, binaryLightToken)
-        String endpointUrl2 = consentResponse.body().htmlPath().getString("**.find { it.@id == 'redirectForm' }.@action")
-        String token2 = consentResponse.body().htmlPath().getString("**.find { it.@id == 'token' }.@value")
-        Response eidasProxyResponse2 = eidasProxyServiceRequest(flow, endpointUrl2, token2)
-        return eidasColleagueResponse(flow, eidasProxyResponse2)
+        authorizationResponse
     }
 
     @Step("Eidas authorization response")

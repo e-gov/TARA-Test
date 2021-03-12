@@ -124,9 +124,9 @@ class EidasAuthSpec extends TaraSpecification {
         "openid eidas:country:ca eidasonly"                          || 200        || "CA" || "direct redirection into ca Eidas network"
         "openid eidasonly eidas:country:ca"                          || 200        || "CA" || "direct redirection into ca Eidas network"
         "openid smartid eidasonly eidas:country:ca"                  || 200        || "CA" || "direct redirection into ca Eidas network"
-        // TARA2-121 "openid smartid eidasonly eidas:country:ca eidas:country:de" || 200        || "CA" || "direct redirection into ca Eidas network"
-        // TARA2-121   "openid smartid eidasonly eidas:country:DE eidas:country:ca" || 200        || "CA" || "direct redirection into ca Eidas network"
-        // TARA2-121    "openid smartid eidasonly eidas:country:de eidas:country:ca" || 200        || "DE" || "direct redirection into ca Eidas network"
+        // TARA2-121 TARA2-223 "openid smartid eidasonly eidas:country:ca eidas:country:de" || 200        || "CA" || "direct redirection into ca Eidas network"
+        //    "openid smartid eidasonly eidas:country:DE eidas:country:ca" || 200        || "CA" || "direct redirection into ca Eidas network"
+        //     "openid smartid eidasonly eidas:country:de eidas:country:ca" || 200        || "DE" || "direct redirection into ca Eidas network"
     }
 
     @Unroll
@@ -140,8 +140,8 @@ class EidasAuthSpec extends TaraSpecification {
         where:
         scope                                                        || statusCode || authType || label
         "openid smartid eidas:country:ca"                            || 200        || "smart-id" || "Smart-ID in TARA selection"
-// TARA2-121       "openid eidasonly eidas:country:"                            || 200        || "eu-citizen" || "Eidas in TARA selection"
-// TARA2-121       "openid eidasonly eidas:country:gb"                          || 200        || "eu-citizen" || "Eidas in TARA selection"
+        // TARA2-121  TARA2-223 "openid eidasonly eidas:country:"                            || 200        || "eu-citizen" || "Eidas in TARA selection"
+        //      "openid eidasonly eidas:country:gb"                          || 200        || "eu-citizen" || "Eidas in TARA selection"
     }
 
     @Unroll
@@ -245,6 +245,25 @@ class EidasAuthSpec extends TaraSpecification {
         "SAMLResponse" | _            || "RelayState"   || "Required String parameter 'RelayState' is not present"
         _              | "RelayState" || "SAMLResponse" || "Required String parameter 'SAMLResponse' is not present"
     }
+
+    @Ignore // TODO Eidas auth flow with invalid password
+    @Feature("EIDAS_AUTH_CALLBACK_ENDPOINT")
+    def "Authentication with Eidas. Invalid password"() {
+        expect:
+        Steps.startAuthenticationInTara(flow, "openid eidas")
+        String country = "CA"
+        Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, country, Collections.emptyMap())
+        assertEquals("Correct HTTP status code is returned", 200, initEidasAuthenticationSession.statusCode())
+        assertEquals("Correct Content-Type is returned", "text/html;charset=UTF-8", initEidasAuthenticationSession.getContentType())
+        String buttonLabel = initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@type == 'submit'}.@value")
+        assertEquals("Continue button exists", "Continue", buttonLabel)
+
+        flow.setNextEndpoint(initEidasAuthenticationSession.body().htmlPath().getString("**.find { form -> form.@method == 'post' }.@action"))
+        flow.setRelayState(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'RelayState' }.@value"))
+        flow.setRequestMessage(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'SAMLRequest' }.@value"))
+        Response colleagueResponse = EidasSteps.continueEidasAuthenticationFlow(flow, IDP_USERNAME, "222", EIDASLOA)
+    }
+
 
     @Unroll
     @Feature("EIDAS_AUTH_CALLBACK_ENDPOINT")

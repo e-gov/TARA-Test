@@ -315,6 +315,7 @@ class Requests {
         return given()
                 .filter(flow.cookieFilter)
                 .headers(headers)
+       // TARA2-193  .auth().preemptive().basic("userName", "secret")
                 .cookie("SESSION", flow.sessionId)
                 .relaxedHTTPSValidation()
                 .log().cookies()
