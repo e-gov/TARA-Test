@@ -93,7 +93,7 @@ class MobileIDAuthSpec extends TaraSpecification {
         Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, idCode, phoneNo, additionalParamsMap)
         assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
         Response pollResponse = Steps.pollMidResponse(flow, 3000L)
-        String messageText = "Correct HTTP status code is returned. Response body: " + pollResponse.body().prettyPrint()
+        String messageText = "Correct HTTP status code is returned. Response body: " + pollResponse.body().jsonPath().prettify()
         assertEquals(messageText, 400, pollResponse.statusCode())
         assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", pollResponse.getContentType())
         assertThat(pollResponse.body().jsonPath().get("message"), Matchers.startsWith(errorMessage))

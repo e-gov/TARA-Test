@@ -155,8 +155,7 @@ class OpenIdConnectSpec extends TaraSpecification {
 
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat(claims.getClaim("nonce"), equalTo(paramsMap.get("nonce")))
-        // Should be fixed in id_token TARA2-182
-        // assertThat(claims.getClaim("state"), equalTo(paramsMap.get("state")))
+        assertThat(claims.getClaim("state"), equalTo(paramsMap.get("state")))
     }
 
 }

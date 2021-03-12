@@ -80,8 +80,8 @@ class OidcIdendityTokenRequestSpec extends TaraSpecification {
         assertThat("Correct given name", claims.getJSONObjectClaim("profile_attributes").get("given_name"),  equalTo("ONE"))
         assertThat("Correct family name", claims.getJSONObjectClaim("profile_attributes").get("family_name"),  equalTo("TESTNUMBER"))
         assertThat("Correct amr value", claims.getStringArrayClaim("amr")[0].toString(), Matchers.oneOf("smartid", "eIDAS", "idcard", "mID"))
-        // TODO TARA2-182
-        // assertThat("Correct state value", claims.getStringClaim("state"), equalTo(flow.getState()))
+
+        assertThat("Correct state value", claims.getStringClaim("state"), equalTo(flow.getState()))
         assertThat("Correct LoA level", claims.getStringClaim("acr"), equalTo("high"))
         assertTrue("Correct at_hash claim exists", claims.getStringClaim("at_hash").size()  > 20)
     }

@@ -40,6 +40,7 @@ class Steps {
     static Response createLoginSession(Flow flow, Response response) {
         Response initLogin = followRedirect(flow, response)
         flow.setSessionId(initLogin.getCookie("SESSION"))
+        // TODO initLogin.body("input", contains("_csrf"))
         if (initLogin.body().prettyPrint().contains("_csrf")) { // TARA2-121
             flow.setCsrf(initLogin.body().htmlPath().get("**.find {it.@name == '_csrf'}.@value"))
         }
@@ -260,8 +261,7 @@ class Steps {
         if (!flow.getNonce().isEmpty()) {
             assertThat(signedJWT.getJWTClaimsSet().getStringClaim("nonce"), equalTo(flow.getNonce()))
         }
-        // TARA2-182
-        // assertThat(signedJWT.getJWTClaimsSet().getStringClaim("state"), equalTo(flow.getState()))
+        assertThat(signedJWT.getJWTClaimsSet().getStringClaim("state"), equalTo(flow.getState()))
         return signedJWT
     }
 
