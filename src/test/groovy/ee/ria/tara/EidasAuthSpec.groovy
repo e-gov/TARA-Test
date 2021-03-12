@@ -246,7 +246,6 @@ class EidasAuthSpec extends TaraSpecification {
         _              | "RelayState" || "SAMLResponse" || "Required String parameter 'SAMLResponse' is not present"
     }
 
-    @Ignore // TODO Eidas auth flow with invalid password
     @Feature("EIDAS_AUTH_CALLBACK_ENDPOINT")
     def "Authentication with Eidas. Invalid password"() {
         expect:
@@ -261,7 +260,16 @@ class EidasAuthSpec extends TaraSpecification {
         flow.setNextEndpoint(initEidasAuthenticationSession.body().htmlPath().getString("**.find { form -> form.@method == 'post' }.@action"))
         flow.setRelayState(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'RelayState' }.@value"))
         flow.setRequestMessage(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'SAMLRequest' }.@value"))
-        Response colleagueResponse = EidasSteps.continueEidasAuthenticationFlow(flow, IDP_USERNAME, "222", EIDASLOA)
+        Response authorizationResponse = EidasSteps.continueEidasFlow(flow, IDP_USERNAME, "myPassword", EIDASLOA)
+        String endpointUrl = authorizationResponse.body().htmlPath().getString("**.find { it.@id == 'redirectForm' }.@action")
+        String token = authorizationResponse.body().htmlPath().getString("**.find { it.@id == 'token' }.@value")
+        Response eidasProxyResponse2 = EidasSteps.eidasProxyServiceRequest(flow, endpointUrl, token)
+        Response colleagueResponse = EidasSteps.eidasColleagueResponse(flow, eidasProxyResponse2)
+        Response authorizationResponse2 = EidasSteps.getAuthorizationResponseFromEidas(flow, colleagueResponse)
+        Response redirectionResponse = EidasSteps.eidasRedirectAuthorizationResponse(flow, authorizationResponse2, false)
+        assertEquals("Correct HTTP status code is returned", 400, redirectionResponse.statusCode())
+        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", redirectionResponse.getContentType())
+        assertThat(redirectionResponse.body().jsonPath().get("message").toString(), equalTo("Eidas autentimine ebaõnnestus."))
     }
 
 
