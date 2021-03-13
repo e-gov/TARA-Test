@@ -72,7 +72,7 @@ class LoginService {
     @Lazy fullMidInitUrl = "${protocol}://${host}${portCheck()}${midInitUrl}"
     @Lazy fullMidPollUrl = "${protocol}://${host}${portCheck()}${midPollUrl}"
     @Lazy fullMidCancelUrl = "${protocol}://${host}${portCheck()}${midCancelUrl}"
-    @Lazy fullIdCardInitUrl = "${nodeProtocol}://${nodeHost}:${nodePort}${idCardInitUrl}"
+    @Lazy fullIdCardInitUrl = "${nodeProtocol}://${nodeHost}${nodePortCheck()}${idCardInitUrl}"
     @Lazy fullSidInitUrl = "${protocol}://${host}${portCheck()}${sidInitUrl}"
     @Lazy fullSidPollUrl = "${protocol}://${host}${portCheck()}${sidPollUrl}"
     @Lazy fullSidCancelUrl = "${protocol}://${host}${portCheck()}${sidCancelUrl}"
@@ -80,7 +80,7 @@ class LoginService {
     @Lazy fullAuthRejectUrl = "${protocol}://${host}${portCheck()}${authRejectUrl}"
     @Lazy fullConsentUrl = "${protocol}://${host}${portCheck()}${consentUrl}"
     @Lazy fullConsentConfirmUrl = "${protocol}://${host}${portCheck()}${consentConfirmUrl}"
-    @Lazy fullHeartbeatUrl = "${nodeProtocol}://${nodeHost}:${nodePort}${heartbeatUrl}"
+    @Lazy fullHeartbeatUrl = "${nodeProtocol}://${nodeHost}${nodePortCheck()}${heartbeatUrl}"
     @Lazy fullErrorUrl = "${protocol}://${host}${portCheck()}${errorUrl}"
     @Lazy fullEidasInitUrl = "${protocol}://${host}${portCheck()}${eidasInitUrl}"
     @Lazy fullEidasCallbackUrl = "${protocol}://${host}${portCheck()}${eidasCallbackUrl}"
@@ -119,6 +119,14 @@ class LoginService {
     private String portCheck() {
         if (port != null && port.isInteger()) {
             return ":${port}"
+        } else {
+            return ""
+        }
+    }
+
+    private String nodePortCheck() {
+        if (nodePort != null && nodePort.isInteger()) {
+            return ":${nodePort}"
         } else {
             return ""
         }
