@@ -144,6 +144,7 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
 
     }
 
+    @IgnoreIf({ properties['test.deployment.env'] == "idp" })
     @Unroll
     @Feature("OIDC_SCOPE_EMAIL")
     @Feature("https://e-gov.github.io/TARA-Doku/TechnicalSpecification#41-authentication-request")
@@ -160,6 +161,7 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
         assertThat(claims.getClaim("email_verified"), equalTo(false))
     }
 
+    @IgnoreIf({ properties['test.deployment.env'] == "idp" })
     @Unroll
     @Feature("OIDC_SCOPE_PHONE")
     @Feature("https://e-gov.github.io/TARA-Doku/TechnicalSpecification#41-authentication-request")

@@ -13,7 +13,7 @@ class Flow {
     OidcClient oidcClient
     ForeignIdpProvider foreignIdpProvider
     ForeignProxyService foreignProxyService
-    DomesticConnectorService domesticConnectorService
+ 
     CookieFilter cookieFilter
     String sessionId
     String csrf
@@ -24,7 +24,7 @@ class Flow {
     JWKSet jwkSet
     JsonPath openIdServiceConfiguration
 
-    String token
+ //   String token
     String nextEndpoint
     String requestMessage
     String relayState
@@ -36,7 +36,7 @@ class Flow {
         this.oidcClient = new OidcClient(properties)
         this.foreignIdpProvider = new ForeignIdpProvider(properties)
         this.foreignProxyService = new ForeignProxyService(properties)
-        this.domesticConnectorService = new DomesticConnectorService(properties)
+
     }
 }
 
@@ -235,31 +235,6 @@ class ForeignProxyService {
         this.protocol = properties."ca-proxyservice.protocol"
         this.consentUrl = properties."ca-proxyservice.consentUrl"
     }
-    private String portCheck() {
-        if (port != null && port.isInteger()) {
-            return ":${port}"
-        } else {
-            return ""
-        }
-    }
-}
-
-@Canonical
-class DomesticConnectorService {
-    String host
-    String port
-    String protocol
-    String authenticationRequestUrl
-
-    @Lazy fullAuthenticationRequestUrl = "${protocol}://${host}${portCheck()}${authenticationRequestUrl}"
-
-    DomesticConnectorService(Properties properties) {
-        this.host = properties."ee-connector.host"
-        this.port = properties."ee-connector.port"
-        this.protocol = properties."ee-connector.protocol"
-        this.authenticationRequestUrl = properties."ee-connector.authenticationRequestUrl"
-    }
-
     private String portCheck() {
         if (port != null && port.isInteger()) {
             return ":${port}"
