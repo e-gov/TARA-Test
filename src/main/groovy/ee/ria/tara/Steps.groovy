@@ -159,7 +159,7 @@ class Steps {
     }
 
     @Step("Polling Smart-ID authentication response")
-    static Response pollSidResponse(Flow flow) {
+    static Response pollSidResponse(Flow flow , long pollingIntevalMillis = 2000L) {
         int counter = 0
         Response response = null
         while (counter < 20) {
@@ -168,7 +168,7 @@ class Steps {
                 break
             }
             ++counter
-            sleep(2000L)
+            sleep(pollingIntevalMillis)
         }
         return response
     }

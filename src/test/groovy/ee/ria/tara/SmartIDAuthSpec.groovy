@@ -10,6 +10,7 @@ import org.hamcrest.Matchers
 
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertThat
+import static org.junit.Assert.assertTrue
 
 @IgnoreIf({ properties['test.deployment.env'] == "idp" })
 class SmartIDAuthSpec extends TaraSpecification {
@@ -74,13 +75,31 @@ class SmartIDAuthSpec extends TaraSpecification {
     }
 
     @Unroll
+    @Feature("SID_AUTH_INIT_ENDPOINT")
+    def "initialize Smart-ID authentication with no smart-id contract: #label"() {
+        expect:
+        Steps.startAuthenticationInTara(flow, "openid smartid",locale)
+        Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, "60001019906", Collections.emptyMap())
+        assertEquals("Correct HTTP status code is returned", 400, initSidAuthenticationSession.statusCode())
+        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", initSidAuthenticationSession.getContentType())
+        assertThat(initSidAuthenticationSession.body().jsonPath().get("message"), Matchers.containsString(errorMessage))
+        assertTrue(initSidAuthenticationSession.body().jsonPath().get("incident_nr").toString().size() > 15)
+
+        where:
+        locale | label || errorMessage
+        "et" | "Estonian locale" || "Kasutajal puudub"
+        "en" | "English locale" || "The user has no Smart-ID contract"
+        "ru" | "Russian locale" || "У пользователя нет договора"
+    }
+
+    @Unroll
     @Feature("SID_AUTH_POLL_RESPONSE_COMPLETED_ERRORS")
     def "initialize Smart-ID authentication with scenario: #label et"() {
         expect:
         Steps.startAuthenticationInTara(flow, "openid smartid")
         Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, idCode, Collections.emptyMap())
         assertEquals("Correct HTTP status code is returned", 200, initSidAuthenticationSession.statusCode())
-        Response pollResponse = Steps.pollSidResponse(flow)
+        Response pollResponse = Steps.pollSidResponse(flow, 3000L)
         String messageText = "Correct HTTP status code is returned. Response body: " + pollResponse.body().jsonPath().prettify()
         assertEquals(messageText, 400, pollResponse.statusCode())
         assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", pollResponse.getContentType())
@@ -99,7 +118,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         Steps.startAuthenticationInTara(flow, "openid smartid", "en")
         Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, idCode, Collections.emptyMap())
         assertEquals("Correct HTTP status code is returned", 200, initSidAuthenticationSession.statusCode())
-        Response pollResponse = Steps.pollSidResponse(flow)
+        Response pollResponse = Steps.pollSidResponse(flow, 3000L)
         String messageText = "Correct HTTP status code is returned. Response body: " + pollResponse.body().jsonPath().prettify()
         assertEquals(messageText, 400, pollResponse.statusCode())
         assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", pollResponse.getContentType())
@@ -118,7 +137,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         Steps.startAuthenticationInTara(flow, "openid smartid", "ru")
         Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, idCode, Collections.emptyMap())
         assertEquals("Correct HTTP status code is returned", 200, initSidAuthenticationSession.statusCode())
-        Response pollResponse = Steps.pollSidResponse(flow)
+        Response pollResponse = Steps.pollSidResponse(flow, 3000L)
         String messageText = "Correct HTTP status code is returned. Response body: " + pollResponse.body().jsonPath().prettify()
         assertEquals(messageText, 400, pollResponse.statusCode())
         assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", pollResponse.getContentType())
