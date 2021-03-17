@@ -27,7 +27,7 @@ class AuthenticationSpec extends TaraSpecification {
 
     @Unroll
     @Feature("AUTHENTICATION")
-    def "request authentication"() {
+    def "request authentication with mobile-ID"() {
         expect:
         Steps.startAuthenticationInTara(flow)
         Response midAuthResponse = Steps.authenticateWithMid(flow,"60001017716", "69100366")

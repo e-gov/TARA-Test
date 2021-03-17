@@ -67,6 +67,8 @@ class LoginService {
     String errorUrl
     String eidasInitUrl
     String eidasCallbackUrl
+    String idCardEndpointUsername
+    String idCardEndpointPassword
 
     @Lazy fullInitUrl = "${protocol}://${host}${portCheck()}${initUrl}"
     @Lazy fullMidInitUrl = "${protocol}://${host}${portCheck()}${midInitUrl}"
@@ -115,6 +117,8 @@ class LoginService {
         this.authLegalInitUrl = properties."loginservice.authLegalInitUrl"
         this.authLegalPersonUrl = properties."loginservice.authLegalPersonUrl"
         this.authLegalConfirmUrl = properties."loginservice.authLegalConfirmUrl"
+        this.idCardEndpointUsername = properties."loginservice.id.username"
+        this.idCardEndpointPassword = properties."loginservice.id.password"
     }
     private String portCheck() {
         if (port != null && port.isInteger()) {
