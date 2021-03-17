@@ -53,8 +53,8 @@ class OidcMetadataSpec extends TaraSpecification {
         path || statusCode
         "/.well-known/openid-configuration" || 200
         // TARA2-219
-        //     "/oidc/.well-known" || 200
-        //    "/.well-known" || 200
+        "/oidc/.well-known" || 200
+        "/.well-known" || 200
     }
 
     @Unroll
@@ -92,10 +92,10 @@ class OidcMetadataSpec extends TaraSpecification {
             assertTrue("Locale $it supported", localesSupported.contains(it))
         }
         // TARA2-151 , TARA2-219
-//        assertEquals("Correct token endpoint", (flow.oidcService.baseUrl + "/oidc/token"), jsonResponse.getString("token_endpoint"))
-//        assertEquals("Correct userinfo endpoint", (flow.oidcService.baseUrl + "/oidc/profile"), jsonResponse.getString("userinfo_endpoint"))
-//        assertEquals("Correct authorization endpoint", (flow.oidcService.baseUrl + "/oidc/authorization"), jsonResponse.getString("authorization_endpoint"))
-//        assertEquals("Correct jwks uri", (flow.oidcService.baseUrl + "/oidc/jwks"), jsonResponse.getString("jwks_uri"))
+        assertEquals("Correct token endpoint", (flow.oidcService.baseUrl + "/oidc/token").toString(), jsonResponse.getString("token_endpoint"))
+        assertEquals("Correct userinfo endpoint", (flow.oidcService.baseUrl + "/oidc/profile").toString(), jsonResponse.getString("userinfo_endpoint"))
+        assertEquals("Correct authorization endpoint", (flow.oidcService.baseUrl + "/oidc/authorize").toString(), jsonResponse.getString("authorization_endpoint"))
+        assertEquals("Correct jwks uri", (flow.oidcService.baseUrl + "/oidc/jwks").toString(), jsonResponse.getString("jwks_uri"))
     }
 
     @Unroll

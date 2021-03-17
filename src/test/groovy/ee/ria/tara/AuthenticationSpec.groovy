@@ -149,7 +149,7 @@ class AuthenticationSpec extends TaraSpecification {
         assertThat(pollResponse.body().jsonPath().get("status").toString(), Matchers.not(equalTo("PENDING")))
         Response response = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
         assertEquals("Correct HTTP status code is returned", 302, response.statusCode())
-        assertThat(response.getHeader("location"), Matchers.startsWith(flow.oidcService.fullAuthenticationRequestUrl))
+        assertThat(response.getHeader("location"), Matchers.startsWith(flow.openIdServiceConfiguration.getString("authorization_endpoint")))
         assertEquals("Location field contains correct client_id value", flow.oidcClient.clientId, Utils.getParamValueFromResponseHeader(response, "client_id"))
     }
 
@@ -206,7 +206,7 @@ class AuthenticationSpec extends TaraSpecification {
         def map3 = Utils.setParameter(cookieMap, "SESSION", flow.sessionId)
         Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullAuthRejectUrl, cookieMap, paramsMap, Collections.emptyMap())
         assertEquals("Correct HTTP status code is returned", 302, response.statusCode())
-        assertThat(response.getHeader("location"), Matchers.startsWith(flow.oidcService.fullAuthenticationRequestUrl))
+        assertThat(response.getHeader("location"), Matchers.startsWith(flow.openIdServiceConfiguration.getString("authorization_endpoint")))
         assertEquals("Location field contains correct client_id value", flow.oidcClient.clientId, Utils.getParamValueFromResponseHeader(response, "client_id"))
         Response oidcserviceResponse = Steps.followRedirectWithCookies(flow, response, flow.oidcService.cookies)
         assertEquals("Correct HTTP status code is returned", 302, oidcserviceResponse.statusCode())

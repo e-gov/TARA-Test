@@ -68,7 +68,6 @@ class Requests {
     @Step("Follow redirect request")
     static Response followRedirect(Flow flow, String location) {
         return given()
-         //  remove this line     .filter(flow.cookieFilter)
                 .filter(new AllureRestAssured())
                 .relaxedHTTPSValidation()
                 .log().cookies()
@@ -315,8 +314,7 @@ class Requests {
         return given()
                 .filter(flow.cookieFilter)
                 .headers(headers)
-       // TARA2-193
-        .auth().preemptive().basic(flow.loginService.idCardEndpointUsername, flow.loginService.idCardEndpointPassword)
+                .auth().preemptive().basic(flow.loginService.idCardEndpointUsername, flow.loginService.idCardEndpointPassword)
                 .cookie("SESSION", flow.sessionId)
                 .relaxedHTTPSValidation()
                 .log().cookies()
@@ -333,6 +331,7 @@ class Requests {
         return given()
                 .filter(flow.cookieFilter)
                 .headers(headers)
+                .auth().preemptive().basic(flow.loginService.idCardEndpointUsername, flow.loginService.idCardEndpointPassword)
                 .relaxedHTTPSValidation()
                 .log().cookies()
                 .filter(new AllureRestAssured())
