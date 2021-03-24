@@ -13,6 +13,7 @@ class Flow {
     OidcClient oidcClient
     ForeignIdpProvider foreignIdpProvider
     ForeignProxyService foreignProxyService
+    TaraAdminService taraAdminService
  
     CookieFilter cookieFilter
     String sessionId
@@ -24,7 +25,6 @@ class Flow {
     JWKSet jwkSet
     JsonPath openIdServiceConfiguration
 
- //   String token
     String nextEndpoint
     String requestMessage
     String relayState
@@ -36,7 +36,7 @@ class Flow {
         this.oidcClient = new OidcClient(properties)
         this.foreignIdpProvider = new ForeignIdpProvider(properties)
         this.foreignProxyService = new ForeignProxyService(properties)
-
+        this.taraAdminService = new TaraAdminService(properties)
     }
 }
 
@@ -247,3 +247,33 @@ class ForeignProxyService {
         }
     }
 }
+
+@Canonical
+class TaraAdminService {
+    String host
+    String port
+    String protocol
+    String baseUrl
+    String username
+    String password
+    String xsrfToken
+    String jsessionId
+
+    @Lazy fullBaseUrl = "${protocol}://${host}${portCheck()}"
+
+    TaraAdminService(Properties properties) {
+        this.host = properties."adminservice.host"
+        this.port = properties."adminservice.port"
+        this.protocol = properties."adminservice.protocol"
+        this.username = properties."adminservice.username"
+        this.password = properties."adminservice.password"
+    }
+    private String portCheck() {
+        if (port != null && port.isInteger()) {
+            return ":${port}"
+        } else {
+            return ""
+        }
+    }
+}
+

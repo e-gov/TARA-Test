@@ -3,6 +3,7 @@ package ee.ria.tara
 import io.qameta.allure.Step
 import io.qameta.allure.restassured.AllureRestAssured
 import io.restassured.RestAssured
+import io.restassured.http.ContentType
 import io.restassured.path.json.JsonPath
 import io.restassured.response.Response
 
@@ -418,6 +419,70 @@ class Requests {
                 .when()
                 .urlEncodingEnabled(true)
                 .request(requestType, flow.openIdServiceConfiguration.getString("userinfo_endpoint"))
+                .then()
+                .extract().response()
+    }
+
+    @Step("Post request with json body for admin api")
+    static Response jsonRequest(Flow flow, String location, Map<String, Object> jsonAsMap) {
+        return given()
+                .filter(flow.cookieFilter)
+                .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
+                .filter(new AllureRestAssured())
+                .contentType(ContentType.JSON)
+                .body(jsonAsMap)
+                .when()
+                .urlEncodingEnabled(true)
+                .post(location)
+                .then()
+                .log().cookies()
+                .extract().response()
+    }
+
+    @Step("Post request with json for admin api")
+    static Response postRequestWithJsonBody(Flow flow, String location, Map<String, String> cookies, String body) {
+        return given()
+                .filter(flow.cookieFilter)
+                .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
+                .filter(new AllureRestAssured())
+                .header("X-XSRF-TOKEN", cookies.get("XSRF-TOKEN"))
+                .cookies(cookies)
+                .contentType(ContentType.JSON)
+                .body(body)
+                .when()
+                .urlEncodingEnabled(true)
+                .post(location)
+                .then()
+                .log().cookies()
+                .extract().response()
+    }
+
+    @Step("Delete request for admin api")
+    static Response deleteRequest(Flow flow, String location, Map<String, String> cookies) {
+        return given()
+                .filter(flow.cookieFilter)
+                .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
+                .filter(new AllureRestAssured())
+                .header("X-XSRF-TOKEN", cookies.get("XSRF-TOKEN"))
+                .cookies(cookies)
+                .when()
+                .urlEncodingEnabled(true)
+                .delete(location)
+                .then()
+                .extract().response()
+    }
+
+    @Step("Get request for admin api")
+    static Response getRequest(Flow flow, String location, Map<String, String> cookies) {
+        return given()
+                .filter(flow.cookieFilter)
+                .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
+                .filter(new AllureRestAssured())
+                .header("X-XSRF-TOKEN", cookies.get("XSRF-TOKEN"))
+                .cookies(cookies)
+                .when()
+                .urlEncodingEnabled(true)
+                .get(location)
                 .then()
                 .extract().response()
     }
