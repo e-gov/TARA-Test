@@ -41,7 +41,7 @@ class TaraAdminSteps {
                 type "public"
             }
             address "Albu küla, Järva vald, 73402 Järvamaa"
-            phone "+37213666"
+            phone "37213666"
             email "info@alburaamat.ee"
             billing_settings {
                 email "arved@alburaamat.ee"
@@ -90,6 +90,7 @@ class TaraAdminSteps {
         def root = builder {
             client_id "${clientId}"
             institution_metainfo {
+                name "Albu Raamatukogu"
                 registry_code "${registryCode}"
                 type {
                     type "public"
@@ -105,7 +106,10 @@ class TaraAdminSteps {
                 et "Registreerija (lühinimi)"
                 ru "Регистратор (короткое имя)"
             }
-            client_secret_export_settings {}
+            client_secret_export_settings {
+                recipient_email "saladus@saladus.ee"
+                recipient_id_code "38001085718"
+            }
             redirect_uris("https://www.example.com/edasi", "https://www.example.ee/portal")
             scope(
                     "openid",
@@ -125,7 +129,24 @@ class TaraAdminSteps {
                 should_use_additional_verification_code_check true
             }
             mid_settings {}
+            client_contacts(
+                    {
+                        name "Uuno Udu"
+                        email "uuno@tugi.ee"
+                        phone "+370876543"
+                        department "AIA"
+                    },
+                    {
+                        name "Tiiu Trepp"
+                        email "tiiu.trepp@tugi.ee"
+                        phone "+37134567"
+                        department "Kollane"
+                    }
+            )
         }
+
+        // println builder.toPrettyString()
+
         HashMap<String, String> cookiesMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(cookiesMap, "XSRF-TOKEN", flow.taraAdminService.xsrfToken)
         Utils.setParameter(cookiesMap, "JSESSIONID", flow.taraAdminService.jsessionId)

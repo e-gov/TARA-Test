@@ -26,7 +26,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         expect:
         Steps.startAuthenticationInTara(flow, "openid")
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
-        Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, "10101010005", additionalParamsMap)
+        Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, "30303039914", additionalParamsMap)
         assertEquals("Correct HTTP status code is returned", 200, initSidAuthenticationSession.statusCode())
         assertEquals("Correct Content-Type is returned", "text/html;charset=UTF-8", initSidAuthenticationSession.getContentType())
         String controlCode = initSidAuthenticationSession.body().htmlPath().getString("**.find { p -> p.@class == 'control-code' }.text()")
@@ -40,7 +40,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         expect:
         Steps.startAuthenticationInTara(flow, "openid smartid")
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        def map1 = Utils.setParameter(paramsMap, "idCode", "10101010005")
+        def map1 = Utils.setParameter(paramsMap, "idCode", "30303039914")
         HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
         def map3 = Utils.setParameter(cookieMap, "SESSION", flow.sessionId)
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
@@ -106,9 +106,15 @@ class SmartIDAuthSpec extends TaraSpecification {
         assertThat(pollResponse.body().jsonPath().get("message"), Matchers.startsWith(errorMessage))
 
         where:
-        idCode        | label            || errorMessage
-        "10101010016" | "User cancelled" || "Autentimine katkestati kasutaja poolt."
-        "10101010027" | "Timeout"        || "Autentimise päring aegus."
+        idCode        | label                                             || errorMessage
+        "30403039917" | "USER_REFUSED"                                    || "Autentimine katkestati kasutaja poolt."
+        "30403039928" | "USER_REFUSED_DISPLAYTEXTANDPIN"                  || "Kasutaja katkestas PIN koodi sisestamise."
+        "30403039939" | "USER_REFUSED_VC_CHOICE"                          || "Kasutaja katkestas verifitseerimiskoodi valiku sisestamise."
+    // TODO   "30403039946" | "USER_REFUSED_CONFIRMATIONMESSAGE"                || "Autentimine katkestati kasutaja poolt."
+    //    "30403039950" | "USER_REFUSED_CONFIRMATIONMESSAGE_WITH_VC_CHOICE" || "Autentimine katkestati kasutaja poolt."
+        "30403039961" | "USER_REFUSED_CERT_CHOICE"                        || "Kasutajal on mitu Smart-ID kontot ja ühe kontoga tühistati autentimisprotsess."
+        "30403039972" | "WRONG_VC"                                        || "Vale kinnituskood."
+        "30403039983" | "TIMEOUT"                                         || "Autentimise päring aegus."
     }
 
     @Unroll
@@ -126,8 +132,14 @@ class SmartIDAuthSpec extends TaraSpecification {
 
         where:
         idCode        | label            || errorMessage
-        "10101010016" | "User cancelled" || "Authentication was cancelled by user."
-        "10101010027" | "Timeout"        || "Authentication request timed out."
+        "30403039917" | "USER_REFUSED" || "Authentication was cancelled by user."
+        "30403039928" | "USER_REFUSED_DISPLAYTEXTANDPIN"                  || "User pressed cancel on PIN screen."
+        "30403039939" | "USER_REFUSED_VC_CHOICE"                          || "Authentication was cancelled by user."
+   // TODO    "30403039946" | "USER_REFUSED_CONFIRMATIONMESSAGE"                || "Autentimine katkestati kasutaja poolt."
+   //     "30403039950" | "USER_REFUSED_CONFIRMATIONMESSAGE_WITH_VC_CHOICE" || "Autentimine katkestati kasutaja poolt."
+        "30403039961" | "USER_REFUSED_CERT_CHOICE"                        || "User has multiple Smart-ID accounts and one of them has refused authentication."
+        "30403039972" | "WRONG_VC"                                        || "Wrong verification code."
+        "30403039983" | "TIMEOUT"        || "Authentication request timed out."
     }
 
     @Unroll
@@ -144,9 +156,15 @@ class SmartIDAuthSpec extends TaraSpecification {
         assertThat(pollResponse.body().jsonPath().get("message"), Matchers.startsWith(errorMessage))
 
         where:
-        idCode        | label            || errorMessage
-        "10101010016" | "User cancelled" || "Пользователь рервал аутентификацию."
-        "10101010027" | "Timeout"        || "Истекло время запроса."
+        idCode        | label                                             || errorMessage
+        "30403039917" | "USER_REFUSED"                                    || "Пользователь рервал аутентификацию."
+        "30403039928" | "USER_REFUSED_DISPLAYTEXTANDPIN"                  || "Пользователь нажал Отмена на экране PIN"
+        "30403039939" | "USER_REFUSED_VC_CHOICE"                          || "Пользователь рервал аутентификацию."
+  // TODO      "30403039946" | "USER_REFUSED_CONFIRMATIONMESSAGE"                || "Autentimine katkestati kasutaja poolt."
+  //      "30403039950" | "USER_REFUSED_CONFIRMATIONMESSAGE_WITH_VC_CHOICE" || "Autentimine katkestati kasutaja poolt."
+  //      "30403039961" | "USER_REFUSED_CERT_CHOICE"                        || "User has multiple Smart-ID accounts and one of them has refused authentication."
+        "30403039972" | "WRONG_VC"                                        || "Неправильный код подтверждения"
+        "30403039983" | "TIMEOUT"        || "Истекло время запроса."
     }
 
     @Unroll
@@ -156,7 +174,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         expect:
         Steps.startAuthenticationInTara(flow, "openid smartid")
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
-        Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, "10101010027", additionalParamsMap)
+        Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, "30403039983", additionalParamsMap)
         assertEquals("Correct HTTP status code is returned", 200, initSidAuthenticationSession.statusCode())
         Response response = Requests.pollSid(flow)
         assertEquals("Correct HTTP status code is returned", 200, response.statusCode())
@@ -170,7 +188,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         expect:
         Steps.startAuthenticationInTara(flow, "openid smartid")
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
-        Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, "10101010027", additionalParamsMap)
+        Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, "30403039983", additionalParamsMap)
         assertEquals("Correct HTTP status code is returned", 200, initSidAuthenticationSession.statusCode())
         flow.setSessionId("1234567")
         Response response = Requests.pollSid(flow)
@@ -186,7 +204,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         expect:
         Steps.startAuthenticationInTara(flow, "openid smartid")
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
-        Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, "10101010005", additionalParamsMap)
+        Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, "30303039914", additionalParamsMap)
         assertEquals("Correct HTTP status code is returned", 200, initSidAuthenticationSession.statusCode())
         Response response = Steps.pollSidResponse(flow)
         assertEquals("Correct HTTP status code is returned", 200, response.statusCode())
@@ -201,7 +219,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         expect:
         Steps.startAuthenticationInTara(flow, "openid smartid")
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
-        Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, "10101010005", additionalParamsMap)
+        Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, "30303039914", additionalParamsMap)
         assertEquals("Correct HTTP status code is returned", 200, initSidAuthenticationSession.statusCode())
         Response response = Requests.postRequestWithSessionId(flow, flow.loginService.fullSidPollUrl)
         assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
@@ -215,7 +233,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         expect:
         Steps.startAuthenticationInTara(flow, "openid smartid")
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
-        Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, "10101010005", additionalParamsMap)
+        Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, "30303039914", additionalParamsMap)
         assertEquals("Correct HTTP status code is returned", 200, initSidAuthenticationSession.statusCode())
         Response response = Requests.postRequestWithSessionId(flow, flow.loginService.fullSidCancelUrl)
         assertEquals("Correct HTTP status code is returned", 302, response.statusCode())
@@ -233,7 +251,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         expect:
         Steps.startAuthenticationInTara(flow, "openid smartid")
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
-        Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, "10101010005", additionalParamsMap)
+        Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, "30303039914", additionalParamsMap)
         assertEquals("Correct HTTP status code is returned", 200, initSidAuthenticationSession.statusCode())
         Response response = Requests.postRequestWithSessionId(flow, flow.loginService.fullSidCancelUrl)
         assertEquals("Correct HTTP status code is returned", 302, response.statusCode())
@@ -246,7 +264,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         expect:
         Steps.startAuthenticationInTara(flow, "openid smartid")
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
-        Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, "10101010005", additionalParamsMap)
+        Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, "30303039914", additionalParamsMap)
         assertEquals("Correct HTTP status code is returned", 200, initSidAuthenticationSession.statusCode())
 
         flow.setSessionId("1234567")
@@ -266,7 +284,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         expect:
         Steps.startAuthenticationInTara(flow, "openid smartid")
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
-        Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, "10101010005", additionalParamsMap)
+        Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, "30303039914", additionalParamsMap)
         assertEquals("Correct HTTP status code is returned", 200, initSidAuthenticationSession.statusCode())
 
         Response response = Requests.getRequestWithSessionId(flow, flow.loginService.fullSidCancelUrl)

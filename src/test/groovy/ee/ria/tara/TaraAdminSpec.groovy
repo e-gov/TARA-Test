@@ -3,7 +3,7 @@ package ee.ria.tara
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
-
+import spock.lang.Ignore
 import spock.lang.IgnoreIf
 import spock.lang.Unroll
 
@@ -18,8 +18,10 @@ class TaraAdminSpec extends TaraSpecification {
         flow.cookieFilter = new CookieFilter()
     }
 
+    @Ignore
     @Unroll
     @Feature("TARA_MGMT_CLIENT_ADD_RESPONSE_SUCCESS")
+    @Feature("TARA_MGMT_ADDCLIENT_UPDATEINSTITUTION")
     def "Register new organisation and client application"() {
         expect:
         TaraAdminSteps.taraAdminLogin(flow, flow.taraAdminService.username, flow.taraAdminService.password)
@@ -29,9 +31,11 @@ class TaraAdminSpec extends TaraSpecification {
         String clientId = "rak_id"
 
         TaraAdminSteps.deleteClient(flow, registryCode, clientId, false)
+        sleep(2000L)
         TaraAdminSteps.deleteInstitution(flow, registryCode, false)
 
         TaraAdminSteps.createInstitution(flow, registryCode)
+        sleep(2000L)
         TaraAdminSteps.addClientApplication(flow, registryCode, clientId)
     }
 }
