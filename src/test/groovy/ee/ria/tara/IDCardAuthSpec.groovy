@@ -93,6 +93,45 @@ class IDCardAuthSpec extends TaraSpecification {
     }
 
     @Unroll
+    @Feature("IDCARD_AUTH_SUCCESSFUL")
+    def "Authenticate with ID-Card. Esteid 2015 chain certificate"() {
+        expect:
+        String certificate = Utils.getCertificateAsString("src/test/resources/Mari-Liis-Esteid-2015_auth.pem")
+        Response initClientAuthenticationSession = Steps.startAuthenticationInTara(flow)
+        HashMap<String, String> headersMap = (HashMap) Collections.emptyMap()
+        Utils.setParameter(headersMap, "XCLIENTCERTIFICATE", certificate)
+        Response response = Requests.idCardAuthentication(flow, headersMap)
+        assertThat("Correct response", response.body().jsonPath().get("status").toString(), equalTo("COMPLETED"))
+        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
+        assertEquals("Correct HTTP status code is returned", 302, acceptResponse.statusCode())
+        Response oidcServiceResponse = Steps.getOAuthCookies(flow, acceptResponse)
+        assertEquals("Correct HTTP status code is returned", 302, oidcServiceResponse.statusCode())
+
+        Response consentResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
+
+        if (consentResponse.getStatusCode() == 200) {
+            consentResponse = Steps.submitConsent(flow, true)
+            assertEquals("Correct HTTP status code is returned", 302, consentResponse.statusCode())
+            Steps.verifyResponseHeaders(consentResponse)
+        }
+
+        assertEquals("Correct HTTP status code is returned", 302, consentResponse.statusCode())
+        Response oidcserviceResponse = Steps.followRedirectWithCookies(flow, consentResponse, flow.oidcService.cookies)
+        assertEquals("Correct HTTP status code is returned", 302, oidcserviceResponse.statusCode())
+        String authorizationCode = Utils.getParamValueFromResponseHeader(oidcserviceResponse, "code")
+        Response tokenResponse = Requests.getWebToken(flow, authorizationCode)
+        assertEquals("Correct HTTP status code is returned", 200, tokenResponse.statusCode())
+        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        assertThat(claims.getAudience().get(0), equalTo(flow.oidcClient.clientId))
+        assertThat(claims.getSubject(), equalTo("EE47101010033"))
+        assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo("MARI-LIIS"))
+        assertThat(claims.getJSONObjectClaim("profile_attributes").get("family_name"), equalTo("MÄNNIK"))
+        assertThat(claims.getJSONObjectClaim("profile_attributes").get("date_of_birth"), equalTo("1971-01-01"))
+        assertThat(claims.getClaim("amr")[0].toString(), equalTo("idcard"))
+        assertThat(claims.getClaim("acr"), equalTo("high"))
+    }
+
+    @Unroll
     @Feature("DISALLOW_IFRAMES")
     @Feature("CSP_ENABLED")
     @Feature("HSTS_ENABLED")

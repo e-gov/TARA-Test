@@ -107,8 +107,7 @@ class TaraAdminSteps {
                 ru "Регистратор (короткое имя)"
             }
             client_secret_export_settings {
-                recipient_email "saladus@saladus.ee"
-                recipient_id_code "38001085718"
+
             }
             redirect_uris("https://www.example.com/edasi", "https://www.example.ee/portal")
             scope(
