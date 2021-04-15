@@ -109,12 +109,12 @@ class SmartIDAuthSpec extends TaraSpecification {
         idCode        | label                                             || errorMessage
         "30403039917" | "USER_REFUSED"                                    || "Autentimine katkestati kasutaja poolt."
         "30403039928" | "USER_REFUSED_DISPLAYTEXTANDPIN"                  || "Kasutaja katkestas PIN koodi sisestamise."
-        "30403039939" | "USER_REFUSED_VC_CHOICE"                          || "Kasutaja katkestas verifitseerimiskoodi valiku sisestamise."
-    // TODO   "30403039946" | "USER_REFUSED_CONFIRMATIONMESSAGE"                || "Autentimine katkestati kasutaja poolt."
-    //    "30403039950" | "USER_REFUSED_CONFIRMATIONMESSAGE_WITH_VC_CHOICE" || "Autentimine katkestati kasutaja poolt."
+        "30403039939" | "USER_REFUSED_VC_CHOICE"                          || "Kasutaja katkestas verifitseerimiskoodi valiku."
+        "30403039946" | "USER_REFUSED_CONFIRMATIONMESSAGE"                || "Kasutaja katkestas protsessi kinnitusekraanil."
+        "30403039950" | "USER_REFUSED_CONFIRMATIONMESSAGE_WITH_VC_CHOICE" || "Autentimine katkestati kasutaja poolt verifitseerimiskoodi kinnitusekraanil."
         "30403039961" | "USER_REFUSED_CERT_CHOICE"                        || "Kasutajal on mitu Smart-ID kontot ja ühe kontoga tühistati autentimisprotsess."
         "30403039972" | "WRONG_VC"                                        || "Vale kinnituskood."
-        "30403039983" | "TIMEOUT"                                         || "Autentimise päring aegus."
+        "30403039983" | "TIMEOUT"                                         || "Autentimise sessioon aegus."
     }
 
     @Unroll
@@ -131,15 +131,15 @@ class SmartIDAuthSpec extends TaraSpecification {
         assertThat(pollResponse.body().jsonPath().get("message"), Matchers.startsWith(errorMessage))
 
         where:
-        idCode        | label            || errorMessage
-        "30403039917" | "USER_REFUSED" || "Authentication was cancelled by user."
+        idCode        | label                                             || errorMessage
+        "30403039917" | "USER_REFUSED"                                    || "Authentication was cancelled by user."
         "30403039928" | "USER_REFUSED_DISPLAYTEXTANDPIN"                  || "User pressed cancel on PIN screen."
-        "30403039939" | "USER_REFUSED_VC_CHOICE"                          || "Authentication was cancelled by user."
-   // TODO    "30403039946" | "USER_REFUSED_CONFIRMATIONMESSAGE"                || "Autentimine katkestati kasutaja poolt."
-   //     "30403039950" | "USER_REFUSED_CONFIRMATIONMESSAGE_WITH_VC_CHOICE" || "Autentimine katkestati kasutaja poolt."
-        "30403039961" | "USER_REFUSED_CERT_CHOICE"                        || "User has multiple Smart-ID accounts and one of them has refused authentication."
+        "30403039939" | "USER_REFUSED_VC_CHOICE"                          || "Verification code choice was cancelled by the user."
+        "30403039946" | "USER_REFUSED_CONFIRMATIONMESSAGE"                || "User cancelled the process on the confirmation message screen."
+        "30403039950" | "USER_REFUSED_CONFIRMATIONMESSAGE_WITH_VC_CHOICE" || "User cancelled the process on the verification code choice confirmation message screen."
+        "30403039961" | "USER_REFUSED_CERT_CHOICE"                        || "User has multiple Smart-ID accounts and one of them has canceled authentication."
         "30403039972" | "WRONG_VC"                                        || "Wrong verification code."
-        "30403039983" | "TIMEOUT"        || "Authentication request timed out."
+        "30403039983" | "TIMEOUT"                                         || "Authentication session timed out."
     }
 
     @Unroll
@@ -159,12 +159,12 @@ class SmartIDAuthSpec extends TaraSpecification {
         idCode        | label                                             || errorMessage
         "30403039917" | "USER_REFUSED"                                    || "Пользователь рервал аутентификацию."
         "30403039928" | "USER_REFUSED_DISPLAYTEXTANDPIN"                  || "Пользователь нажал Отмена на экране PIN"
-        "30403039939" | "USER_REFUSED_VC_CHOICE"                          || "Пользователь рервал аутентификацию."
-  // TODO      "30403039946" | "USER_REFUSED_CONFIRMATIONMESSAGE"                || "Autentimine katkestati kasutaja poolt."
-  //      "30403039950" | "USER_REFUSED_CONFIRMATIONMESSAGE_WITH_VC_CHOICE" || "Autentimine katkestati kasutaja poolt."
-  //      "30403039961" | "USER_REFUSED_CERT_CHOICE"                        || "User has multiple Smart-ID accounts and one of them has refused authentication."
+        "30403039939" | "USER_REFUSED_VC_CHOICE"                          || "Пользователь отменил выбор кода подтверждения."
+        "30403039946" | "USER_REFUSED_CONFIRMATIONMESSAGE"                || "Пользователь отменил процесс на экране подтверждения использования устройства для аутентификации."
+        "30403039950" | "USER_REFUSED_CONFIRMATIONMESSAGE_WITH_VC_CHOICE" || "Пользователь отменил процесс на экране выбора кода верификации."
+        "30403039961" | "USER_REFUSED_CERT_CHOICE"                        || "У пользователя несколько учетных записей Smart-ID, и одна из них отменила аутентификацию."
         "30403039972" | "WRONG_VC"                                        || "Неправильный код подтверждения"
-        "30403039983" | "TIMEOUT"        || "Истекло время запроса."
+        "30403039983" | "TIMEOUT"                                         || "Срок сеанса аутентификации истек."
     }
 
     @Unroll
