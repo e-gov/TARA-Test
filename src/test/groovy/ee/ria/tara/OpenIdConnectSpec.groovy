@@ -1,7 +1,6 @@
 package ee.ria.tara
 
 import com.nimbusds.jwt.JWTClaimsSet
-import com.nimbusds.jwt.SignedJWT
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response

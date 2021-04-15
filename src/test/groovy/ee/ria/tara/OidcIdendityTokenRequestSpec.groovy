@@ -26,19 +26,6 @@ class OidcIdendityTokenRequestSpec extends TaraSpecification {
         flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.oidcService.fullJwksUrl))
     }
 
-    @Ignore()
-    @Unroll
-    @Feature("https://e-gov.github.io/TARA-Doku/TechnicalSpecification#43-identity-token-request")
-    def "Test the identity token request parameters and verify response structure and coherence with TARA 1"() {
-        expect:
-        Steps.startAuthenticationInTara(flow)
-        Response midAuthResponse = Steps.authenticateWithMid(flow,"60001017716", "69100366")
-        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
-        Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
-        // In addition to request structure validation, it is needed to verify the security elements, error cases...
-        assertThat(tokenResponse, equalTo("TARA1 generated response"))
-    }
-
     @Unroll
     @Feature("OIDC_ID_TOKEN")
     def "Verify ID token response"() {

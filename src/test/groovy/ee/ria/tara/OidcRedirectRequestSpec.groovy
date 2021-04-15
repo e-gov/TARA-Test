@@ -9,7 +9,6 @@ import spock.lang.Ignore
 import spock.lang.IgnoreIf
 import spock.lang.Unroll
 
-import static org.hamcrest.Matchers.equalTo
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertTrue
 import static org.junit.Assert.assertThat
@@ -22,18 +21,6 @@ class OidcRedirectRequestSpec extends TaraSpecification {
         flow.cookieFilter = new CookieFilter()
         flow.openIdServiceConfiguration = Requests.getOpenidConfiguration(flow.oidcService.fullConfigurationUrl)
         flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.oidcService.fullJwksUrl))
-    }
-
-    @Ignore()
-    @Unroll
-    @Feature("https://e-gov.github.io/TARA-Doku/TechnicalSpecification#42-redirect-request")
-    def "Test the return request structure and coherence with TARA 1"() {
-        expect:
-        Steps.startAuthenticationInTara(flow)
-        Response midAuthResponse = Steps.authenticateWithMid(flow,"60001017716", "69100366")
-        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
-        // In addition to request structure validation, it is needed to verify the security elements, error cases...
-        assertThat(authenticationFinishedResponse.getHeader("location"), equalTo("TARA1 generated request"))
     }
 
     @Unroll

@@ -25,17 +25,6 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
         flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.oidcService.fullJwksUrl))
     }
 
-    @Ignore()
-    @Unroll
-    @Feature("https://e-gov.github.io/TARA-Doku/TechnicalSpecification#41-authentication-request")
-    def "Test all input parameters and verify the structure and element coherence compared to TARA1 on responses"() {
-        expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "openid")
-        Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
-        // We need only to test that the input and output of the first request in most cases
-        assertThat(initOIDCServiceSession, equalTo("TARA1 response"))
-    }
-
     @Unroll
     @Feature("https://e-gov.github.io/TARA-Doku/TechnicalSpecification#41-authentication-request")
     def "Authentication request with invalid param values #paramName"() {
@@ -56,8 +45,6 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
         "scope"         | "openid,eidas"            || 302        || "invalid_scope"             || "The requested scope is invalid" || " is not allowed to request scope 'openid,eidas'."
         "response_type" | "token"                   || 302        || "unsupported_response_type" || "The authorization server does not support obtaining a token" || "is not allowed to request response_type 'token'."
         "client_id"     | "my_client"               || 302        || "invalid_client"            || "Client authentication failed" || "The requested OAuth 2.0 Client does not exist."
-     //   "ui_locales"    | "zu"                      || 302        || "invalid_client"            || "The requested OAuth 2.0 Client does not exist"
-     //   "acr_values"    | "medium"                  || 302        || "invalid_client"            || "The requested OAuth 2.0 Client does not exist"
     }
 
     @Unroll

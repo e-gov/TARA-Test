@@ -25,19 +25,6 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.oidcService.fullJwksUrl))
     }
 
-    @Ignore()
-    @Unroll
-    @Feature("https://e-gov.github.io/TARA-Doku/TechnicalSpecification#44-user-info-request")
-    def "Test all input parameters and verify the structure and element coherence compared to TARA1 on responses"() {
-        expect:
-        Steps.startAuthenticationInTara(flow)
-        Response midAuthResponse = Steps.authenticateWithMid(flow,"60001017716", "69100366")
-        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
-        Response userInfoResponse //= Steps.getUserInfoResponse(flow, authenticationFinishedResponse)
-        // We need only to test that the input and output of the first request in most cases
-        assertThat(userInfoResponse, equalTo("TARA1 response"))
-    }
-
     @Unroll
     @Feature("OIDC_USERINFO_ENDPOINT")
     @Feature("OIDC_USERINFO_REQUEST_VALIDATION")

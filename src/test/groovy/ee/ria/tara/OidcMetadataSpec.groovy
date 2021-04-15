@@ -1,44 +1,20 @@
 package ee.ria.tara
 
-import com.nimbusds.jose.jwk.JWKSet
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.path.json.JsonPath
 import io.restassured.response.Response
-import spock.lang.Ignore
-import spock.lang.Unroll
 import spock.lang.IgnoreIf
+import spock.lang.Unroll
 
-import static org.hamcrest.Matchers.equalTo
-import static org.junit.Assert.assertTrue
 import static org.junit.Assert.assertEquals
-import static org.junit.Assert.assertThat
+import static org.junit.Assert.assertTrue
 
 @IgnoreIf({ properties['test.deployment.env'] == "idp" })
 class OidcMetadataSpec extends TaraSpecification {
     Flow flow = new Flow(props)
     def setup() {
         flow.cookieFilter = new CookieFilter()
-    }
-
-    @Ignore()
-    @Unroll
-    @Feature("/oidc/.well-known/openid-configuration endpoint")
-    def "Test configuration request and verify the structure and element coherence compared to TARA1 on response"() {
-        expect:
-        Response configurationResponse = Requests.getOpenidConfiguration(flow.oidcService.fullConfigurationUrl)
-        // In adition to typical comparing with TARA1 it is needed to test that not supported features in TARA2 are disabled
-        assertThat(configurationResponse, equalTo("TARA1 response"))
-    }
-
-    @Ignore()
-    @Unroll
-    @Feature("oidc/jwks endpoint")
-    def "Test jwks requests and verify the structure and element coherence compared to TARA1 on response"() {
-        expect:
-        JWKSet jwkResponse = JWKSet.load(Requests.getOpenidJwks(flow.oidcService.fullJwksUrl))
-        // In adition to typical comparing with TARA1 it is needed to test that not supported features in TARA2 are disabled
-        assertThat(jwkResponse, equalTo("TARA1 response"))
     }
 
     @Unroll
