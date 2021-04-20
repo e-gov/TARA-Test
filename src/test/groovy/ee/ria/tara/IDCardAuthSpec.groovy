@@ -49,7 +49,7 @@ class IDCardAuthSpec extends TaraSpecification {
         Response response = Requests.idCardAuthentication(flow, headersMap)
         assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
         assertThat("Correct response", response.body().jsonPath().get("status").toString(), equalTo("ERROR"))
-        assertThat("Correct error message", response.body().jsonPath().get("errorMessage").toString(), equalTo("Teie sertifikaadid ei kehti."))
+        assertThat("Correct error message", response.body().jsonPath().get("message").toString(), equalTo("Teie sertifikaadid ei kehti."))
         assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
     }
 
