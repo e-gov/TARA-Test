@@ -114,7 +114,6 @@ class SmartIDAuthSpec extends TaraSpecification {
         "30403039950" | "USER_REFUSED_CONFIRMATIONMESSAGE_WITH_VC_CHOICE" || "Autentimine katkestati kasutaja poolt verifitseerimiskoodi kinnitusekraanil."
         "30403039961" | "USER_REFUSED_CERT_CHOICE"                        || "Kasutajal on mitu Smart-ID kontot ja ühe kontoga tühistati autentimisprotsess."
         "30403039972" | "WRONG_VC"                                        || "Vale kinnituskood."
-        "30403039983" | "TIMEOUT"                                         || "Autentimise sessioon aegus."
     }
 
     @Unroll
@@ -139,7 +138,6 @@ class SmartIDAuthSpec extends TaraSpecification {
         "30403039950" | "USER_REFUSED_CONFIRMATIONMESSAGE_WITH_VC_CHOICE" || "User cancelled the process on the verification code choice confirmation message screen."
         "30403039961" | "USER_REFUSED_CERT_CHOICE"                        || "User has multiple Smart-ID accounts and one of them has canceled authentication."
         "30403039972" | "WRONG_VC"                                        || "Wrong verification code."
-        "30403039983" | "TIMEOUT"                                         || "Authentication session timed out."
     }
 
     @Unroll
@@ -164,7 +162,26 @@ class SmartIDAuthSpec extends TaraSpecification {
         "30403039950" | "USER_REFUSED_CONFIRMATIONMESSAGE_WITH_VC_CHOICE" || "Пользователь отменил процесс на экране выбора кода верификации."
         "30403039961" | "USER_REFUSED_CERT_CHOICE"                        || "У пользователя несколько учетных записей Smart-ID, и одна из них отменила аутентификацию."
         "30403039972" | "WRONG_VC"                                        || "Неправильный код подтверждения"
-        "30403039983" | "TIMEOUT"                                         || "Срок сеанса аутентификации истек."
+    }
+
+    @Unroll
+    @Feature("SID_AUTH_POLL_RESPONSE_TIMEOUT_ERROR")
+    def "initialize Smart-ID authentication with scenario: TIMEOUT #locale"() {
+        expect:
+        Steps.startAuthenticationInTara(flow, "openid smartid", locale)
+        Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, idCode, Collections.emptyMap())
+        assertEquals("Correct HTTP status code is returned", 200, initSidAuthenticationSession.statusCode())
+        Response pollResponse = Steps.pollSidResponse(flow, 10000L)
+        String messageText = "Correct HTTP status code is returned. Response body: " + pollResponse.body().jsonPath().prettify()
+        assertEquals(messageText, 400, pollResponse.statusCode())
+        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", pollResponse.getContentType())
+        assertThat(pollResponse.body().jsonPath().get("message"), Matchers.startsWith(errorMessage))
+
+        where:
+        idCode        | locale    || errorMessage
+        "30403039983" | "et"      || "Autentimise sessioon aegus."
+        "30403039983" | "en"      || "Authentication session timed out."
+        "30403039983" | "ru"      || "Срок сеанса аутентификации истек."
     }
 
     @Unroll
