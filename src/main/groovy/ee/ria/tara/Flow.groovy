@@ -17,6 +17,7 @@ class Flow {
  
     CookieFilter cookieFilter
     String sessionId
+    String login_locale
     String csrf
     String loginChallenge
 

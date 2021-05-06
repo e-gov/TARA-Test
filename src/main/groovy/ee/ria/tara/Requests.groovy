@@ -56,6 +56,7 @@ class Requests {
                         .filter(flow.cookieFilter)
                         .filter(new AllureRestAssured())
                         .cookie("SESSION", flow.sessionId)
+                        .cookie("LOGIN_LOCALE", flow.login_locale)
                         .log().cookies()
                         .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
                         .when()

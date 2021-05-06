@@ -40,6 +40,7 @@ class Steps {
     static Response createLoginSession(Flow flow, Response response) {
         Response initLogin = followRedirect(flow, response)
         flow.setSessionId(initLogin.getCookie("SESSION"))
+        flow.setLogin_locale(initLogin.getCookie("LOGIN_LOCALE"))
         // TODO initLogin.body("input", contains("_csrf"))
         if (initLogin.body().prettyPrint().contains("_csrf")) { // TARA2-121
             flow.setCsrf(initLogin.body().htmlPath().get("**.find {it.@name == '_csrf'}.@value"))
@@ -48,8 +49,8 @@ class Steps {
     }
 
     @Step("Start authentication in TARA and follow redirects")
-    static Response startAuthenticationInTara(Flow flow, String scopeList = "openid", String locale = "et", boolean checkStatusCode = true) {
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, scopeList, locale)
+    static Response startAuthenticationInTara(Flow flow, String scopeList = "openid", String login_locale = "et", boolean checkStatusCode = true) {
+        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, scopeList, login_locale)
         Response initOIDCServiceSession = startAuthenticationInOidcWithParams(flow, paramsMap)
         Response initLoginSession = createLoginSession(flow, initOIDCServiceSession)
         if (checkStatusCode) {
@@ -155,6 +156,7 @@ class Steps {
         }
         HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(cookieMap, "SESSION", sessionId)
+        Utils.setParameter(cookieMap, "LOGIN_LOCALE", flow.login_locale)
         return Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullSidInitUrl, cookieMap, formParamsMap, additionalParamsMap)
     }
 

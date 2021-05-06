@@ -78,7 +78,7 @@ class SmartIDAuthSpec extends TaraSpecification {
     @Feature("SID_AUTH_INIT_ENDPOINT")
     def "initialize Smart-ID authentication with no smart-id contract: #label"() {
         expect:
-        Steps.startAuthenticationInTara(flow, "openid smartid",locale)
+        Steps.startAuthenticationInTara(flow, "openid smartid",login_locale)
         Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, "60001019906", Collections.emptyMap())
         assertEquals("Correct HTTP status code is returned", 400, initSidAuthenticationSession.statusCode())
         assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", initSidAuthenticationSession.getContentType())
@@ -86,7 +86,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         assertTrue(initSidAuthenticationSession.body().jsonPath().get("incident_nr").toString().size() > 15)
 
         where:
-        locale | label || errorMessage
+        login_locale | label || errorMessage
         "et" | "Estonian locale" || "Kasutajal puudub"
         "en" | "English locale" || "The user has no Smart-ID contract"
         "ru" | "Russian locale" || "У пользователя нет договора"
@@ -96,7 +96,7 @@ class SmartIDAuthSpec extends TaraSpecification {
     @Feature("SID_AUTH_POLL_RESPONSE_COMPLETED_ERRORS")
     def "initialize Smart-ID authentication with scenario: #label et"() {
         expect:
-        Steps.startAuthenticationInTara(flow, "openid smartid")
+        Steps.startAuthenticationInTara(flow, "openid smartid", "et")
         Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, idCode, Collections.emptyMap())
         assertEquals("Correct HTTP status code is returned", 200, initSidAuthenticationSession.statusCode())
         Response pollResponse = Steps.pollSidResponse(flow, 3000L)
@@ -166,9 +166,9 @@ class SmartIDAuthSpec extends TaraSpecification {
 
     @Unroll
     @Feature("SID_AUTH_POLL_RESPONSE_TIMEOUT_ERROR")
-    def "initialize Smart-ID authentication with scenario: TIMEOUT #locale"() {
+    def "initialize Smart-ID authentication with scenario: TIMEOUT #login_locale"() {
         expect:
-        Steps.startAuthenticationInTara(flow, "openid smartid", locale)
+        Steps.startAuthenticationInTara(flow, "openid smartid", login_locale)
         Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, idCode, Collections.emptyMap())
         assertEquals("Correct HTTP status code is returned", 200, initSidAuthenticationSession.statusCode())
         Response pollResponse = Steps.pollSidResponse(flow, 10000L)
@@ -178,10 +178,10 @@ class SmartIDAuthSpec extends TaraSpecification {
         assertThat(pollResponse.body().jsonPath().get("message"), Matchers.startsWith(errorMessage))
 
         where:
-        idCode        | locale    || errorMessage
-        "30403039983" | "et"      || "Autentimise sessioon aegus."
-        "30403039983" | "en"      || "Authentication session timed out."
-        "30403039983" | "ru"      || "Срок сеанса аутентификации истек."
+        idCode        | login_locale    || errorMessage
+        "30403039983" | "et"            || "Autentimise sessioon aegus."
+        "30403039983" | "en"            || "Authentication session timed out."
+        "30403039983" | "ru"            || "Срок сеанса аутентификации истек."
     }
 
     @Unroll
