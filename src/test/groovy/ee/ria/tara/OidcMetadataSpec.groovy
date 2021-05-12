@@ -23,7 +23,7 @@ class OidcMetadataSpec extends TaraSpecification {
         expect:
         Response response = Requests.getRequest(flow.oidcService.baseUrl + path)
         assertEquals("Correct HTTP status code is returned", 200, response.statusCode())
-        assertEquals("Correct issuer", (flow.oidcService.baseUrl.toString() + "/"), response.getBody().jsonPath().get("issuer"))
+        assertEquals("Correct issuer", (flow.oidcService.baseUrl.toString()), response.getBody().jsonPath().get("issuer"))
 
         where:
         path || statusCode
@@ -38,7 +38,7 @@ class OidcMetadataSpec extends TaraSpecification {
     def "Verify discovery content"() {
         expect:
         JsonPath jsonResponse = Requests.getOpenidConfiguration(flow.oidcService.fullConfigurationUrl)
-        assertEquals("Correct issuer", (flow.oidcService.baseUrl.toString() + "/"), jsonResponse.get("issuer"))
+        assertEquals("Correct issuer", (flow.oidcService.baseUrl.toString()), jsonResponse.get("issuer"))
         List<String> scopesSupported = jsonResponse.getList("scopes_supported")
         def scopeList = ["openid", "idcard", "mid", "smartid", "email", "phone"] //, "eidas", "eidasonly"]
         scopeList.each {
