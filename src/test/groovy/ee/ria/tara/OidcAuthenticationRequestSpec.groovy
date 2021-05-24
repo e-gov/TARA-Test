@@ -167,4 +167,70 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
         assertThat(claims.getClaim("phone_number_verified"), equalTo(true))
     }
 
+    @Unroll
+    @Feature("https://e-gov.github.io/TARA-Doku/TechnicalSpecification#41-authentication-request")
+    def "Authentication request with empty optional parameters: #paramName"() {
+        expect:
+        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "openid")
+        def value = Utils.setParameter(paramsMap, paramName, paramValue)
+        if (paramName.equalsIgnoreCase("nonce")) {
+            flow.setNonce("")
+        }
+        Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
+        Steps.createLoginSession(flow, initOIDCServiceSession)
+
+        String certificate = Utils.getCertificateAsString("src/test/resources/joeorg-auth.pem")
+        HashMap<String, String> headersMap = (HashMap) Collections.emptyMap()
+        Utils.setParameter(headersMap, "XCLIENTCERTIFICATE", certificate)
+        Requests.idCardAuthentication(flow, headersMap)
+        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
+        Response oidcServiceResponse = Steps.getOAuthCookies(flow, acceptResponse)
+
+        Response consentResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
+
+        if (consentResponse.getStatusCode() == 200) {
+            consentResponse = Steps.submitConsent(flow, true)
+            assertEquals("Correct HTTP status code is returned", 302, consentResponse.statusCode())
+            Steps.verifyResponseHeaders(consentResponse)
+        }
+        Response oidcserviceResponse = Steps.followRedirectWithCookies(flow, consentResponse, flow.oidcService.cookies)
+        Response sa = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
+        String authorizationCode = Utils.getParamValueFromResponseHeader(oidcserviceResponse, "code")
+        Response tokenResponse = Requests.getWebToken(flow, authorizationCode)
+        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        assertThat(claims.getAudience().get(0), equalTo(flow.oidcClient.clientId))
+        assertThat(claims.getSubject(), equalTo("EE38001085718"))
+        assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo("JAAK-KRISTJAN"))
+        assertThat(claims.getJSONObjectClaim("profile_attributes").get("family_name"), equalTo("JÕEORG"))
+        assertThat(claims.getJSONObjectClaim("profile_attributes").get("date_of_birth"), equalTo("1980-01-08"))
+        assertThat(claims.getClaim("amr")[0].toString(), equalTo("idcard"))
+        assertThat(claims.getClaim("acr"), equalTo("high"))
+
+        where:
+        paramName    | paramValue
+        "ui_locales" | _
+        "nonce" | _
+        "acr_values" | _
+        "redirect_uri" | _
+    }
+
+    @Unroll
+    @Feature("https://e-gov.github.io/TARA-Doku/TechnicalSpecification#41-authentication-request")
+    def "Authentication request with empty mandatory parameters: #paramName"() {
+        expect:
+
+        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "openid")
+        def value = Utils.setParameter(paramsMap, paramName, paramValue)
+
+        Response response = Requests.getRequestWithParams(flow, flow.oidcService.fullAuthenticationRequestUrl, value,  Collections.emptyMap())
+        assertEquals("Error description parameter exists", expectedErrorDescription ,Utils.getParamValueFromResponseHeader(response, "error_description"))
+
+        where:
+        paramName    | paramValue | expectedErrorDescription
+        "redirect_uri" | _ | "string"
+        "state" | _ | "The state is missing or does not have enough characters and is therefore considered too weak. Request parameter 'state' must be at least be 8 characters long to ensure sufficient entropy."
+        "response_type" | _ | "The authorization server does not support obtaining a token using this method. `The request is missing the 'response_type' parameter."
+        "client_id" | _ | "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method). The requested OAuth 2.0 Client does not exist."
+    }
+
 }
