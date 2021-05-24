@@ -227,7 +227,6 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
 
         where:
         paramName    | paramValue | expectedErrorDescription
-        "redirect_uri" | _ | "string"
         "state" | _ | "The state is missing or does not have enough characters and is therefore considered too weak. Request parameter 'state' must be at least be 8 characters long to ensure sufficient entropy."
         "response_type" | _ | "The authorization server does not support obtaining a token using this method. `The request is missing the 'response_type' parameter."
         "client_id" | _ | "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method). The requested OAuth 2.0 Client does not exist."
