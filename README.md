@@ -1,3 +1,5 @@
+<img src="doc/img/eu_regional_development_fund_horizontal.jpg" width="350" height="200">
+
 # TARA2 integration tests
 
 Tests for TARA2 (both Hydra OIDC and Estonian specific login service component)
@@ -123,5 +125,3 @@ Configure correct Allure results directory in IntelliJ in order to view Allure r
 `Run-> Edit configurations-> Templates-> JUnit-> VM Options: -ea -Dallure.results.directory=$ProjectFileDir$/target/allure-results`
 
 And delete all existing run configurations
-
-<img src="doc/eu_regional_development_fund_horizontal.jpg" width="350" height="200">
