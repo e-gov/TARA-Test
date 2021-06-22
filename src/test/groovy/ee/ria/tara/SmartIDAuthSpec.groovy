@@ -79,11 +79,12 @@ class SmartIDAuthSpec extends TaraSpecification {
     def "initialize Smart-ID authentication with no smart-id contract: #label"() {
         expect:
         Steps.startAuthenticationInTara(flow, "openid smartid",login_locale)
-        Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, "60001019906", Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 400, initSidAuthenticationSession.statusCode())
-        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", initSidAuthenticationSession.getContentType())
-        assertThat(initSidAuthenticationSession.body().jsonPath().get("message"), Matchers.containsString(errorMessage))
-        assertTrue(initSidAuthenticationSession.body().jsonPath().get("incident_nr").toString().size() > 15)
+        Steps.initSidAuthSession(flow, flow.sessionId, "60001019906", Collections.emptyMap())
+        Response pollResponse = Steps.pollSidResponse(flow, 1000L)
+        assertEquals("Correct HTTP status code is returned", 400, pollResponse.statusCode())
+        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", pollResponse.getContentType())
+        assertThat(pollResponse.body().jsonPath().get("message"), Matchers.containsString(errorMessage))
+        assertTrue(pollResponse.body().jsonPath().get("incident_nr").toString().size() > 15)
 
         where:
         login_locale | label || errorMessage
