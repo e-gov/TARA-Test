@@ -74,6 +74,8 @@ class ServiceErrorsSpec extends TaraSpecification {
         assertTrue(response.body().htmlPath().getInt("**.find { strong -> strong.text() == 'Kasutaja tuvastamine ebaõnnestus.'}.size()") > 0)
         assertTrue(response.body().htmlPath().getInt("**.find { p -> p.text() == 'Autentimine ebaõnnestus teenuse tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti.'}.size()") > 0)
         assertTrue(response.body().htmlPath().getString("**.find { it.@role == 'alert'}.p.text()").contains("Intsidendi number:"))
+        assertTrue(response.body().htmlPath().getString("**.find { it.@role == 'alert'}.p.text()").contains("Edasta veakirjeldus"))
+        assertTrue(response.body().htmlPath().getString("**.find { it.@role == 'alert'}.p.text()").contains("Palun saatke e-kiri aadressile help@example.com."))
     }
 
     @Unroll
@@ -90,6 +92,8 @@ class ServiceErrorsSpec extends TaraSpecification {
         assertTrue(response.body().htmlPath().getInt("**.find { strong -> strong.text() == 'Kasutaja tuvastamine ebaõnnestus.'}.size()") > 0)
         assertTrue(response.body().htmlPath().getInt("**.find { p -> p.text() == 'Kliendi autentimine ebaõnnestus. Tundmatu klient.'}.size()") > 0)
         assertTrue(response.body().htmlPath().getString("**.find { it.@role == 'alert'}.p.text()").contains("Intsidendi number:"))
+        assertTrue(response.body().htmlPath().getString("**.find { it.@role == 'alert'}.p.text()").contains("Edasta veakirjeldus"))
+        assertTrue(response.body().htmlPath().getString("**.find { it.@role == 'alert'}.p.text()").contains("Palun saatke e-kiri aadressile help@example.com."))
     }
 
 
