@@ -89,6 +89,35 @@ class AuthenticationSpec extends TaraSpecification {
         assertThat(claims.getJSONObjectClaim("profile_attributes").get("date_of_birth"), equalTo("1965-01-01"))
     }
 
+    @IgnoreIf({ properties['test.deployment.env'] == "idp" })
+    @Unroll
+    @Feature("AUTHENTICATION")
+    def "request authentication with Eidas. Low level of assurance."() {
+        expect:
+        Steps.startAuthenticationInTara(flow, "openid eidas")
+        String country = "CA"
+        Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, country, Collections.emptyMap())
+        assertEquals("Correct HTTP status code is returned", 200, initEidasAuthenticationSession.statusCode())
+        assertEquals("Correct Content-Type is returned", "text/html;charset=UTF-8", initEidasAuthenticationSession.getContentType())
+        String buttonLabel = initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@type == 'submit'}.@value")
+        assertEquals("Continue button exists", "Continue", buttonLabel)
+
+        flow.setNextEndpoint(initEidasAuthenticationSession.body().htmlPath().getString("**.find { form -> form.@method == 'post' }.@action"))
+        flow.setRelayState(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'RelayState' }.@value"))
+        flow.setRequestMessage(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'SAMLRequest' }.@value"))
+        Response colleagueResponse = EidasSteps.continueEidasAuthenticationFlow(flow, IDP_USERNAME, IDP_PASSWORD, EIDASLOA_LOW)
+        Response authorizationResponse = EidasSteps.getAuthorizationResponseFromEidas(flow, colleagueResponse)
+        String endpointUrl = authorizationResponse.body().htmlPath().get("**.find {it.@method == 'post'}.@action")
+        String samlResponse = authorizationResponse.body().htmlPath().get("**.find {it.@name == 'SAMLResponse'}.@value")
+        String relayState = authorizationResponse.body().htmlPath().get("**.find {it.@name == 'RelayState'}.@value")
+        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
+        Utils.setParameter(paramsMap, "SAMLResponse" , samlResponse)
+        Utils.setParameter(paramsMap, "RelayState", relayState)
+        Response redirectionResponse = Requests.postRequestWithParams(flow, endpointUrl, paramsMap, Collections.emptyMap())
+        assertThat(redirectionResponse.body().jsonPath().get("status"), equalTo(400))
+        assertThat(redirectionResponse.body().jsonPath().get("message").toString(), equalTo("Autentimine ebaõnnestus teenuse tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti."))
+    }
+
     @Unroll
     @Feature("DISALLOW_IFRAMES")
     @Feature("CSP_ENABLED")

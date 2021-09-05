@@ -115,7 +115,7 @@ class EidasSteps {
     @Step("Eidas colleague response")
     static Response eidasColleagueResponse(Flow flow, Response response) {
         String endpointUrl = response.body().htmlPath().get("**.find {it.@name == 'redirectForm'}.@action")
-        String samlResponse = response.body().htmlPath().get("**.find {it.@id == 'ColleagueResponse_SAMLResponse'}.@value")
+        String samlResponse = response.body().htmlPath().get("**.find {it.@name == 'SAMLResponse'}.@value")
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(paramsMap, "SAMLResponse", samlResponse)
         Response colleagueResponse =  Requests.postRequestWithParams(flow, endpointUrl, paramsMap, Collections.emptyMap())

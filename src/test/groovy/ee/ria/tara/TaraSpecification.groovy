@@ -24,6 +24,7 @@ class TaraSpecification extends Specification {
     static String IDP_USERNAME = "xavi"
     static String IDP_PASSWORD = "creus"
     static String EIDASLOA = "E"
+    static String EIDASLOA_LOW = "A"
     static String COUNTRY = "CA"
 
     def setupSpec() {
