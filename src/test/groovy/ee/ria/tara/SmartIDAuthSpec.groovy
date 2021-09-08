@@ -70,7 +70,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         "60001329939"  | _                       | _                                      | "wrong date inside idCode"   || "Isikukood ei ole korrektne."
         "6000"         | _                       | _                                      | "too short idCode"           || "Isikukood ei ole korrektne."
         "38500030556"  | _                       | _                                      | "invalid month in idCode"    || "Isikukood ei ole korrektne."
-        "60001017716"  | "idCode"           | "60001017727"                          | "multiple idCode parameters" || "Multiple request parameters with the same name not allowed"
+        "60001017716"  | "idCode"                | "60001017727"                          | "multiple idCode parameters" || "Multiple request parameters with the same name not allowed"
         "60001017716"  | "_csrf"                 | "d7860443-a0cc-45db-ad68-3c9300c0b3bb" | "multiple _csrf parameters"  || "Multiple request parameters with the same name not allowed"
     }
 
@@ -87,10 +87,10 @@ class SmartIDAuthSpec extends TaraSpecification {
         assertTrue(pollResponse.body().jsonPath().get("incident_nr").toString().size() > 15)
 
         where:
-        login_locale | label || errorMessage
-        "et" | "Estonian locale" || "Kasutajal puudub"
-        "en" | "English locale" || "The user has no Smart-ID contract"
-        "ru" | "Russian locale" || "У пользователя нет договора"
+        login_locale | label             || errorMessage
+        "et"         | "Estonian locale" || "Kasutajal puudub"
+        "en"         | "English locale"  || "User has no Smart-ID account."
+        "ru"         | "Russian locale"  || "У пользователя нет учетной записи Smart-ID."
     }
 
     @Unroll
@@ -105,16 +105,17 @@ class SmartIDAuthSpec extends TaraSpecification {
         assertEquals(messageText, 400, pollResponse.statusCode())
         assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", pollResponse.getContentType())
         assertThat(pollResponse.body().jsonPath().get("message"), Matchers.startsWith(errorMessage))
+        assertThat(pollResponse.body().jsonPath().get("reportable"), Matchers.is(false))
 
         where:
         idCode        | label                                             || errorMessage
-        "30403039917" | "USER_REFUSED"                                    || "Autentimine katkestati kasutaja poolt."
-        "30403039928" | "USER_REFUSED_DISPLAYTEXTANDPIN"                  || "Kasutaja katkestas PIN koodi sisestamise."
-        "30403039939" | "USER_REFUSED_VC_CHOICE"                          || "Kasutaja katkestas verifitseerimiskoodi valiku."
-        "30403039946" | "USER_REFUSED_CONFIRMATIONMESSAGE"                || "Kasutaja katkestas protsessi kinnitusekraanil."
-        "30403039950" | "USER_REFUSED_CONFIRMATIONMESSAGE_WITH_VC_CHOICE" || "Autentimine katkestati kasutaja poolt verifitseerimiskoodi kinnitusekraanil."
-        "30403039961" | "USER_REFUSED_CERT_CHOICE"                        || "Kasutajal on mitu Smart-ID kontot ja ühe kontoga tühistati autentimisprotsess."
-        "30403039972" | "WRONG_VC"                                        || "Vale kinnituskood."
+        "30403039917" | "USER_REFUSED"                                    || "Kasutaja katkestas autentimise Smart-ID rakenduses."
+        "30403039928" | "USER_REFUSED_DISPLAYTEXTANDPIN"                  || "Kasutaja katkestas Smart-ID rakenduses PIN koodi sisestamise."
+        "30403039939" | "USER_REFUSED_VC_CHOICE"                          || "Kasutaja katkestas Smart-ID rakenduses kontrollkoodi valiku."
+        "30403039946" | "USER_REFUSED_CONFIRMATIONMESSAGE"                || "Kasutaja katkestas autentimise Smart-ID rakenduses kinnitusekraanil."
+        "30403039950" | "USER_REFUSED_CONFIRMATIONMESSAGE_WITH_VC_CHOICE" || "Kasutaja katkestas autentimise Smart-ID rakenduses kontrollkoodi kinnituskraanil."
+        "30403039961" | "USER_REFUSED_CERT_CHOICE"                        || "Kasutajal on mitu Smart-ID kontot ja ühe kontoga tühistati autentimine."
+        "30403039972" | "WRONG_VC"                                        || "Kasutaja valis Smart-ID rakenduses vale kontrollkoodi."
     }
 
     @Unroll
@@ -129,16 +130,18 @@ class SmartIDAuthSpec extends TaraSpecification {
         assertEquals(messageText, 400, pollResponse.statusCode())
         assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", pollResponse.getContentType())
         assertThat(pollResponse.body().jsonPath().get("message"), Matchers.startsWith(errorMessage))
+        assertThat(pollResponse.body().jsonPath().get("reportable"), Matchers.is(false))
+
 
         where:
         idCode        | label                                             || errorMessage
-        "30403039917" | "USER_REFUSED"                                    || "Authentication was cancelled by user."
-        "30403039928" | "USER_REFUSED_DISPLAYTEXTANDPIN"                  || "User pressed cancel on PIN screen."
-        "30403039939" | "USER_REFUSED_VC_CHOICE"                          || "Verification code choice was cancelled by the user."
-        "30403039946" | "USER_REFUSED_CONFIRMATIONMESSAGE"                || "User cancelled the process on the confirmation message screen."
-        "30403039950" | "USER_REFUSED_CONFIRMATIONMESSAGE_WITH_VC_CHOICE" || "User cancelled the process on the verification code choice confirmation message screen."
-        "30403039961" | "USER_REFUSED_CERT_CHOICE"                        || "User has multiple Smart-ID accounts and one of them has canceled authentication."
-        "30403039972" | "WRONG_VC"                                        || "Wrong verification code."
+        "30403039917" | "USER_REFUSED"                                    || "User cancelled authentication in the Smart-ID app."
+        "30403039928" | "USER_REFUSED_DISPLAYTEXTANDPIN"                  || "User cancelled PIN code entry in the Smart-ID app."
+        "30403039939" | "USER_REFUSED_VC_CHOICE"                          || "User cancelled verification code choice in the Smart-ID app."
+        "30403039946" | "USER_REFUSED_CONFIRMATIONMESSAGE"                || "User cancelled authentication on the confirmation screen in the Smart-ID app."
+        "30403039950" | "USER_REFUSED_CONFIRMATIONMESSAGE_WITH_VC_CHOICE" || "User cancelled authentication on the verification code choice confirmation screen in the Smart-ID app."
+        "30403039961" | "USER_REFUSED_CERT_CHOICE"                        || "User has multiple Smart-ID accounts and one of them has cancelled authentication."
+        "30403039972" | "WRONG_VC"                                        || "User chose the wrong verification code in the Smart-ID app."
     }
 
     @Unroll
@@ -153,16 +156,18 @@ class SmartIDAuthSpec extends TaraSpecification {
         assertEquals(messageText, 400, pollResponse.statusCode())
         assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", pollResponse.getContentType())
         assertThat(pollResponse.body().jsonPath().get("message"), Matchers.startsWith(errorMessage))
+        assertThat(pollResponse.body().jsonPath().get("reportable"), Matchers.is(false))
+
 
         where:
         idCode        | label                                             || errorMessage
-        "30403039917" | "USER_REFUSED"                                    || "Пользователь рервал аутентификацию."
-        "30403039928" | "USER_REFUSED_DISPLAYTEXTANDPIN"                  || "Пользователь нажал Отмена на экране PIN"
-        "30403039939" | "USER_REFUSED_VC_CHOICE"                          || "Пользователь отменил выбор кода подтверждения."
-        "30403039946" | "USER_REFUSED_CONFIRMATIONMESSAGE"                || "Пользователь отменил процесс на экране подтверждения использования устройства для аутентификации."
-        "30403039950" | "USER_REFUSED_CONFIRMATIONMESSAGE_WITH_VC_CHOICE" || "Пользователь отменил процесс на экране выбора кода верификации."
+        "30403039917" | "USER_REFUSED"                                    || "Пользователь прервал аутентификацию в приложении Smart-ID."
+        "30403039928" | "USER_REFUSED_DISPLAYTEXTANDPIN"                  || "Пользователь отменил ввод PIN-кода в приложении Smart-ID."
+        "30403039939" | "USER_REFUSED_VC_CHOICE"                          || "Пользователь отменил выбор кода подтверждения в приложении Smart-ID."
+        "30403039946" | "USER_REFUSED_CONFIRMATIONMESSAGE"                || "Пользователь отменил аутентификацию на экране подтверждения в приложении Smart-ID."
+        "30403039950" | "USER_REFUSED_CONFIRMATIONMESSAGE_WITH_VC_CHOICE" || "Пользователь отменил аутентификацию на экране подтверждения контрольного кода в приложении Smart-ID."
         "30403039961" | "USER_REFUSED_CERT_CHOICE"                        || "У пользователя несколько учетных записей Smart-ID, и одна из них отменила аутентификацию."
-        "30403039972" | "WRONG_VC"                                        || "Неправильный код подтверждения"
+        "30403039972" | "WRONG_VC"                                        || "Пользователь выбрал неправильный код подтверждения в приложении Smart-ID."
     }
 
     @Unroll
@@ -177,12 +182,14 @@ class SmartIDAuthSpec extends TaraSpecification {
         assertEquals(messageText, 400, pollResponse.statusCode())
         assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", pollResponse.getContentType())
         assertThat(pollResponse.body().jsonPath().get("message"), Matchers.startsWith(errorMessage))
+        assertThat(pollResponse.body().jsonPath().get("reportable"), Matchers.is(false))
+
 
         where:
         idCode        | login_locale    || errorMessage
-        "30403039983" | "et"            || "Autentimise sessioon aegus."
-        "30403039983" | "en"            || "Authentication session timed out."
-        "30403039983" | "ru"            || "Срок сеанса аутентификации истек."
+        "30403039983" | "et"            || "Kasutaja ei autentinud Smart-ID rakenduses oodatud aja jooksul. Palun proovige uuesti."
+        "30403039983" | "en"            || "User did not authenticate in the Smart-ID app within the required time. Please try again."
+        "30403039983" | "ru"            || "Пользователь не прошел аутентификацию в приложении Smart-ID в течение требуемого времени. Пожалуйста, попробуйте еще раз."
     }
 
     @Unroll

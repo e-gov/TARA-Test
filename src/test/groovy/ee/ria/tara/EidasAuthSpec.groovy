@@ -269,7 +269,8 @@ class EidasAuthSpec extends TaraSpecification {
         Response redirectionResponse = EidasSteps.eidasRedirectAuthorizationResponse(flow, authorizationResponse2, false)
         assertEquals("Correct HTTP status code is returned", 400, redirectionResponse.statusCode())
         assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", redirectionResponse.getContentType())
-        assertThat(redirectionResponse.body().jsonPath().get("message").toString(), equalTo("Eidas autentimine ebaõnnestus."))
+        assertThat(redirectionResponse.body().jsonPath().get("message").toString(), equalTo("eIDAS autentimine ebaõnnestus."))
+        assertThat(redirectionResponse.body().jsonPath().get("reportable"), equalTo(true))
     }
 
 

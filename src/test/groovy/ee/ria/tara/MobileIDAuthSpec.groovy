@@ -97,16 +97,18 @@ class MobileIDAuthSpec extends TaraSpecification {
         assertEquals(messageText, 400, pollResponse.statusCode())
         assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", pollResponse.getContentType())
         assertThat(pollResponse.body().jsonPath().get("message"), Matchers.startsWith(errorMessage))
+        assertThat(pollResponse.body().jsonPath().get("reportable"), Matchers.is(reportable))
 
         where:
-        phoneNo                                   | idCode        | additionalParameterName | additionalParameterValue | label                                            || errorMessage
-        "00000266"                                | "60001019939" | _                       | _                        | "Mobile-ID user has no active certificates"      || "Kasutajal pole Mobiil-ID lepingut."
-        "07110066"                                | "60001019947" | _                       | _                        | "Sending authentication request to phone failed" || "Teie mobiiltelefoni ei saa Mobiil-ID autentimise sõnumeid saata."
-        "01100266"                                | "60001019950" | _                       | _                        | "User cancelled authentication"                  || "Autentimine on katkestatud."
-        "00000666"                                | "60001019961" | _                       | _                        | "Created signature is not valid"                 || "Autentimine Mobiil-ID-ga ei õnnestunud."
-        "01200266"                                | "60001019972" | _                       | _                        | "Phone cannot receive Mobile-ID auth messages"   || "Teie mobiiltelefoni ei saa Mobiil-ID autentimise sõnumeid saata."
-        "13100266"                                | "60001019983" | _                       | _                        | "Phone is not in coverage area"                  || "Teie mobiiltelefon on levialast väljas."
-        RandomStringUtils.random(15, false, true) | "60001019939" | _                       | _                        | "Telephone number length check"                  || "Kasutajal pole Mobiil-ID lepingut."
+        phoneNo                                   | idCode        | additionalParameterName | additionalParameterValue | reportable | label                                            || errorMessage
+        "00000266"                                | "60001019939" | _                       | _                        | false      | "Mobile-ID user has no active certificates"      || "Kasutajal pole telefoninumbril Mobiil-ID lepingut."
+        "07110066"                                | "60001019947" | _                       | _                        | false      | "Sending authentication request to phone failed" || "Kasutaja mobiiltelefoni ei saa Mobiil-ID autentimise sõnumeid saata."
+        "01100266"                                | "60001019950" | _                       | _                        | false      | "User cancelled authentication"                  || "Kasutaja katkestas mobiiltelefonil Mobiil-ID autentimise."
+        "00000666"                                | "60001019961" | _                       | _                        | true       | "Created signature is not valid"                 || "Autentimine Mobiil-ID-ga ei õnnestunud."
+        "01200266"                                | "60001019972" | _                       | _                        | false      | "Phone cannot receive Mobile-ID auth messages"   || "Kasutaja mobiiltelefoni ei saa Mobiil-ID autentimise sõnumeid saata."
+        "13100266"                                | "60001019983" | _                       | _                        | false      | "Phone is not in coverage area"                  || "Kasutaja mobiiltelefon on levialast väljas."
+        "66000266"                                | "50001018908" | _                       | _                        | false      | "User timeout"                                   || ""
+        RandomStringUtils.random(15, false, true) | "60001019939" | _                       | _                        | false      | "Telephone number length check"                  || "Kasutajal pole telefoninumbril Mobiil-ID lepingut."
     }
 
     @Unroll
@@ -125,16 +127,17 @@ class MobileIDAuthSpec extends TaraSpecification {
         assertEquals("Correct HTTP status code is returned", 400, pollResponse.statusCode())
         assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", pollResponse.getContentType())
         assertThat(pollResponse.body().jsonPath().get("message"), Matchers.startsWith(errorMessage))
+        assertThat(pollResponse.body().jsonPath().get("reportable"), Matchers.is(reportable))
 
         where:
-        phoneNo    | idCode        | additionalParameterName | additionalParameterValue | label                                            || errorMessage
-        "00000266" | "60001019939" | _                       | _                        | "Mobile-ID user has no active certificates"      || "У пользователя отсутствует договор об услуге"
-        "07110066" | "60001019947" | _                       | _                        | "Sending authentication request to phone failed" || "На Ваш телефон нельзя отправить сообщение аутентификации"
-        "01100266" | "60001019950" | _                       | _                        | "User cancelled authentication"                  || "Аутентификация прервана"
-        "00000666" | "60001019961" | _                       | _                        | "Created signature is not valid"                 || "Аутентификация с помощью Вашего"
-        "01200266" | "60001019972" | _                       | _                        | "Phone cannot receive Mobile-ID auth messages"   || "На Ваш телефон нельзя отправить сообщение аутентификации"
-        "13100266" | "60001019983" | _                       | _                        | "Phone is not in coverage area"                  || "Ваш телефон находится вне зоны доступа."
-
+        phoneNo    | idCode        | additionalParameterName | additionalParameterValue | reportable | label                                            || errorMessage
+        "00000266" | "60001019939" | _                       | _                        | false      | "Mobile-ID user has no active certificates"      || "У пользователя отсутствует договор об услуге"
+        "07110066" | "60001019947" | _                       | _                        | false      | "Sending authentication request to phone failed" || "На телефон пользователя нельзя отправить сообщение аутентификации Mobiil-ID."
+        "01100266" | "60001019950" | _                       | _                        | false      | "User cancelled authentication"                  || "Пользователь отменил аутентификацию с Mobiil-ID на своем телефоне."
+        "00000666" | "60001019961" | _                       | _                        | true       | "Created signature is not valid"                 || "Аутентификация с помощью Вашего"
+        "01200266" | "60001019972" | _                       | _                        | false      | "Phone cannot receive Mobile-ID auth messages"   || "На телефон пользователя нельзя отправить сообщение аутентификации Mobiil-ID."
+        "13100266" | "60001019983" | _                       | _                        | false      | "Phone is not in coverage area"                  || "Телефон пользователя находится вне зоны доступа."
+        "66000266" | "50001018908" | _                       | _                        | false      | "User timeout"                                   || "Пользователь не прошел аутентификацию на телефоне в течение требуемого времени. Пожалуйста, попробуйте еще раз."
     }
 
     @Unroll
@@ -153,16 +156,17 @@ class MobileIDAuthSpec extends TaraSpecification {
         assertEquals("Correct HTTP status code is returned", 400, pollResponse.statusCode())
         assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", pollResponse.getContentType())
         assertThat(pollResponse.body().jsonPath().get("message"), Matchers.startsWith(errorMessage))
+        assertThat(pollResponse.body().jsonPath().get("reportable"), Matchers.is(reportable))
 
         where:
-        phoneNo    | idCode        | additionalParameterName | additionalParameterValue | label                                            || errorMessage
-        "00000266" | "60001019939" | _                       | _                        | "Mobile-ID user has no active certificates"      || "The user has no Mobile-ID contract."
-        "07110066" | "60001019947" | _                       | _                        | "Sending authentication request to phone failed" || "Your mobile phone cannot receive Mobile-ID authentication messages."
-        "01100266" | "60001019950" | _                       | _                        | "User cancelled authentication"                  || "Authentication has been cancelled."
-        "00000666" | "60001019961" | _                       | _                        | "Created signature is not valid"                 || "Authentication with Mobile-ID failed. Test your Mobile-ID with the DigiDoc4 client"
-        "01200266" | "60001019972" | _                       | _                        | "Phone cannot receive Mobile-ID auth messages"   || "Your mobile phone cannot receive Mobile-ID authentication messages."
-        "13100266" | "60001019983" | _                       | _                        | "Phone is not in coverage area"                  || "Your mobile phone is out of coverage area."
-
+        phoneNo    | idCode        | additionalParameterName | additionalParameterValue | reportable | label                                            || errorMessage
+        "00000266" | "60001019939" | _                       | _                        | false      | "Mobile-ID user has no active certificates"      || "User has no Mobile-ID contract with this phone number."
+        "07110066" | "60001019947" | _                       | _                        | false      | "Sending authentication request to phone failed" || "User's mobile phone cannot receive Mobile-ID authentication messages."
+        "01100266" | "60001019950" | _                       | _                        | false      | "User cancelled authentication"                  || "User cancelled Mobile-ID authentication on mobile phone."
+        "00000666" | "60001019961" | _                       | _                        | true       | "Created signature is not valid"                 || "Authentication with Mobile-ID failed. Test your Mobile-ID with the DigiDoc4 client"
+        "01200266" | "60001019972" | _                       | _                        | false      | "Phone cannot receive Mobile-ID auth messages"   || "User's mobile phone cannot receive Mobile-ID authentication messages."
+        "13100266" | "60001019983" | _                       | _                        | false      | "Phone is not in coverage area"                  || "User's mobile phone is out of the coverage area."
+        "66000266" | "50001018908" | _                       | _                        | false      | "User timeout"                                   || "User did not authenticate on mobile phone during the required time. Please try again."
     }
 
     @Unroll

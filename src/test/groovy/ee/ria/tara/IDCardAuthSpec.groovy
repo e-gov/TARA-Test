@@ -49,7 +49,8 @@ class IDCardAuthSpec extends TaraSpecification {
         Response response = Requests.idCardAuthentication(flow, headersMap)
         assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
         assertThat("Correct response", response.body().jsonPath().get("status").toString(), equalTo("ERROR"))
-        assertThat("Correct error message", response.body().jsonPath().get("message").toString(), equalTo("Teie sertifikaadid ei kehti."))
+        assertThat("Correct error message", response.body().jsonPath().get("message").toString(), equalTo("ID-kaardi sertifikaadid ei kehti."))
+        assertThat("Error is not reportable", response.body().jsonPath().get("reportable"), equalTo(false))
         assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
     }
 
@@ -162,6 +163,7 @@ class IDCardAuthSpec extends TaraSpecification {
         assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
         assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
         assertEquals("Correct error message is returned", "Teie sessiooni ei leitud! Sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"))
+        assertEquals("Error is not reportable", false, response.body().jsonPath().get("reportable"))
     }
 
     @Unroll
