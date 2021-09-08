@@ -12,6 +12,7 @@ import org.spockframework.lang.Wildcard
 import java.text.ParseException
 
 import static org.hamcrest.CoreMatchers.is
+import static org.hamcrest.Matchers.anyOf
 import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.equalTo
 import static org.junit.Assert.assertEquals
@@ -272,7 +273,7 @@ class Steps {
         assertThat(response.getHeader("X-Frame-Options"), equalTo("DENY"))
         String policyString = "connect-src 'self'; default-src 'none'; font-src 'self'; img-src 'self'; script-src 'self'; style-src 'self'; base-uri 'none'; frame-ancestors 'none'; block-all-mixed-content"
         assertThat(response.getHeader("Content-Security-Policy"), equalTo(policyString))
-        assertThat(response.getHeader("Strict-Transport-Security"), containsString("max-age=16070400"))
+        assertThat(response.getHeader("Strict-Transport-Security"), anyOf(containsString("max-age=16070400"), containsString("max-age=31536000")))
         assertThat(response.getHeader("Strict-Transport-Security"), containsString("includeSubDomains"))
         assertThat(response.getHeader("Cache-Control"), equalTo("no-cache, no-store, max-age=0, must-revalidate"))
         assertThat(response.getHeader("X-Content-Type-Options"), equalTo("nosniff"))
