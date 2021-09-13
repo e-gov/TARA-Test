@@ -95,7 +95,7 @@ class AuthLegalPersonSpec extends TaraSpecification {
         Response response = Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullAuthLegalPersonUrl, cookiesMap, formParamsMap, Collections.emptyMap())
         assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
         assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
-        assertThat(response.body().jsonPath().get("message").toString(), Matchers.equalTo("Request method 'POST' not supported"))
+        assertThat(response.body().jsonPath().get("message").toString(), equalTo("Request method 'POST' not supported"))
     }
 
 }

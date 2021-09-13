@@ -235,7 +235,7 @@ class EidasAuthSpec extends TaraSpecification {
         Response redirectionResponse = Requests.postRequestWithParams(flow, endpointUrl, paramsMap, Collections.emptyMap())
         assertEquals(400, redirectionResponse.statusCode(), "Correct HTTP status code is returned")
         assertThat("Correct Content-Type is returned", redirectionResponse.getContentType(), Matchers.startsWith("application/json"))
-        assertEquals(redirectionResponse.body().jsonPath().get("error"), "Correct error is returned", "Bad Request")
+        assertEquals("Bad Request", redirectionResponse.body().jsonPath().get("error"), "Correct error is returned")
         assertThat("Correct error message is returned", redirectionResponse.body().jsonPath().getString("message"), Matchers.startsWith(errorMessage))
         assertTrue(redirectionResponse.body().jsonPath().get("incident_nr").toString().size() > 15)
 

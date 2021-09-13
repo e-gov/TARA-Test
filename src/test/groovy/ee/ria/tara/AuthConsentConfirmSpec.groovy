@@ -29,7 +29,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         expect:
         Steps.startAuthenticationInTara(flow)
         Response response = Steps.authenticateWithMid(flow,"60001017716", "69100366")
-        assertEquals("Correct HTTP status code is returned", 200, response.statusCode())
+        assertEquals(200, response.statusCode(), "Correct HTTP status code is returned")
         List<String> identityFields = response.body().htmlPath().getList("**.findAll {th -> th.@colspan == '1'}.b")
         assertTrue(response.body().htmlPath().getList("**.findAll { it.@method == 'POST'}.button").contains("Nõustun"))
         assertTrue(response.body().htmlPath().getList("**.findAll { it.@method == 'POST'}.button").contains("Keeldun"))
@@ -52,7 +52,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         flow.setSessionId("1234567")
         Response response = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
         assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
+        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
         assertEquals("Teie sessiooni ei leitud! Sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"), "Correct error message is returned")
     }
 
@@ -84,7 +84,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         Response oidcServiceResponse = Steps.getOAuthCookies(flow, acceptResponse)
         Response response = Steps.followRedirect(flow, oidcServiceResponse)
         assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
+        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
         assertEquals("Teie sessiooni ei leitud! Sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"), "Correct error message is returned")
     }
 
@@ -183,7 +183,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         def map2 = Utils.setParameter(paramsMap, "consent_given", true)
         Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullConsentConfirmUrl, cookiesMap, paramsMap, Collections.emptyMap())
         assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
+        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
         assertEquals("Request method 'GET' not supported", response.body().jsonPath().get("message"), "Correct error message is returned")
     }
 

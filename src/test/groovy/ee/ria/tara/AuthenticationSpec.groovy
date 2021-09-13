@@ -96,10 +96,10 @@ class AuthenticationSpec extends TaraSpecification {
         Steps.startAuthenticationInTara(flow, "openid eidas")
         String country = "CA"
         Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, country, Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 200, initEidasAuthenticationSession.statusCode())
-        assertEquals("Correct Content-Type is returned", "text/html;charset=UTF-8", initEidasAuthenticationSession.getContentType())
+        assertEquals(200, initEidasAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("text/html;charset=UTF-8", initEidasAuthenticationSession.getContentType(), "Correct Content-Type is returned")
         String buttonLabel = initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@type == 'submit'}.@value")
-        assertEquals("Continue button exists", "Continue", buttonLabel)
+        assertEquals("Continue", buttonLabel, "Continue button exists")
 
         flow.setNextEndpoint(initEidasAuthenticationSession.body().htmlPath().getString("**.find { form -> form.@method == 'post' }.@action"))
         flow.setRelayState(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'RelayState' }.@value"))
