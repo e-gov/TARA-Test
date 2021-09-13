@@ -6,15 +6,15 @@ import org.hamcrest.Matchers
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
-import spock.lang.Ignore
 import spock.lang.IgnoreIf
 import spock.lang.Unroll
 
 import static org.hamcrest.CoreMatchers.is
 import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.Matchers.startsWith
-import static org.junit.Assert.assertEquals
-import static org.junit.Assert.assertThat
+import static org.junit.jupiter.api.Assertions.*
+import static org.hamcrest.MatcherAssert.assertThat
+
 
 class OidcAuthenticationRequestSpec extends TaraSpecification {
     Flow flow = new Flow(props)
@@ -32,8 +32,8 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "openid")
         def value = paramsMap.put(paramName, paramValue)
         Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
-        assertEquals("Correct HTTP status code is returned", statusCode, initOIDCServiceSession.statusCode())
-        assertEquals("Correct error message is returned", error, Utils.getParamValueFromResponseHeader(initOIDCServiceSession, "error"))
+        assertEquals(statusCode, initOIDCServiceSession.statusCode(), "Correct HTTP status code is returned")
+        assertEquals(error, Utils.getParamValueFromResponseHeader(initOIDCServiceSession, "error"), "Correct error message is returned")
         String errorDescription = Utils.getParamValueFromResponseHeader(initOIDCServiceSession, "error_description")
         assertThat("Correct error_description suffix", errorDescription, startsWith(errorSuffix))
         assertThat("Correct error_description preffix", errorDescription, Matchers.endsWith(errorPreffix))
@@ -55,7 +55,7 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
         def value = Utils.setParameter(paramsMap, paramName, paramValue)
         Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
         Response response = Steps.followRedirect(flow, initOIDCServiceSession)
-        assertEquals("Correct HTTP status code is returned", 200, response.statusCode())
+        assertEquals(200, response.statusCode(), "Correct HTTP status code is returned")
         response.then().body("html.head.title", equalTo(expectedValue))
 
         where:
@@ -78,7 +78,7 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "openid")
         def value = paramsMap.put("my_parameter", "654321")
         Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
-        assertEquals("Correct HTTP status code is returned", 302, initOIDCServiceSession.statusCode())
+        assertEquals(302, initOIDCServiceSession.statusCode(), "Correct HTTP status code is returned")
         assertThat(initOIDCServiceSession.getHeader("location"), Matchers.containsString("?login_challenge="))
     }
 
@@ -91,8 +91,8 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
         def value = paramsMap.put("acr_values", "medium")
         Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
         Response response = Steps.followRedirect(flow, initOIDCServiceSession)
-        assertEquals("Correct HTTP status code is returned", 500, response.statusCode())
-        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
+        assertEquals(500, response.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
         assertThat(response.body().jsonPath().get("message").toString(), startsWith("Autentimine ebaõnnestus teenuse tehnilise vea tõttu."))
     }
 
@@ -103,8 +103,8 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "")
         Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
         Response response = Steps.followRedirect(flow, initOIDCServiceSession)
-        assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
-        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
+        assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
         assertThat(response.body().jsonPath().get("message").toString(), startsWith("Päringus puudub scope parameeter."))
     }
 
@@ -118,7 +118,7 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "openid " + scopes)
         Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
         Response response = Steps.followRedirect(flow, initOIDCServiceSession)
-        assertEquals("Correct HTTP status code is returned", 200, response.statusCode())
+        assertEquals(200, response.statusCode(), "Correct HTTP status code is returned")
         assertThat("Correct ID-Card scope value", isIdCardPresent(response), is(idCard))
         assertThat("Correct MID scope value", isMidPresent(response), is(mID))
         assertThat("Correct Smart-ID scope value", isSmartIdPresent(response), is(smartID))
@@ -190,7 +190,7 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
 
         if (consentResponse.getStatusCode() == 200) {
             consentResponse = Steps.submitConsent(flow, true)
-            assertEquals("Correct HTTP status code is returned", 302, consentResponse.statusCode())
+            assertEquals(302, consentResponse.statusCode(), "Correct HTTP status code is returned")
             Steps.verifyResponseHeaders(consentResponse)
         }
         Response oidcserviceResponse = Steps.followRedirectWithCookies(flow, consentResponse, flow.oidcService.cookies)
@@ -223,7 +223,7 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
         def value = Utils.setParameter(paramsMap, paramName, paramValue)
 
         Response response = Requests.getRequestWithParams(flow, flow.oidcService.fullAuthenticationRequestUrl, value,  Collections.emptyMap())
-        assertEquals("Error description parameter exists", expectedErrorDescription ,Utils.getParamValueFromResponseHeader(response, "error_description"))
+        assertEquals(expectedErrorDescription ,Utils.getParamValueFromResponseHeader(response, "error_description"), "Error description parameter exists")
 
         where:
         paramName    | paramValue | expectedErrorDescription

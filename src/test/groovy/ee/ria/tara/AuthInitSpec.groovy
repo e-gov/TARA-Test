@@ -8,12 +8,12 @@ import org.hamcrest.Matchers
 import org.spockframework.lang.Wildcard
 import spock.lang.Unroll
 
-import static org.junit.Assert.assertEquals
 import io.restassured.path.xml.XmlPath
 import io.restassured.path.xml.XmlPath.CompatibilityMode
 
-import static org.junit.Assert.assertThat
-import static org.junit.Assert.assertTrue
+import static org.junit.jupiter.api.Assertions.*
+import static org.hamcrest.MatcherAssert.assertThat
+
 
 class AuthInitSpec extends TaraSpecification {
     Flow flow = new Flow(props)
@@ -27,17 +27,17 @@ class AuthInitSpec extends TaraSpecification {
     def "request initialize authentication"() {
         expect:
         Response initOIDCServiceSession = Steps.startAuthenticationInOidc(flow)
-        assertEquals("Correct HTTP status code is returned", 302, initOIDCServiceSession.statusCode())
+        assertEquals(302, initOIDCServiceSession.statusCode(), "Correct HTTP status code is returned")
         Response response = Steps.createLoginSession(flow, initOIDCServiceSession)
-        assertEquals("Correct HTTP status code is returned", 200, response.statusCode())
-        assertEquals("Correct content type", "text/html;charset=UTF-8", response.getContentType())
+        assertEquals(200, response.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("text/html;charset=UTF-8", response.getContentType(), "Correct content type")
         String sessionCookie = response.getCookie("SESSION")
         String sessionHeader = response.getHeader("Set-Cookie")
-        assertEquals("Correct header attribute Set-Cookie", "SESSION=${sessionCookie}; Path=/; Secure; HttpOnly; SameSite=Strict".toString(), sessionHeader)
-        assertEquals("Correct header attribute Content-Language", "et", response.getHeader("Content-Language"))
+        assertEquals("SESSION=${sessionCookie}; Path=/; Secure; HttpOnly; SameSite=Strict".toString(), sessionHeader, "Correct header attribute Set-Cookie")
+        assertEquals("et", response.getHeader("Content-Language"), "Correct header attribute Content-Language")
         XmlPath xmlPath = new XmlPath(CompatibilityMode.HTML, response.body().toString())
         int count = response.body().htmlPath().getInt("**.find { a -> a.text() == 'Tagasi teenusepakkuja juurde' }.size()")
-        assertTrue("Link in Estonian exists", count > 0)
+        assertTrue(count > 0, "Link in estoninan exists")
     }
 
     @Unroll
@@ -47,14 +47,14 @@ class AuthInitSpec extends TaraSpecification {
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "openid", "et")
         Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
 
-        assertEquals("Correct HTTP status code is returned", 302, initOIDCServiceSession.statusCode())
+        assertEquals(302, initOIDCServiceSession.statusCode(), "Correct HTTP status code is returned")
         Response response = Steps.createLoginSession(flow, initOIDCServiceSession)
-        assertEquals("Correct HTTP status code is returned", 200, response.statusCode())
-        assertEquals("Correct content type", "text/html;charset=UTF-8", response.getContentType())
+        assertEquals(200, response.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("text/html;charset=UTF-8", response.getContentType(), "Correct content type")
         String sessionCookie = response.getCookie("SESSION")
         String sessionHeader = response.getHeader("Set-Cookie")
-        assertEquals("Correct header attribute Set-Cookie", "SESSION=${sessionCookie}; Path=/; Secure; HttpOnly; SameSite=Strict".toString(), sessionHeader)
-        assertEquals("Correct header attribute Content-Language", "et", response.getHeader("Content-Language"))
+        assertEquals("SESSION=${sessionCookie}; Path=/; Secure; HttpOnly; SameSite=Strict".toString(), sessionHeader, "Correct header attribute Set-Cookie")
+        assertEquals("et", response.getHeader("Content-Language"), "Correct header attribute Content-Language")
     }
 
     @Unroll
@@ -78,7 +78,7 @@ class AuthInitSpec extends TaraSpecification {
             def map2 = Utils.setParameter(paramsMap, paramName2, paramValue2)
         }
         Response initResponse = Requests.getRequestWithParams(flow, flow.loginService.fullInitUrl, paramsMap, additionalParamsMap)
-        assertEquals("Correct HTTP status code is returned", 400, initResponse.statusCode())
+        assertEquals(400, initResponse.statusCode(), "Correct HTTP status code is returned")
         assertThat(initResponse.body().jsonPath().get("message"), Matchers.startsWith(errorMessage))
 
         where:
@@ -104,7 +104,7 @@ class AuthInitSpec extends TaraSpecification {
         def map2 = Utils.setParameter(paramsMap, "login_challenge", loginChallenge)
         def map3 = Utils.setParameter(additionalParamsMap, paramName1, paramValue1)
         Response initResponse = Requests.getRequestWithParams(flow, flow.loginService.fullInitUrl, paramsMap, additionalParamsMap)
-        assertEquals("Correct HTTP status code is returned", 400, initResponse.statusCode())
+        assertEquals(400, initResponse.statusCode(), "Correct HTTP status code is returned")
         assertThat(initResponse.body().jsonPath().get("message"), Matchers.startsWith(errorMessage))
 
         where:
@@ -121,15 +121,15 @@ class AuthInitSpec extends TaraSpecification {
         def map1 = Utils.setParameter(localeMap, "lang", "ru")
         Response initOIDCServiceSession = Steps.startAuthenticationInOidc(flow)
         Response response = Steps.initLoginSession(flow, initOIDCServiceSession, localeMap)
-        assertEquals("Correct HTTP status code is returned", 200, response.statusCode())
-        assertEquals("Correct content type", "text/html;charset=UTF-8", response.getContentType())
+        assertEquals(200, response.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("text/html;charset=UTF-8", response.getContentType(), "Correct content type")
         String sessionCookie = response.getCookie("SESSION")
         String sessionHeader = response.getHeader("Set-Cookie")
-        assertEquals("Correct header attribute Set-Cookie", "SESSION=${sessionCookie}; Path=/; Secure; HttpOnly; SameSite=Strict".toString(), sessionHeader)
-        assertEquals("Correct header attribute Content-Language", "ru", response.getHeader("Content-Language"))
+        assertEquals("SESSION=${sessionCookie}; Path=/; Secure; HttpOnly; SameSite=Strict".toString(), sessionHeader, "Correct header attribute Set-Cookie")
+        assertEquals("ru", response.getHeader("Content-Language"), "Correct header attribute Content-Language")
         XmlPath xmlPath = new XmlPath(CompatibilityMode.HTML, response.body().toString())
         int count = response.body().htmlPath().getInt("**.find { a -> a.text() == 'Вернуться к поставщику услуг' }.size()")
-        assertTrue("Link in Russian exists", count > 0)
+        assertTrue(count > 0, "Link in Russian exists")
     }
 
     @Unroll
@@ -140,14 +140,14 @@ class AuthInitSpec extends TaraSpecification {
         def map1 = Utils.setParameter(localeMap, "lang", "en")
         Response initOIDCServiceSession = Steps.startAuthenticationInOidc(flow)
         Response response = Steps.initLoginSession(flow, initOIDCServiceSession, localeMap)
-        assertEquals("Correct HTTP status code is returned", 200, response.statusCode())
-        assertEquals("Correct content type", "text/html;charset=UTF-8", response.getContentType())
+        assertEquals(200, response.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("text/html;charset=UTF-8", response.getContentType(), "Correct content type")
         String sessionCookie = response.getCookie("SESSION")
         String sessionHeader = response.getHeader("Set-Cookie")
-        assertEquals("Correct header attribute Set-Cookie", "SESSION=${sessionCookie}; Path=/; Secure; HttpOnly; SameSite=Strict".toString(), sessionHeader)
-        assertEquals("Correct header attribute Content-Language", "en", response.getHeader("Content-Language"))
+        assertEquals("SESSION=${sessionCookie}; Path=/; Secure; HttpOnly; SameSite=Strict".toString(), sessionHeader, "Correct header attribute Set-Cookie")
+        assertEquals("en", response.getHeader("Content-Language"), "Correct header attribute Content-Language")
         XmlPath xmlPath = new XmlPath(CompatibilityMode.HTML, response.body().toString())
         int count = response.body().htmlPath().getInt("**.find { a -> a.text() == 'Return to service provider' }.size()")
-        assertTrue("Link in Russian exists", count > 0)
+        assertTrue(count > 0, "Link in English exists")
     }
 }

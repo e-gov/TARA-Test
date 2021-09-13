@@ -12,9 +12,10 @@ import spock.lang.IgnoreIf
 import spock.lang.Unroll
 
 import static org.hamcrest.Matchers.equalTo
-import static org.junit.Assert.assertEquals
-import static org.junit.Assert.assertThat
-import static org.junit.Assert.assertTrue
+import static org.junit.jupiter.api.Assertions.*
+import static org.hamcrest.MatcherAssert.assertThat
+
+
 
 @IgnoreIf({ properties['test.deployment.env'] != "idp" })
 class AuthLegalPersonConfirmSpec extends TaraSpecification {
@@ -65,7 +66,7 @@ class AuthLegalPersonConfirmSpec extends TaraSpecification {
         String legalPersonIdentifier = legalPersonsResponse.body().jsonPath().get("legalPersons[0].legalPersonIdentifier").toString()
         String legalName = legalPersonsResponse.body().jsonPath().get("legalPersons[0].legalName").toString()
         Response response = Steps.selectLegalPerson(flow, legalPersonIdentifier)
-        assertEquals("Correct HTTP status code is returned", 302, response.statusCode())
+        assertEquals(302, response.statusCode(), "Correct HTTP status code is returned")
         Steps.verifyResponseHeaders(response)
     }
 
@@ -77,8 +78,8 @@ class AuthLegalPersonConfirmSpec extends TaraSpecification {
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         def map1 = Utils.setParameter(paramsMap, "legal_person_identifier", "123456789")
         Response response = Requests.getRequestWithParams(flow, flow.loginService.fullAuthLegalConfirmUrl, paramsMap, Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
-        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
+        assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
         assertThat(response.body().jsonPath().get("message").toString(), Matchers.equalTo("Request method 'GET' not supported"))
     }
 
@@ -94,8 +95,8 @@ class AuthLegalPersonConfirmSpec extends TaraSpecification {
         def map1 = Utils.setParameter(paramsMap, "legal_person_identifier", "123456789")
         def map3 = Utils.setParameter(paramsMap, "_csrf", flow.csrf)
         Response response = Requests.postRequestWithParams(flow, flow.loginService.fullAuthLegalConfirmUrl, paramsMap, Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 403, response.statusCode())
-        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
+        assertEquals(403, response.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
         assertThat(response.body().jsonPath().get("error").toString(), equalTo("Forbidden"))
         String message = "Keelatud päring. Päring esitati topelt, sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud."
         assertThat(response.body().jsonPath().get("message").toString(), equalTo(message))
@@ -115,8 +116,8 @@ class AuthLegalPersonConfirmSpec extends TaraSpecification {
         HashMap<String, String> cookiesMap = (HashMap) Collections.emptyMap()
         def map2 = Utils.setParameter(cookiesMap, "SESSION", flow.sessionId)
         Response response = Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullAuthLegalConfirmUrl, cookiesMap, paramsMap, Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", statusCode, response.statusCode())
-        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
+        assertEquals(statusCode, response.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
         assertThat(response.body().jsonPath().get("message").toString(), Matchers.equalTo(errorMessage))
 
         where:
@@ -143,8 +144,8 @@ class AuthLegalPersonConfirmSpec extends TaraSpecification {
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
         def map4 = Utils.setParameter(additionalParamsMap, "legal_person_identifier", "10910878")
         Response response = Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullAuthLegalConfirmUrl, cookiesMap, paramsMap, additionalParamsMap)
-        assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
-        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
+        assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
         String message = "Multiple request parameters with the same name not allowed"
         assertThat(response.body().jsonPath().get("message").toString(), Matchers.equalTo(message))
         assertTrue(response.body().jsonPath().get("incident_nr").toString().size() > 15)

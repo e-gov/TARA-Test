@@ -8,8 +8,7 @@ import org.hamcrest.Matchers
 
 import java.time.Duration
 
-import static org.junit.Assert.assertEquals
-import static org.junit.Assert.assertTrue
+import static org.junit.jupiter.api.Assertions.*
 
 class HeartBeatSpec extends TaraSpecification {
     Flow flow = new Flow(props)
@@ -45,14 +44,14 @@ class HeartBeatSpec extends TaraSpecification {
                 .contentType("application/json")
         String duration = heartBeat.body().jsonPath().get("upTime")
         Duration upTime = Duration.parse(duration)
-        assertTrue("Correct upTime value exists", upTime.getSeconds() > 5)
+        assertTrue(upTime.getSeconds() > 5, "Correct upTime value exists")
         String serviceStatus = heartBeat.body().jsonPath().get("status")
         switch (serviceStatus) {
             case "UP" :
-                assertEquals("Correct heartbeat HTTP status code is returned", 200, heartBeat.statusCode())
+                assertEquals(200, heartBeat.statusCode(), "Correct heartbeat HTTP status code is returned")
                 break
             case "DOWN" :
-                assertEquals("Correct heartbeat HTTP status code is returned if some component is down", 503, heartBeat.statusCode())
+                assertEquals(503, heartBeat.statusCode(), "Correct heartbeat HTTP status code is returned if some component is down")
                 break
         }
     }

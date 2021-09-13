@@ -4,7 +4,7 @@ import io.qameta.allure.Step
 import io.restassured.response.Response
 import org.spockframework.lang.Wildcard
 
-import static org.junit.Assert.assertEquals
+import static org.junit.jupiter.api.Assertions.assertEquals
 
 class EidasSteps {
     @Step("Initialize Eidas authentication session")
@@ -28,7 +28,7 @@ class EidasSteps {
         Utils.setParameter(formParamsMap, "RelayState", relayState)
         Utils.setParameter(formParamsMap, "SAMLRequest", samlRequest)
         Response serviceProviderResponse = Requests.postRequestWithParams(flow, url, formParamsMap, Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 200, serviceProviderResponse.statusCode())
+        assertEquals(200, serviceProviderResponse.statusCode(), "Correct HTTP status code is returned")
         return serviceProviderResponse
     }
 
@@ -39,7 +39,7 @@ class EidasSteps {
         HashMap<String, String> formParamsMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(formParamsMap, "token", token)
         Response serviceProviderResponse = Requests.postRequestWithParams(flow, specificConnectorUrl, formParamsMap, Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 200, serviceProviderResponse.statusCode())
+        assertEquals(200, serviceProviderResponse.statusCode(), "Correct HTTP status code is returned")
         return serviceProviderResponse
     }
 
@@ -50,7 +50,7 @@ class EidasSteps {
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(paramsMap, "SAMLRequest", samlRequest)
         Response colleagueResponse = Requests.postRequestWithParams(flow, colleagueRequestUrl, paramsMap, Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 200, colleagueResponse.statusCode())
+        assertEquals(200, colleagueResponse.statusCode(), "Correct HTTP status code is returned")
         return colleagueResponse
     }
 
@@ -59,7 +59,7 @@ class EidasSteps {
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(paramsMap, "token", token)
         Response proxyServiceResponse = Requests.postRequestWithParams(flow, endpointUrl, paramsMap, Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 200, proxyServiceResponse.statusCode())
+        assertEquals(200, proxyServiceResponse.statusCode(), "Correct HTTP status code is returned")
         return proxyServiceResponse
     }
 
@@ -70,7 +70,7 @@ class EidasSteps {
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(paramsMap, "SMSSPRequest", smsspRequest)
         Response idpResponse =  Requests.postRequestWithParams(flow, endpointUrl, paramsMap, Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 200, idpResponse.statusCode())
+        assertEquals(200, idpResponse.statusCode(), "Correct HTTP status code is returned")
         return idpResponse
     }
 
@@ -88,7 +88,7 @@ class EidasSteps {
         Utils.setParameter(paramsMap, "callback", callbackUrl)
         Utils.setParameter(paramsMap, "jSonRequestDecoded", smsspTokenRequestJson)
         Response authorizationRequest =  Requests.postRequestWithParams(flow, flow.foreignIdpProvider.fullResponseUrl, paramsMap, Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 200, authorizationRequest.statusCode())
+        assertEquals(200, authorizationRequest.statusCode(), "Correct HTTP status code is returned")
         return authorizationRequest
     }
 
@@ -99,7 +99,7 @@ class EidasSteps {
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(paramsMap, "SMSSPResponse", smsspTokenResponse)
         Response authorizationResponse =  Requests.postRequestWithParams(flow, endpointUrl, paramsMap, Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 200, authorizationResponse.statusCode())
+        assertEquals(200, authorizationResponse.statusCode(), "Correct HTTP status code is returned")
         return authorizationResponse
     }
 
@@ -108,7 +108,7 @@ class EidasSteps {
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(paramsMap, "binaryLightToken", binaryLightToken)
         Response consentResponse =  Requests.postRequestWithParams(flow, flow.foreignProxyService.fullConsentUrl, paramsMap, Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 200, consentResponse.statusCode())
+        assertEquals(200, consentResponse.statusCode(), "Correct HTTP status code is returned")
         return consentResponse
     }
 
@@ -119,7 +119,7 @@ class EidasSteps {
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(paramsMap, "SAMLResponse", samlResponse)
         Response colleagueResponse =  Requests.postRequestWithParams(flow, endpointUrl, paramsMap, Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 200, colleagueResponse.statusCode())
+        assertEquals(200, colleagueResponse.statusCode(), "Correct HTTP status code is returned")
         return colleagueResponse
     }
 
@@ -156,7 +156,7 @@ class EidasSteps {
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(paramsMap, "token", lightToken)
         Response authorizationResponse = Requests.postRequestWithParams(flow, endpointUrl, paramsMap, Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 200, authorizationResponse.statusCode())
+        assertEquals(200, authorizationResponse.statusCode(), "Correct HTTP status code is returned")
         return authorizationResponse
     }
 
@@ -170,7 +170,7 @@ class EidasSteps {
         Utils.setParameter(paramsMap, "RelayState", relayState)
         Response redirectionResponse = Requests.postRequestWithParams(flow, endpointUrl, paramsMap, Collections.emptyMap())
         if (checkStatusCode) {
-            assertEquals("Correct HTTP status code is returned", 200, redirectionResponse.statusCode())
+            assertEquals(200, redirectionResponse.statusCode(), "Correct HTTP status code is returned")
         }
         return redirectionResponse
     }

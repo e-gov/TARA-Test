@@ -6,7 +6,7 @@ import groovy.json.JsonBuilder
 import io.qameta.allure.Step
 import io.restassured.response.Response
 
-import static org.junit.Assert.assertEquals
+import static org.junit.jupiter.api.Assertions.assertEquals
 
 class TaraAdminSteps {
     static String pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"

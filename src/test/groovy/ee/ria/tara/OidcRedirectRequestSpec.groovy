@@ -5,13 +5,11 @@ import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import org.hamcrest.Matchers
-import spock.lang.Ignore
 import spock.lang.IgnoreIf
 import spock.lang.Unroll
 
-import static org.junit.Assert.assertEquals
-import static org.junit.Assert.assertTrue
-import static org.junit.Assert.assertThat
+import static org.junit.jupiter.api.Assertions.*
+import static org.hamcrest.MatcherAssert.assertThat
 
 @IgnoreIf({ properties['test.deployment.env'] == "idp" })
 class OidcRedirectRequestSpec extends TaraSpecification {
@@ -31,9 +29,9 @@ class OidcRedirectRequestSpec extends TaraSpecification {
         Steps.startAuthenticationInTara(flow)
         Response midAuthResponse = Steps.authenticateWithMid(flow,"60001017716", "69100366")
         Response response = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
-        assertEquals("Correct HTTP status code is returned", 302, response.statusCode())
-        assertTrue("Code parameter exists", Utils.getParamValueFromResponseHeader(response, "code").size() > 60)
-        assertEquals("Correct state parameter", flow.state, Utils.getParamValueFromResponseHeader(response, "state"))
+        assertEquals(302, response.statusCode(), "Correct HTTP status code is returned")
+        assertTrue(Utils.getParamValueFromResponseHeader(response, "code").size() > 60, "Code parameter exists")
+        assertEquals(flow.state, Utils.getParamValueFromResponseHeader(response, "state"), "Correct state parameter")
     }
 
     @Unroll
@@ -43,9 +41,9 @@ class OidcRedirectRequestSpec extends TaraSpecification {
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "my_scope", "et")
         Response response = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
 
-        assertEquals("Correct HTTP status code is returned", 302, response.statusCode())
-        assertEquals("Correct state parameter", flow.state, Utils.getParamValueFromResponseHeader(response, "state"))
-        assertEquals("Error parameter exists", "invalid_scope", Utils.getParamValueFromResponseHeader(response, "error"))
+        assertEquals(302, response.statusCode(), "Correct HTTP status code is returned")
+        assertEquals(flow.state, Utils.getParamValueFromResponseHeader(response, "state"), "Correct state parameter")
+        assertEquals("invalid_scope", Utils.getParamValueFromResponseHeader(response, "error"), "Error parameter exists")
         assertThat("Error description parameter exists", Utils.getParamValueFromResponseHeader(response, "error_description") , Matchers.startsWith("The requested scope is invalid"))
     }
 
@@ -56,9 +54,9 @@ class OidcRedirectRequestSpec extends TaraSpecification {
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
         paramsMap.put("state", "ab")
         Response response = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
-        assertEquals("Correct HTTP status code is returned", 302, response.statusCode())
-        assertEquals("Correct state parameter", "ab", Utils.getParamValueFromResponseHeader(response, "state"))
-        assertEquals("Error parameter exists", "invalid_state", Utils.getParamValueFromResponseHeader(response, "error"))
+        assertEquals(302, response.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("ab", Utils.getParamValueFromResponseHeader(response, "state"), "Correct state parameter")
+        assertEquals("invalid_state", Utils.getParamValueFromResponseHeader(response, "error"), "Error parameter exists")
         assertThat("Error description parameter exists", Utils.getParamValueFromResponseHeader(response, "error_description") , Matchers.startsWith("The state is missing"))
     }
 
@@ -69,9 +67,9 @@ class OidcRedirectRequestSpec extends TaraSpecification {
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
         paramsMap.put("response_type", "token")
         Response response = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
-        assertEquals("Correct HTTP status code is returned", 302, response.statusCode())
-        assertEquals("Correct state parameter", flow.state, Utils.getParamValueFromResponseHeader(response, "state"))
-        assertEquals("Error parameter exists", "unsupported_response_type", Utils.getParamValueFromResponseHeader(response, "error"))
+        assertEquals(302, response.statusCode(), "Correct HTTP status code is returned")
+        assertEquals(flow.state, Utils.getParamValueFromResponseHeader(response, "state"), "Correct state parameter")
+        assertEquals("unsupported_response_type", Utils.getParamValueFromResponseHeader(response, "error"), "Error parameter exists")
         assertThat("Error description parameter exists", Utils.getParamValueFromResponseHeader(response, "error_description") , Matchers.startsWith("The authorization server does not support"))
     }
 
@@ -86,9 +84,9 @@ class OidcRedirectRequestSpec extends TaraSpecification {
         def map3 = Utils.setParameter(cookieMap, "SESSION", flow.sessionId)
         Response rejectResponse = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullAuthRejectUrl, cookieMap, paramsMap, Collections.emptyMap())
         Response response = Steps.followRedirectWithCookies(flow, rejectResponse, flow.oidcService.cookies)
-        assertEquals("Correct HTTP status code is returned", 302, response.statusCode())
-        assertEquals("Correct state parameter", flow.state, Utils.getParamValueFromResponseHeader(response, "state"))
-        assertEquals("Error parameter exists", "user_cancel", Utils.getParamValueFromResponseHeader(response, "error"))
+        assertEquals(302, response.statusCode(), "Correct HTTP status code is returned")
+        assertEquals(flow.state, Utils.getParamValueFromResponseHeader(response, "state"), "Correct state parameter")
+        assertEquals("user_cancel", Utils.getParamValueFromResponseHeader(response, "error"), "Error parameter exists")
         assertThat("Error description parameter exists", Utils.getParamValueFromResponseHeader(response, "error_description") , Matchers.startsWith("User canceled the authentication process"))
     }
 

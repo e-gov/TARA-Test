@@ -7,7 +7,7 @@ import spock.lang.Ignore
 import spock.lang.IgnoreIf
 import spock.lang.Unroll
 
-import static org.junit.Assert.assertEquals
+import static org.junit.jupiter.api.Assertions.assertEquals
 
 
 @IgnoreIf({ properties['test.deployment.env'] == "idp" })
@@ -26,7 +26,7 @@ class TaraAdminSpec extends TaraSpecification {
         expect:
         TaraAdminSteps.taraAdminLogin(flow, flow.taraAdminService.username, flow.taraAdminService.password)
         Response myResponse = TaraAdminSteps.whoAmI(flow)
-        assertEquals("Correct authenticated user", flow.taraAdminService.username, myResponse.getBody().jsonPath().get("username"))
+        assertEquals(flow.taraAdminService.username, myResponse.getBody().jsonPath().get("username"), "Correct authenticated user")
         String registryCode = "75004381"
         String clientId = "rak_id"
 

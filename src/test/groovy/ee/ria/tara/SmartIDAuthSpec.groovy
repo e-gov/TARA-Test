@@ -8,9 +8,8 @@ import spock.lang.IgnoreIf
 import spock.lang.Unroll
 import org.hamcrest.Matchers
 
-import static org.junit.Assert.assertEquals
-import static org.junit.Assert.assertThat
-import static org.junit.Assert.assertTrue
+import static org.junit.jupiter.api.Assertions.*
+import static org.hamcrest.MatcherAssert.assertThat
 
 @IgnoreIf({ properties['test.deployment.env'] == "idp" })
 class SmartIDAuthSpec extends TaraSpecification {
@@ -27,10 +26,10 @@ class SmartIDAuthSpec extends TaraSpecification {
         Steps.startAuthenticationInTara(flow, "openid")
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
         Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, "30303039914", additionalParamsMap)
-        assertEquals("Correct HTTP status code is returned", 200, initSidAuthenticationSession.statusCode())
-        assertEquals("Correct Content-Type is returned", "text/html;charset=UTF-8", initSidAuthenticationSession.getContentType())
+        assertEquals(200, initSidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("text/html;charset=UTF-8", initSidAuthenticationSession.getContentType(), "Correct Content-Type is returned")
         String controlCode = initSidAuthenticationSession.body().htmlPath().getString("**.find { p -> p.@class == 'control-code' }.text()")
-        assertEquals("Verification code exists", 4, controlCode.size())
+        assertEquals(4, controlCode.size(), "Verification code exists")
     }
 
     @Ignore // TARA2-165
@@ -45,7 +44,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         def map3 = Utils.setParameter(cookieMap, "SESSION", flow.sessionId)
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
         Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullSidInitUrl, cookieMap, paramsMap, additionalParamsMap)
-        assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
+        assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
         assertThat(response.body().jsonPath().get("message").toString(), Matchers.equalTo("Request method 'GET' not supported"))
     }
 
@@ -58,8 +57,8 @@ class SmartIDAuthSpec extends TaraSpecification {
         def map1 = Utils.setParameter(additionalParamsMap, additionalParameterName, additionalParameterValue)
         Steps.startAuthenticationInTara(flow, "openid smartid")
         Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, idCode, additionalParamsMap)
-        assertEquals("Correct HTTP status code is returned", 400, initSidAuthenticationSession.statusCode())
-        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", initSidAuthenticationSession.getContentType())
+        assertEquals(400, initSidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("application/json;charset=UTF-8", initSidAuthenticationSession.getContentType(), "Correct Content-Type is returned")
         assertThat(initSidAuthenticationSession.body().jsonPath().get("message"), Matchers.containsString(errorMessage))
 
         where:
@@ -81,8 +80,8 @@ class SmartIDAuthSpec extends TaraSpecification {
         Steps.startAuthenticationInTara(flow, "openid smartid",login_locale)
         Steps.initSidAuthSession(flow, flow.sessionId, "60001019906", Collections.emptyMap())
         Response pollResponse = Steps.pollSidResponse(flow, 1000L)
-        assertEquals("Correct HTTP status code is returned", 400, pollResponse.statusCode())
-        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", pollResponse.getContentType())
+        assertEquals(400, pollResponse.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("application/json;charset=UTF-8", pollResponse.getContentType(), "Correct Content-Type is returned")
         assertThat(pollResponse.body().jsonPath().get("message"), Matchers.containsString(errorMessage))
         assertTrue(pollResponse.body().jsonPath().get("incident_nr").toString().size() > 15)
 
@@ -99,11 +98,11 @@ class SmartIDAuthSpec extends TaraSpecification {
         expect:
         Steps.startAuthenticationInTara(flow, "openid smartid", "et")
         Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, idCode, Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 200, initSidAuthenticationSession.statusCode())
+        assertEquals(200, initSidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
         Response pollResponse = Steps.pollSidResponse(flow, 3000L)
         String messageText = "Correct HTTP status code is returned. Response body: " + pollResponse.body().jsonPath().prettify()
-        assertEquals(messageText, 400, pollResponse.statusCode())
-        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", pollResponse.getContentType())
+        assertEquals(400, pollResponse.statusCode(), messageText)
+        assertEquals("application/json;charset=UTF-8", pollResponse.getContentType(), "Correct Content-Type is returned")
         assertThat(pollResponse.body().jsonPath().get("message"), Matchers.startsWith(errorMessage))
         assertThat(pollResponse.body().jsonPath().get("reportable"), Matchers.is(false))
 
@@ -124,11 +123,11 @@ class SmartIDAuthSpec extends TaraSpecification {
         expect:
         Steps.startAuthenticationInTara(flow, "openid smartid", "en")
         Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, idCode, Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 200, initSidAuthenticationSession.statusCode())
+        assertEquals(200, initSidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
         Response pollResponse = Steps.pollSidResponse(flow, 3000L)
         String messageText = "Correct HTTP status code is returned. Response body: " + pollResponse.body().jsonPath().prettify()
-        assertEquals(messageText, 400, pollResponse.statusCode())
-        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", pollResponse.getContentType())
+        assertEquals(400, pollResponse.statusCode(), messageText)
+        assertEquals("application/json;charset=UTF-8", pollResponse.getContentType(), "Correct Content-Type is returned")
         assertThat(pollResponse.body().jsonPath().get("message"), Matchers.startsWith(errorMessage))
         assertThat(pollResponse.body().jsonPath().get("reportable"), Matchers.is(false))
 
@@ -150,11 +149,11 @@ class SmartIDAuthSpec extends TaraSpecification {
         expect:
         Steps.startAuthenticationInTara(flow, "openid smartid", "ru")
         Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, idCode, Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 200, initSidAuthenticationSession.statusCode())
+        assertEquals(200, initSidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
         Response pollResponse = Steps.pollSidResponse(flow, 3000L)
         String messageText = "Correct HTTP status code is returned. Response body: " + pollResponse.body().jsonPath().prettify()
-        assertEquals(messageText, 400, pollResponse.statusCode())
-        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", pollResponse.getContentType())
+        assertEquals(400, pollResponse.statusCode(), messageText)
+        assertEquals("application/json;charset=UTF-8", pollResponse.getContentType(), "Correct Content-Type is returned")
         assertThat(pollResponse.body().jsonPath().get("message"), Matchers.startsWith(errorMessage))
         assertThat(pollResponse.body().jsonPath().get("reportable"), Matchers.is(false))
 
@@ -176,11 +175,11 @@ class SmartIDAuthSpec extends TaraSpecification {
         expect:
         Steps.startAuthenticationInTara(flow, "openid smartid", login_locale)
         Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, idCode, Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 200, initSidAuthenticationSession.statusCode())
+        assertEquals(200, initSidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
         Response pollResponse = Steps.pollSidResponse(flow, 10000L)
         String messageText = "Correct HTTP status code is returned. Response body: " + pollResponse.body().jsonPath().prettify()
-        assertEquals(messageText, 400, pollResponse.statusCode())
-        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", pollResponse.getContentType())
+        assertEquals(400, pollResponse.statusCode(), messageText)
+        assertEquals("application/json;charset=UTF-8", pollResponse.getContentType(), "Correct Content-Type is returned")
         assertThat(pollResponse.body().jsonPath().get("message"), Matchers.startsWith(errorMessage))
         assertThat(pollResponse.body().jsonPath().get("reportable"), Matchers.is(false))
 
@@ -200,11 +199,11 @@ class SmartIDAuthSpec extends TaraSpecification {
         Steps.startAuthenticationInTara(flow, "openid smartid")
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
         Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, "30403039983", additionalParamsMap)
-        assertEquals("Correct HTTP status code is returned", 200, initSidAuthenticationSession.statusCode())
+        assertEquals(200, initSidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
         Response response = Requests.pollSid(flow)
-        assertEquals("Correct HTTP status code is returned", 200, response.statusCode())
-        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
-        assertEquals("Correct Mobile-ID status", "PENDING", response.body().jsonPath().get("status"))
+        assertEquals(200, response.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
+        assertEquals("PENDING", response.body().jsonPath().get("status"), "Correct Mobile-ID status")
     }
 
     @Unroll
@@ -214,12 +213,12 @@ class SmartIDAuthSpec extends TaraSpecification {
         Steps.startAuthenticationInTara(flow, "openid smartid")
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
         Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, "30403039983", additionalParamsMap)
-        assertEquals("Correct HTTP status code is returned", 200, initSidAuthenticationSession.statusCode())
+        assertEquals(200, initSidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
         flow.setSessionId("1234567")
         Response response = Requests.pollSid(flow)
-        assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
-        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
-        assertEquals("Correct error message is returned", "Teie sessiooni ei leitud! Sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"))
+        assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
+        assertEquals("Teie sessiooni ei leitud! Sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"), "Correct error message is returned")
     }
 
     @Unroll
@@ -230,11 +229,11 @@ class SmartIDAuthSpec extends TaraSpecification {
         Steps.startAuthenticationInTara(flow, "openid smartid")
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
         Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, "30303039914", additionalParamsMap)
-        assertEquals("Correct HTTP status code is returned", 200, initSidAuthenticationSession.statusCode())
+        assertEquals(200, initSidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
         Response response = Steps.pollSidResponse(flow)
-        assertEquals("Correct HTTP status code is returned", 200, response.statusCode())
-        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
-        assertEquals("Correct Mobile-ID status", "COMPLETED", response.body().jsonPath().get("status"))
+        assertEquals(200, response.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
+        assertEquals("COMPLETED", response.body().jsonPath().get("status"), "Correct Mobile-ID status")
     }
 
     @Ignore // TARA2-165
@@ -245,9 +244,9 @@ class SmartIDAuthSpec extends TaraSpecification {
         Steps.startAuthenticationInTara(flow, "openid smartid")
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
         Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, "30303039914", additionalParamsMap)
-        assertEquals("Correct HTTP status code is returned", 200, initSidAuthenticationSession.statusCode())
+        assertEquals(200, initSidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
         Response response = Requests.postRequestWithSessionId(flow, flow.loginService.fullSidPollUrl)
-        assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
+        assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
         assertThat(response.body().jsonPath().get("message").toString(), Matchers.equalTo("Request method 'POST' not supported"))
     }
 
@@ -259,9 +258,9 @@ class SmartIDAuthSpec extends TaraSpecification {
         Steps.startAuthenticationInTara(flow, "openid smartid")
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
         Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, "30303039914", additionalParamsMap)
-        assertEquals("Correct HTTP status code is returned", 200, initSidAuthenticationSession.statusCode())
+        assertEquals(200, initSidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
         Response response = Requests.postRequestWithSessionId(flow, flow.loginService.fullSidCancelUrl)
-        assertEquals("Correct HTTP status code is returned", 302, response.statusCode())
+        assertEquals(302, response.statusCode(), "Correct HTTP status code is returned")
         assertThat(response.getHeader("location"), Matchers.startsWith(flow.loginService.initUrl + "?login_challenge=" + flow.loginChallenge))
     }
 
@@ -277,9 +276,9 @@ class SmartIDAuthSpec extends TaraSpecification {
         Steps.startAuthenticationInTara(flow, "openid smartid")
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
         Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, "30303039914", additionalParamsMap)
-        assertEquals("Correct HTTP status code is returned", 200, initSidAuthenticationSession.statusCode())
+        assertEquals(200, initSidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
         Response response = Requests.postRequestWithSessionId(flow, flow.loginService.fullSidCancelUrl)
-        assertEquals("Correct HTTP status code is returned", 302, response.statusCode())
+        assertEquals(302, response.statusCode(), "Correct HTTP status code is returned")
         Steps.verifyResponseHeaders(response)
     }
 
@@ -290,16 +289,16 @@ class SmartIDAuthSpec extends TaraSpecification {
         Steps.startAuthenticationInTara(flow, "openid smartid")
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
         Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, "30303039914", additionalParamsMap)
-        assertEquals("Correct HTTP status code is returned", 200, initSidAuthenticationSession.statusCode())
+        assertEquals(200, initSidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
 
         flow.setSessionId("1234567")
         Response response = Requests.postRequestWithSessionId(flow, flow.loginService.fullSidCancelUrl)
-        assertEquals("Correct HTTP status code is returned", 403, response.statusCode())
-        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
+        assertEquals(403, response.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
 
-        assertEquals("Correct error text is returned", "Forbidden", response.body().jsonPath().get("error"))
+        assertEquals("Forbidden", response.body().jsonPath().get("error"), "Correct error text is returned")
         String errorMessage = "Keelatud päring. Päring esitati topelt, sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud."
-        assertEquals("Correct error message is returned", errorMessage, response.body().jsonPath().get("message"))
+        assertEquals(errorMessage, response.body().jsonPath().get("message"), "Correct error message is returned")
     }
 
     @Ignore // TARA2-165
@@ -310,10 +309,10 @@ class SmartIDAuthSpec extends TaraSpecification {
         Steps.startAuthenticationInTara(flow, "openid smartid")
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
         Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, "30303039914", additionalParamsMap)
-        assertEquals("Correct HTTP status code is returned", 200, initSidAuthenticationSession.statusCode())
+        assertEquals(200, initSidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
 
         Response response = Requests.getRequestWithSessionId(flow, flow.loginService.fullSidCancelUrl)
-        assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
+        assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
         assertThat(response.body().jsonPath().get("message").toString(), Matchers.equalTo("Request method 'GET' not supported"))
     }
 }

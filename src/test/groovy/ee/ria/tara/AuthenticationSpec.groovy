@@ -11,9 +11,8 @@ import spock.lang.IgnoreIf
 import spock.lang.Unroll
 
 import static org.hamcrest.Matchers.equalTo
-import static org.junit.Assert.assertEquals
-import static org.junit.Assert.assertThat
-import static org.junit.Assert.assertTrue
+import static org.junit.jupiter.api.Assertions.*
+import static org.hamcrest.MatcherAssert.assertThat
 
 class AuthenticationSpec extends TaraSpecification {
 
@@ -64,10 +63,10 @@ class AuthenticationSpec extends TaraSpecification {
         Steps.startAuthenticationInTara(flow, "openid eidas")
         String country = "CA"
         Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, country, Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 200, initEidasAuthenticationSession.statusCode())
-        assertEquals("Correct Content-Type is returned", "text/html;charset=UTF-8", initEidasAuthenticationSession.getContentType())
+        assertEquals(200, initEidasAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("text/html;charset=UTF-8", initEidasAuthenticationSession.getContentType(), "Correct Content-Type is returned")
         String buttonLabel = initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@type == 'submit'}.@value")
-        assertEquals("Continue button exists", "Continue", buttonLabel)
+        assertEquals("Continue", buttonLabel, "Continue button exists")
 
         flow.setNextEndpoint(initEidasAuthenticationSession.body().htmlPath().getString("**.find { form -> form.@method == 'post' }.@action"))
         flow.setRelayState(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'RelayState' }.@value"))
@@ -76,7 +75,7 @@ class AuthenticationSpec extends TaraSpecification {
         Response authorizationResponse = EidasSteps.getAuthorizationResponseFromEidas(flow, colleagueResponse)
         Response redirectionResponse = EidasSteps.eidasRedirectAuthorizationResponse(flow, authorizationResponse)
         Response acceptResponse = EidasSteps.eidasAcceptAuthorizationResult(flow, redirectionResponse)
-        assertEquals("Correct HTTP status code is returned", 302, acceptResponse.statusCode())
+        assertEquals(302, acceptResponse.statusCode(), "Correct HTTP status code is returned")
         Response oidcServiceResponse = Steps.getOAuthCookies(flow, acceptResponse)
         Response redirectResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, redirectResponse)
@@ -129,34 +128,34 @@ class AuthenticationSpec extends TaraSpecification {
     def "request authentication with security checks"() {
         expect:
         Response initLoginSession = Steps.startAuthenticationInTara(flow)
-        assertEquals("Correct HTTP status code is returned", 200, initLoginSession.statusCode())
+        assertEquals(200, initLoginSession.statusCode(), "Correct HTTP status code is returned")
         Steps.verifyResponseHeaders(initLoginSession)
         assertThat(initLoginSession.getDetailedCookie("SESSION").toString(), Matchers.containsString("HttpOnly"))
         assertThat(initLoginSession.getDetailedCookie("SESSION").toString(), Matchers.containsString("SameSite=Strict"))
         Response midInit = Requests.startMidAuthentication(flow, "60001017716", "69100366")
-        assertEquals("Correct HTTP status code is returned", 200, midInit.statusCode())
+        assertEquals(200, midInit.statusCode(), "Correct HTTP status code is returned")
         Steps.verifyResponseHeaders(midInit)
         Response midPollResult = Steps.pollMidResponse(flow)
-        assertEquals("Correct HTTP status code is returned", 200, midPollResult.statusCode())
+        assertEquals(200, midPollResult.statusCode(), "Correct HTTP status code is returned")
         assertThat(midPollResult.body().jsonPath().get("status").toString(), Matchers.not(equalTo("PENDING")))
         Steps.verifyResponseHeaders(midPollResult)
         Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
-        assertEquals("Correct HTTP status code is returned", 302, acceptResponse.statusCode())
+        assertEquals(302, acceptResponse.statusCode(), "Correct HTTP status code is returned")
         Steps.verifyResponseHeaders(acceptResponse)
         Response oidcServiceResponse = Steps.getOAuthCookies(flow, acceptResponse)
-        assertEquals("Correct HTTP status code is returned", 302, oidcServiceResponse.statusCode())
+        assertEquals(302, oidcServiceResponse.statusCode(), "Correct HTTP status code is returned")
 
         Response consentResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
         Steps.verifyResponseHeaders(consentResponse)
 
         if (consentResponse.getStatusCode() == 200) {
             consentResponse = Steps.submitConsent(flow, true)
-            assertEquals("Correct HTTP status code is returned", 302, consentResponse.statusCode())
+            assertEquals(302, consentResponse.statusCode(), "Correct HTTP status code is returned")
             Steps.verifyResponseHeaders(consentResponse)
         }
 
         Response oidcserviceResponse = Steps.followRedirectWithCookies(flow, consentResponse, flow.oidcService.cookies)
-        assertEquals("Correct HTTP status code is returned", 302, oidcserviceResponse.statusCode())
+        assertEquals(302, oidcserviceResponse.statusCode(), "Correct HTTP status code is returned")
         String authorizationCode = Utils.getParamValueFromResponseHeader(oidcserviceResponse, "code")
         Response tokenResponse = Requests.getWebToken(flow, authorizationCode)
 
@@ -172,14 +171,14 @@ class AuthenticationSpec extends TaraSpecification {
         expect:
         Steps.startAuthenticationInTara(flow)
         Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
+        assertEquals(200, initMidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
         Response pollResponse = Steps.pollMidResponse(flow)
-        assertEquals("Correct HTTP status code is returned", 200, pollResponse.statusCode())
+        assertEquals(200, pollResponse.statusCode(), "Correct HTTP status code is returned")
         assertThat(pollResponse.body().jsonPath().get("status").toString(), Matchers.not(equalTo("PENDING")))
         Response response = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
-        assertEquals("Correct HTTP status code is returned", 302, response.statusCode())
+        assertEquals(302, response.statusCode(), "Correct HTTP status code is returned")
         assertThat(response.getHeader("location"), Matchers.startsWith(flow.openIdServiceConfiguration.getString("authorization_endpoint")))
-        assertEquals("Location field contains correct client_id value", flow.oidcClient.clientId, Utils.getParamValueFromResponseHeader(response, "client_id"))
+        assertEquals(flow.oidcClient.clientId, Utils.getParamValueFromResponseHeader(response, "client_id"), "Location field contains correct client_id value")
     }
 
     @Ignore // TARA2-82 , TARA2-165
@@ -189,13 +188,13 @@ class AuthenticationSpec extends TaraSpecification {
         expect:
         Steps.startAuthenticationInTara(flow)
         Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
+        assertEquals(200, initMidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
         Response pollResponse = Steps.pollMidResponse(flow)
-        assertEquals("Correct HTTP status code is returned", 200, pollResponse.statusCode())
+        assertEquals(200, pollResponse.statusCode(), "Correct HTTP status code is returned")
         assertThat(pollResponse.body().jsonPath().get("status").toString(), Matchers.not(equalTo("PENDING")))
         Response response = Requests.getRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
-        assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
-        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
+        assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
         assertThat(response.body().jsonPath().get("message").toString(), equalTo("Request method 'GET' not supported"))
     }
 
@@ -205,14 +204,14 @@ class AuthenticationSpec extends TaraSpecification {
         expect:
         Steps.startAuthenticationInTara(flow)
         Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
+        assertEquals(200, initMidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
         Response pollResponse = Steps.pollMidResponse(flow)
-        assertEquals("Correct HTTP status code is returned", 200, pollResponse.statusCode())
+        assertEquals(200, pollResponse.statusCode(), "Correct HTTP status code is returned")
         assertThat(pollResponse.body().jsonPath().get("status").toString(), Matchers.not(equalTo("PENDING")))
         flow.setSessionId("1234567")
         Response response = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
-        assertEquals("Correct HTTP status code is returned", 403, response.statusCode())
-        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
+        assertEquals(403, response.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
         assertThat(response.body().jsonPath().get("error").toString(), equalTo("Forbidden"))
         String message = "Keelatud päring. Päring esitati topelt, sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud."
         assertThat(response.body().jsonPath().get("message").toString(), equalTo(message))
@@ -225,20 +224,20 @@ class AuthenticationSpec extends TaraSpecification {
         expect:
         Steps.startAuthenticationInTara(flow)
         Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
+        assertEquals(200, initMidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
         Response pollResponse = Steps.pollMidResponse(flow)
-        assertEquals("Correct HTTP status code is returned", 200, pollResponse.statusCode())
+        assertEquals(200, pollResponse.statusCode(), "Correct HTTP status code is returned")
         assertThat(pollResponse.body().jsonPath().get("status").toString(), Matchers.not(equalTo("PENDING")))
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         def map1 = Utils.setParameter(paramsMap, "error_code", REJECT_ERROR_CODE)
         HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
         def map3 = Utils.setParameter(cookieMap, "SESSION", flow.sessionId)
         Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullAuthRejectUrl, cookieMap, paramsMap, Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 302, response.statusCode())
+        assertEquals(302, response.statusCode(), "Correct HTTP status code is returned")
         assertThat(response.getHeader("location"), Matchers.startsWith(flow.openIdServiceConfiguration.getString("authorization_endpoint")))
-        assertEquals("Location field contains correct client_id value", flow.oidcClient.clientId, Utils.getParamValueFromResponseHeader(response, "client_id"))
+        assertEquals(flow.oidcClient.clientId, Utils.getParamValueFromResponseHeader(response, "client_id"), "Location field contains correct client_id value")
         Response oidcserviceResponse = Steps.followRedirectWithCookies(flow, response, flow.oidcService.cookies)
-        assertEquals("Correct HTTP status code is returned", 302, oidcserviceResponse.statusCode())
+        assertEquals(302, oidcserviceResponse.statusCode(), "Correct HTTP status code is returned")
         assertThat(oidcserviceResponse.getHeader("location"), Matchers.containsString("user_cancel"))
     }
 
@@ -253,16 +252,16 @@ class AuthenticationSpec extends TaraSpecification {
         expect:
         Steps.startAuthenticationInTara(flow)
         Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
+        assertEquals(200, initMidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
         Response pollResponse = Steps.pollMidResponse(flow)
-        assertEquals("Correct HTTP status code is returned", 200, pollResponse.statusCode())
+        assertEquals(200, pollResponse.statusCode(), "Correct HTTP status code is returned")
         assertThat(pollResponse.body().jsonPath().get("status").toString(), Matchers.not(equalTo("PENDING")))
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         def map1 = Utils.setParameter(paramsMap, "error_code", REJECT_ERROR_CODE)
         HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
         def map3 = Utils.setParameter(cookieMap, "SESSION", flow.sessionId)
         Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullAuthRejectUrl, cookieMap, paramsMap, Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 302, response.statusCode())
+        assertEquals(302, response.statusCode(), "Correct HTTP status code is returned")
        Steps.verifyResponseHeaders(response)
     }
 
@@ -272,18 +271,18 @@ class AuthenticationSpec extends TaraSpecification {
         expect:
         Steps.startAuthenticationInTara(flow)
         Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
+        assertEquals(200, initMidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
         Response pollResponse = Steps.pollMidResponse(flow)
-        assertEquals("Correct HTTP status code is returned", 200, pollResponse.statusCode())
+        assertEquals(200, pollResponse.statusCode(), "Correct HTTP status code is returned")
         assertThat(pollResponse.body().jsonPath().get("status").toString(), Matchers.not(equalTo("PENDING")))
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         def map1 = Utils.setParameter(paramsMap, "error_code", "ERROR12345")
         HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
         def map3 = Utils.setParameter(cookieMap, "SESSION", flow.sessionId)
         Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullAuthRejectUrl, cookieMap, paramsMap, Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
+        assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
         assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
-        assertEquals("Correct error message is returned", "authReject.errorCode: the only supported value is: 'user_cancel'", response.body().jsonPath().get("message"))
+        assertEquals("authReject.errorCode: the only supported value is: 'user_cancel'", response.body().jsonPath().get("message"), "Correct error message is returned")
         assertTrue(response.body().jsonPath().get("incident_nr").toString().size() > 15)
     }
 
@@ -296,9 +295,9 @@ class AuthenticationSpec extends TaraSpecification {
         HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
         def map3 = Utils.setParameter(cookieMap, "SESSION", "S34567")
         Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullAuthRejectUrl, cookieMap, paramsMap, Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
-        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
-        assertEquals("Correct error message is returned", "Teie sessiooni ei leitud! Sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"))
+        assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
+        assertEquals("Teie sessiooni ei leitud! Sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"), "Correct error message is returned")
     }
 
     @Unroll
@@ -308,9 +307,9 @@ class AuthenticationSpec extends TaraSpecification {
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         def map1 = Utils.setParameter(paramsMap, "error_code", REJECT_ERROR_CODE)
         Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullAuthRejectUrl, Collections.emptyMap(), paramsMap, Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
+        assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
         assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
-        assertEquals("Correct error message is returned", "Teie sessiooni ei leitud! Sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"))
+        assertEquals("Teie sessiooni ei leitud! Sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"), "Correct error message is returned")
     }
     
     @Ignore // TARA2-104 , TARA2-165
@@ -320,9 +319,9 @@ class AuthenticationSpec extends TaraSpecification {
         expect:
         Steps.startAuthenticationInTara(flow)
         Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
+        assertEquals(200, initMidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
         Response pollResponse = Steps.pollMidResponse(flow)
-        assertEquals("Correct HTTP status code is returned", 200, pollResponse.statusCode())
+        assertEquals(200, pollResponse.statusCode(), "Correct HTTP status code is returned")
         assertThat(pollResponse.body().jsonPath().get("status").toString(), Matchers.not(equalTo("PENDING")))
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         def map1 = Utils.setParameter(paramsMap, "error_code", REJECT_ERROR_CODE)
@@ -330,7 +329,7 @@ class AuthenticationSpec extends TaraSpecification {
         HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
         def map3 = Utils.setParameter(cookieMap, "SESSION", flow.sessionId)
         Response response = Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullAuthRejectUrl, cookieMap, paramsMap, Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
+        assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
         assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
         assertThat(response.body().jsonPath().get("message").toString(), equalTo("Request method 'POST' not supported"))
     }
@@ -341,9 +340,9 @@ class AuthenticationSpec extends TaraSpecification {
         expect:
         Steps.startAuthenticationInTara(flow)
         Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
+        assertEquals(200, initMidAuthenticationSession.statusCode(),"Correct HTTP status code is returned")
         Response pollResponse = Steps.pollMidResponse(flow)
-        assertEquals("Correct HTTP status code is returned", 200, pollResponse.statusCode())
+        assertEquals(200, pollResponse.statusCode(), "Correct HTTP status code is returned")
         assertThat(pollResponse.body().jsonPath().get("status").toString(), Matchers.not(equalTo("PENDING")))
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         def map1 = Utils.setParameter(paramsMap, "error_code", "ERROR12345")
@@ -352,9 +351,9 @@ class AuthenticationSpec extends TaraSpecification {
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
         def map4 = Utils.setParameter(additionalParamsMap, "error_code", REJECT_ERROR_CODE)
         Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullAuthRejectUrl, cookieMap, paramsMap, additionalParamsMap)
-        assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
+        assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
         assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
-        assertEquals("Correct error message is returned", "Multiple request parameters with the same name not allowed", response.body().jsonPath().get("message"))
+        assertEquals("Multiple request parameters with the same name not allowed", response.body().jsonPath().get("message"), "Correct error message is returned")
         assertTrue(response.body().jsonPath().get("incident_nr").toString().size() > 15)
     }
 }

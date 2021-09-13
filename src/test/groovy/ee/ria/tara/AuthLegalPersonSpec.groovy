@@ -9,9 +9,8 @@ import spock.lang.IgnoreIf
 import spock.lang.Unroll
 
 import static org.hamcrest.Matchers.equalTo
-import static org.junit.Assert.assertEquals
-import static org.junit.Assert.assertThat
-import static org.junit.Assert.assertTrue
+import static org.junit.jupiter.api.Assertions.*
+import static org.hamcrest.MatcherAssert.assertThat
 
 @IgnoreIf({ properties['test.deployment.env'] != "idp" })
 class AuthLegalPersonSpec extends TaraSpecification {
@@ -28,8 +27,8 @@ class AuthLegalPersonSpec extends TaraSpecification {
         Response initClientAuthenticationSession = Steps.startAuthenticationInTara(flow, "openid legalperson")
         Response initLegalPersonResponse = Steps.authInitAsLegalPerson(flow, "60001019906", "00000766")
         Response response = Steps.loadLegalPersonsList(flow)
-        assertEquals("Correct HTTP status code is returned", 200, response.statusCode())
-        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
+        assertEquals(200, response.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
         assertTrue(response.body().jsonPath().getList("legalPersons").size() > 0)
         assertTrue(response.body().jsonPath().getList("legalPersons.legalName").size() > 0)
         assertTrue(response.body().jsonPath().getList("legalPersons.legalPersonIdentifier").size() > 0)
@@ -59,7 +58,7 @@ class AuthLegalPersonSpec extends TaraSpecification {
         Response initClientAuthenticationSession = Steps.startAuthenticationInTara(flow, "openid legalperson")
         Response initLegalPersonResponse = Steps.authInitAsLegalPerson(flow, "60001019906", "00000766")
         Response response = Steps.loadLegalPersonsList(flow)
-        assertEquals("Correct HTTP status code is returned", 200, response.statusCode())
+        assertEquals(200, response.statusCode(), "Correct HTTP status code is returned")
         Steps.verifyResponseHeaders(response)
     }
 
@@ -69,9 +68,9 @@ class AuthLegalPersonSpec extends TaraSpecification {
         expect:
         flow.setSessionId("1234567")
         Response response = Requests.getRequestWithSessionId(flow, flow.loginService.fullAuthLegalPersonUrl)
-        assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
-        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
-        assertEquals("Correct error message is returned", "Teie sessiooni ei leitud! Sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"))
+        assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
+        assertEquals("Teie sessiooni ei leitud! Sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"), "Correct error message is returned")
     }
 
     @Ignore // TARA2-165
@@ -81,12 +80,12 @@ class AuthLegalPersonSpec extends TaraSpecification {
         expect:
         Response initClientAuthenticationSession = Steps.startAuthenticationInTara(flow, "openid legalperson")
         Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001019906", "00000766", Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
+        assertEquals(200, initMidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
         Response pollResponse = Steps.pollMidResponse(flow)
-        assertEquals("Correct HTTP status code is returned", 200, pollResponse.statusCode())
+        assertEquals(200, pollResponse.statusCode(), "Correct HTTP status code is returned")
         assertThat(pollResponse.body().jsonPath().get("status").toString(), Matchers.not(equalTo("PENDING")))
         Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
-        assertEquals("Correct HTTP status code is returned", 302, acceptResponse.statusCode())
+        assertEquals(302, acceptResponse.statusCode(), "Correct HTTP status code is returned")
         // /auth/legal_person/init
         Response initLegalResponse = Steps.followRedirectWithSessionId(flow, acceptResponse)
         HashMap<String, String> cookiesMap = (HashMap)Collections.emptyMap()
@@ -94,8 +93,8 @@ class AuthLegalPersonSpec extends TaraSpecification {
         HashMap<String, String> formParamsMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(formParamsMap, "_csrf", flow.csrf)
         Response response = Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullAuthLegalPersonUrl, cookiesMap, formParamsMap, Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
-        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
+        assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
         assertThat(response.body().jsonPath().get("message").toString(), Matchers.equalTo("Request method 'POST' not supported"))
     }
 

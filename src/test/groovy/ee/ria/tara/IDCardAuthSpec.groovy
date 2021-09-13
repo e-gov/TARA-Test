@@ -8,8 +8,8 @@ import io.restassured.response.Response
 
 
 import static org.hamcrest.Matchers.equalTo
-import static org.junit.Assert.assertEquals
-import static org.junit.Assert.assertThat
+import static org.junit.jupiter.api.Assertions.*
+import static org.hamcrest.MatcherAssert.assertThat
 import spock.lang.Unroll
 
 
@@ -31,9 +31,9 @@ class IDCardAuthSpec extends TaraSpecification {
         HashMap<String, String> headersMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(headersMap, "XCLIENTCERTIFICATE", certificate)
         Response response = Requests.idCardAuthentication(flow, headersMap)
-        assertEquals("Correct HTTP status code is returned", 200, response.statusCode())
+        assertEquals(200, response.statusCode(), "Correct HTTP status code is returned")
         assertThat("Correct response", response.body().jsonPath().get("status").toString(), equalTo("COMPLETED"))
-        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
+        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
     }
 
     @Unroll
@@ -47,11 +47,10 @@ class IDCardAuthSpec extends TaraSpecification {
         HashMap<String, String> headersMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(headersMap, "XCLIENTCERTIFICATE", certificate)
         Response response = Requests.idCardAuthentication(flow, headersMap)
-        assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
+        assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
         assertThat("Correct response", response.body().jsonPath().get("status").toString(), equalTo("ERROR"))
-        assertThat("Correct error message", response.body().jsonPath().get("message").toString(), equalTo("ID-kaardi sertifikaadid ei kehti."))
-        assertThat("Error is not reportable", response.body().jsonPath().get("reportable"), equalTo(false))
-        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
+        assertThat("Correct error message", response.body().jsonPath().get("message").toString(), equalTo("Teie sertifikaadid ei kehti."))
+        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
     }
 
     @Unroll
@@ -65,24 +64,24 @@ class IDCardAuthSpec extends TaraSpecification {
         Response response = Requests.idCardAuthentication(flow, headersMap)
         assertThat("Correct response", response.body().jsonPath().get("status").toString(), equalTo("COMPLETED"))
         Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
-        assertEquals("Correct HTTP status code is returned", 302, acceptResponse.statusCode())
+        assertEquals(302, acceptResponse.statusCode(), "Correct HTTP status code is returned")
         Response oidcServiceResponse = Steps.getOAuthCookies(flow, acceptResponse)
-        assertEquals("Correct HTTP status code is returned", 302, oidcServiceResponse.statusCode())
+        assertEquals(302, oidcServiceResponse.statusCode(), "Correct HTTP status code is returned")
 
         Response consentResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
 
         if (consentResponse.getStatusCode() == 200) {
             consentResponse = Steps.submitConsent(flow, true)
-            assertEquals("Correct HTTP status code is returned", 302, consentResponse.statusCode())
+            assertEquals(302, consentResponse.statusCode(), "Correct HTTP status code is returned")
             Steps.verifyResponseHeaders(consentResponse)
         }
 
-        assertEquals("Correct HTTP status code is returned", 302, consentResponse.statusCode())
+        assertEquals(302, consentResponse.statusCode(), "Correct HTTP status code is returned")
         Response oidcserviceResponse = Steps.followRedirectWithCookies(flow, consentResponse, flow.oidcService.cookies)
-        assertEquals("Correct HTTP status code is returned", 302, oidcserviceResponse.statusCode())
+        assertEquals(302, oidcserviceResponse.statusCode(), "Correct HTTP status code is returned")
         String authorizationCode = Utils.getParamValueFromResponseHeader(oidcserviceResponse, "code")
         Response tokenResponse = Requests.getWebToken(flow, authorizationCode)
-        assertEquals("Correct HTTP status code is returned", 200, tokenResponse.statusCode())
+        assertEquals(200, tokenResponse.statusCode(), "Correct HTTP status code is returned")
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat(claims.getAudience().get(0), equalTo(flow.oidcClient.clientId))
         assertThat(claims.getSubject(), equalTo("EE38001085718"))
@@ -104,24 +103,24 @@ class IDCardAuthSpec extends TaraSpecification {
         Response response = Requests.idCardAuthentication(flow, headersMap)
         assertThat("Correct response", response.body().jsonPath().get("status").toString(), equalTo("COMPLETED"))
         Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
-        assertEquals("Correct HTTP status code is returned", 302, acceptResponse.statusCode())
+        assertEquals(302, acceptResponse.statusCode(), "Correct HTTP status code is returned")
         Response oidcServiceResponse = Steps.getOAuthCookies(flow, acceptResponse)
-        assertEquals("Correct HTTP status code is returned", 302, oidcServiceResponse.statusCode())
+        assertEquals(302, oidcServiceResponse.statusCode(), "Correct HTTP status code is returned")
 
         Response consentResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
 
         if (consentResponse.getStatusCode() == 200) {
             consentResponse = Steps.submitConsent(flow, true)
-            assertEquals("Correct HTTP status code is returned", 302, consentResponse.statusCode())
+            assertEquals(302, consentResponse.statusCode(), "Correct HTTP status code is returned")
             Steps.verifyResponseHeaders(consentResponse)
         }
 
-        assertEquals("Correct HTTP status code is returned", 302, consentResponse.statusCode())
+        assertEquals(302, consentResponse.statusCode(), "Correct HTTP status code is returned")
         Response oidcserviceResponse = Steps.followRedirectWithCookies(flow, consentResponse, flow.oidcService.cookies)
-        assertEquals("Correct HTTP status code is returned", 302, oidcserviceResponse.statusCode())
+        assertEquals(302, oidcserviceResponse.statusCode(), "Correct HTTP status code is returned")
         String authorizationCode = Utils.getParamValueFromResponseHeader(oidcserviceResponse, "code")
         Response tokenResponse = Requests.getWebToken(flow, authorizationCode)
-        assertEquals("Correct HTTP status code is returned", 200, tokenResponse.statusCode())
+        assertEquals(200, tokenResponse.statusCode(), "Correct HTTP status code is returned")
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat(claims.getAudience().get(0), equalTo(flow.oidcClient.clientId))
         assertThat(claims.getSubject(), equalTo("EE47101010033"))
@@ -160,10 +159,9 @@ class IDCardAuthSpec extends TaraSpecification {
         Utils.setParameter(headersMap, "XCLIENTCERTIFICATE", certificate)
         flow.setSessionId("123456789")
         Response response = Requests.idCardAuthentication(flow, headersMap)
-        assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
-        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
-        assertEquals("Correct error message is returned", "Teie sessiooni ei leitud! Sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"))
-        assertEquals("Error is not reportable", false, response.body().jsonPath().get("reportable"))
+        assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
+        assertEquals("Teie sessiooni ei leitud! Sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"), "Correct error message is returned")
     }
 
     @Unroll
@@ -176,8 +174,8 @@ class IDCardAuthSpec extends TaraSpecification {
         HashMap<String, String> headersMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(headersMap, "XCLIENTCERTIFICATE", certificate)
         Response response = Requests.idCardAuthenticationWithoutSession(flow, headersMap)
-        assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
-        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
-        assertEquals("Correct error message is returned", "Teie sessiooni ei leitud! Sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"))
+        assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
+        assertEquals("Teie sessiooni ei leitud! Sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"), "Correct error message is returned")
     }
 }

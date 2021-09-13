@@ -4,7 +4,6 @@ import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import org.apache.commons.lang.RandomStringUtils
-import org.hamcrest.Matchers
 import spock.lang.Ignore
 import spock.lang.IgnoreIf
 import spock.lang.Unroll
@@ -12,9 +11,8 @@ import spock.lang.Unroll
 import java.nio.charset.StandardCharsets
 import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.Matchers.startsWith
-import static org.junit.Assert.assertEquals
-import static org.junit.Assert.assertThat
-import static org.junit.Assert.assertTrue
+import static org.hamcrest.MatcherAssert.assertThat
+import static org.junit.jupiter.api.Assertions.*
 
 @IgnoreIf({ properties['test.deployment.env'] != "idp" })
 class AuthConsentConfirmSpec extends TaraSpecification {
@@ -53,9 +51,9 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         Response oidcServiceResponse = Steps.getOAuthCookies(flow, acceptResponse)
         flow.setSessionId("1234567")
         Response response = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
-        assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
+        assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
         assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
-        assertEquals("Correct error message is returned", "Teie sessiooni ei leitud! Sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"))
+        assertEquals("Teie sessiooni ei leitud! Sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"), "Correct error message is returned")
     }
 
     @Ignore // TARA2-76 , TARA2-165
@@ -70,8 +68,8 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         Response oidcServiceResponse = Steps.getOAuthCookies(flow, acceptResponse)
         String location = oidcServiceResponse.getHeader("location")
         Response response = Requests.postRequestWithSessionId(flow, location)
-        assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
-        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
+        assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
         assertThat(response.body().jsonPath().get("message").toString(), equalTo("Request method 'POST' not supported"))
     }
 
@@ -85,9 +83,9 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
         Response oidcServiceResponse = Steps.getOAuthCookies(flow, acceptResponse)
         Response response = Steps.followRedirect(flow, oidcServiceResponse)
-        assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
+        assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
         assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
-        assertEquals("Correct error message is returned", "Teie sessiooni ei leitud! Sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"))
+        assertEquals("Teie sessiooni ei leitud! Sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"), "Correct error message is returned")
     }
 
     @Unroll
@@ -108,8 +106,8 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         def map3 = Utils.setParameter(additionalParamsMap, additionalParamName, additionalParamValue)
         Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullConsentUrl, cookiesMap, paramsMap, additionalParamsMap)
 
-        assertEquals("Correct HTTP status code is returned", statusCode, response.statusCode())
-        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
+        assertEquals(statusCode, response.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
         assertThat(response.body().jsonPath().get("message").toString(), startsWith(errorMessage))
 
         where:
@@ -138,8 +136,8 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullConsentUrl, cookiesMap, paramsMap, Collections.emptyMap())
         flow.setCsrf(response.body().htmlPath().get("**.find {it.@name == '_csrf'}.@value"))
         Response consentConfirmResponse = Steps.submitConsent(flow, true)
-        assertEquals("Correct HTTP status code is returned", 500, consentConfirmResponse.statusCode())
-        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", consentConfirmResponse.getContentType())
+        assertEquals(500, consentConfirmResponse.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("application/json;charset=UTF-8", consentConfirmResponse.getContentType(), "Correct Content-Type is returned")
         assertThat(consentConfirmResponse.body().jsonPath().get("message").toString(), startsWith("Autentimine ebaõnnestus teenuse tehnilise vea tõttu."))
         assertThat(consentConfirmResponse.body().jsonPath().get("path").toString(), startsWith("/auth/consent/confirm"))
     }
@@ -152,10 +150,10 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         Steps.startAuthenticationInTara(flow)
         Steps.authenticateWithMid(flow,"60001017727" , "69200366")
         Response consentConfirmResponse = Steps.submitConsent(flow, true)
-        assertEquals("Correct HTTP status code is returned", 302, consentConfirmResponse.statusCode())
+        assertEquals(302, consentConfirmResponse.statusCode(), "Correct HTTP status code is returned")
         assertThat(consentConfirmResponse.getHeader("location"), startsWith(flow.oidcService.fullAuthenticationRequestUrl))
         assertThat(Utils.getParamValueFromResponseHeader(consentConfirmResponse, "state"), equalTo(flow.state))
-        assertThat("Session cookie is invalidated", consentConfirmResponse.getCookie("SESSION"), equalTo(""))
+        assertThat(consentConfirmResponse.getCookie("SESSION"), equalTo(""), "Session cookie is invalidated")
     }
 
     @Unroll
@@ -164,11 +162,11 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         expect:
         Steps.startAuthenticationInTara(flow)
         Response oidcServiceResponse = Steps.authenticateWithMid(flow,"60001017727" , "69200366")
-        assertEquals("Correct HTTP status code is returned", 200, oidcServiceResponse.statusCode())
+        assertEquals(200, oidcServiceResponse.statusCode(), "Correct HTTP status code is returned")
         flow.setSessionId("1234567")
         Response response = Steps.submitConsent(flow, true)
-        assertEquals("Correct HTTP status code is returned", 403, response.statusCode())
-        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
+        assertEquals(403, response.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
         assertThat(response.body().jsonPath().get("error").toString(), equalTo("Forbidden"))
         String message = "Keelatud päring. Päring esitati topelt, sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud."
         assertThat(response.body().jsonPath().get("message").toString(), equalTo(message))
@@ -184,9 +182,9 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         def map2 = Utils.setParameter(paramsMap, "consent_given", true)
         Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullConsentConfirmUrl, cookiesMap, paramsMap, Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
+        assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
         assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
-        assertEquals("Correct error message is returned", "Request method 'GET' not supported", response.body().jsonPath().get("message"))
+        assertEquals("Request method 'GET' not supported", response.body().jsonPath().get("message"), "Correct error message is returned")
     }
 
     @Unroll
@@ -200,8 +198,8 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         def map2 = Utils.setParameter(paramsMap, "consent_given", true)
         def map3 = Utils.setParameter(paramsMap, "_csrf", flow.csrf)
         Response response = Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullConsentConfirmUrl, Collections.emptyMap(), paramsMap, Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 403, response.statusCode())
-        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
+        assertEquals(403, response.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
         assertThat(response.body().jsonPath().get("error").toString(), equalTo("Forbidden"))
         String message = "Keelatud päring. Päring esitati topelt, sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud."
         assertThat(response.body().jsonPath().get("message").toString(), equalTo(message))
@@ -222,9 +220,9 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
         def map3 = Utils.setParameter(additionalParamsMap, additionalParamName, additionalParamValue)
         Response response = Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullConsentConfirmUrl, cookiesMap, paramsMap, additionalParamsMap)
-        assertEquals("Correct HTTP status code is returned", statusCode, response.statusCode())
-        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
-        assertEquals("Correct error message is returned", errorMessage, response.body().jsonPath().get("message"))
+        assertEquals(statusCode, response.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
+        assertEquals(errorMessage, response.body().jsonPath().get("message"), "Correct error message is returned")
 
         where:
         paramName       | paramValue | additionalParamName | additionalParamValue | label                                 || statusCode || errorMessage
@@ -241,13 +239,13 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         Steps.startAuthenticationInTara(flow)
         Steps.authenticateWithMid(flow,"60001017716", "69100366")
         Response consentRejectResult = Steps.submitConsent(flow, false)
-        assertEquals("Correct HTTP status code is returned", 302, consentRejectResult.statusCode())
+        assertEquals(302, consentRejectResult.statusCode(), "Correct HTTP status code is returned")
         assertThat("Session cookie is invalidated", consentRejectResult.getCookie("SESSION"), equalTo(""))
         Response response = Steps.followRedirectWithCookies(flow, consentRejectResult, flow.oidcClient.cookies)
-        assertEquals("Correct error value", "user_cancel", Utils.getParamValueFromResponseHeader(response, "error"))
+        assertEquals("user_cancel", Utils.getParamValueFromResponseHeader(response, "error"), "Correct error value")
         String actualErrorDescription = URLDecoder.decode(Utils.getParamValueFromResponseHeader(response, "error_description"), StandardCharsets.UTF_8)
         String errorDescription = "Consent not given. User canceled the authentication process."
-        assertEquals("Correct error_description value", errorDescription, actualErrorDescription)
+        assertEquals(errorDescription, actualErrorDescription, "Correct error_description value")
         assertThat(Utils.getParamValueFromResponseHeader(response, "state"), equalTo(flow.state))
   }
 

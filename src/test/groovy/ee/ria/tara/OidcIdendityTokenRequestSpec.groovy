@@ -8,13 +8,12 @@ import io.restassured.response.Response
 import org.hamcrest.Matchers
 
 import spock.lang.IgnoreIf
-import spock.lang.Ignore
 import spock.lang.Unroll
 
 import static org.hamcrest.Matchers.equalTo
-import static org.junit.Assert.assertEquals
-import static org.junit.Assert.assertThat
-import static org.junit.Assert.assertTrue
+import static org.junit.jupiter.api.Assertions.*
+import static org.hamcrest.MatcherAssert.assertThat
+
 
 @IgnoreIf({ properties['test.deployment.env'] == "idp" })
 class OidcIdendityTokenRequestSpec extends TaraSpecification {
@@ -34,11 +33,11 @@ class OidcIdendityTokenRequestSpec extends TaraSpecification {
         Response midAuthResponse = Steps.authenticateWithMid(flow,"60001017716", "69100366")
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
-        assertEquals("Correct token_type value", "bearer", tokenResponse.body().jsonPath().getString("token_type"))
-        assertEquals("Correct scope value", "openid", tokenResponse.body().jsonPath().getString("scope"))
-        assertTrue("Access token element exists", tokenResponse.body().jsonPath().getString("access_token").size() > 32)
-        assertTrue("Expires in element exists", tokenResponse.body().jsonPath().getInt("expires_in") > 60)
-        assertTrue("ID token element exists", tokenResponse.body().jsonPath().getString("id_token").size() > 1000)
+        assertEquals("bearer", tokenResponse.body().jsonPath().getString("token_type"), "Correct token_type value")
+        assertEquals("openid", tokenResponse.body().jsonPath().getString("scope"), "Correct scope value")
+        assertTrue(tokenResponse.body().jsonPath().getString("access_token").size() > 32, "Access token element exists")
+        assertTrue(tokenResponse.body().jsonPath().getInt("expires_in") > 60, "Expires in element exists")
+        assertTrue(tokenResponse.body().jsonPath().getString("id_token").size() > 1000, "ID token element exists")
     }
 
     @Unroll
@@ -51,16 +50,16 @@ class OidcIdendityTokenRequestSpec extends TaraSpecification {
         Response midAuthResponse = Steps.authenticateWithMid(flow, idCode, phoneNo)
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
-        assertEquals("Correct token_type value", "bearer", tokenResponse.body().jsonPath().getString("token_type"))
-        assertEquals("Correct scope value", "openid", tokenResponse.body().jsonPath().getString("scope"))
+        assertEquals("bearer", tokenResponse.body().jsonPath().getString("token_type"), "Correct token_type value")
+        assertEquals("openid", tokenResponse.body().jsonPath().getString("scope"), "Correct scope value")
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
-        assertTrue("Correct jti claim exists", claims.getJWTID().size() > 35)
+        assertTrue(claims.getJWTID().size() > 35, "Correct jti claim exists")
         assertThat("Correct issuer claim", claims.getIssuer(), equalTo(flow.openIdServiceConfiguration.get("issuer")))
         assertThat(claims.getAudience().get(0), equalTo(flow.oidcClient.clientId))
         Date date = new Date()
         assertThat("Expected current: " + date + " to be after nbf: " + claims.getNotBeforeTime(), date.after(claims.getNotBeforeTime()), Matchers.is(true))
         // 10 seconds
-        assertTrue("Correct iat claim", Math.abs(date.getTime() - claims.getDateClaim("iat").getTime()) < 10000L)
+        assertTrue(Math.abs(date.getTime() - claims.getDateClaim("iat").getTime()) < 10000L, "Correct iat claim")
         assertThat("Correct subject claim", claims.getSubject(), equalTo("EE" + idCode))
 
         assertThat("Correct date of birth", claims.getJSONObjectClaim("profile_attributes").get("date_of_birth"),  equalTo("2000-01-01"))
@@ -70,7 +69,7 @@ class OidcIdendityTokenRequestSpec extends TaraSpecification {
 
         assertThat("Correct state value", claims.getStringClaim("state"), equalTo(flow.getState()))
         assertThat("Correct LoA level", claims.getStringClaim("acr"), equalTo("high"))
-        assertTrue("Correct at_hash claim exists", claims.getStringClaim("at_hash").size()  > 20)
+        assertTrue(claims.getStringClaim("at_hash").size()  > 20, "Correct at_hash claim exists")
     }
 
     @Unroll
@@ -84,8 +83,8 @@ class OidcIdendityTokenRequestSpec extends TaraSpecification {
         Response midAuthResponse = Steps.authenticateWithMid(flow, idCode, phoneNo)
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
-        assertEquals("Correct token_type value", "bearer", tokenResponse.body().jsonPath().getString("token_type"))
-        assertEquals("Correct scope value", scopeList, tokenResponse.body().jsonPath().getString("scope"))
+        assertEquals("bearer", tokenResponse.body().jsonPath().getString("token_type"), "Correct token_type value")
+        assertEquals(scopeList, tokenResponse.body().jsonPath().getString("scope"), "Correct scope value")
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat("Correct subject claim", claims.getSubject(), equalTo("EE" + idCode))
         assertThat("Phone_number claim exists", claims.getStringClaim("phone_number"), equalTo("+372" + phoneNo))
@@ -101,8 +100,8 @@ class OidcIdendityTokenRequestSpec extends TaraSpecification {
         Response idCardAuthResponse = Steps.authenticateWithIdCard(flow, "src/test/resources/joeorg-auth.pem")
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, idCardAuthResponse)
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
-        assertEquals("Correct token_type value", "bearer", tokenResponse.body().jsonPath().getString("token_type"))
-        assertEquals("Correct scope value", scopeList, tokenResponse.body().jsonPath().getString("scope"))
+        assertEquals("bearer", tokenResponse.body().jsonPath().getString("token_type"), "Correct token_type value")
+        assertEquals(scopeList, tokenResponse.body().jsonPath().getString("scope"), "Correct scope value")
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat("Correct subject claim", claims.getSubject(), equalTo("EE38001085718"))
         assertThat("Phone_number claim exists", claims.getStringClaim("email"), equalTo("38001085718@eesti.ee"))

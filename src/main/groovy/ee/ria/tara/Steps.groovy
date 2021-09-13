@@ -15,8 +15,10 @@ import static org.hamcrest.CoreMatchers.is
 import static org.hamcrest.Matchers.anyOf
 import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.equalTo
-import static org.junit.Assert.assertEquals
-import static org.junit.Assert.assertThat
+
+import static org.junit.jupiter.api.Assertions.assertEquals
+import static org.hamcrest.MatcherAssert.assertThat
+
 
 class Steps {
 
@@ -33,7 +35,7 @@ class Steps {
     static Response startAuthenticationInOidc(Flow flow) {
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
         Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
-        assertEquals("Correct HTTP status code is returned", 302, initOIDCServiceSession.statusCode())
+        assertEquals(302, initOIDCServiceSession.statusCode(), "Correct HTTP status code is returned")
         return initOIDCServiceSession
     }
 
@@ -55,7 +57,7 @@ class Steps {
         Response initOIDCServiceSession = startAuthenticationInOidcWithParams(flow, paramsMap)
         Response initLoginSession = createLoginSession(flow, initOIDCServiceSession)
         if (checkStatusCode) {
-            assertEquals("Correct HTTP status code is returned", 200, initLoginSession.statusCode())
+            assertEquals(200, initLoginSession.statusCode(), "Correct HTTP status code is returned")
         }
         return initLoginSession
     }
@@ -95,15 +97,15 @@ class Steps {
     @Step("Authenticate with Mobile-ID")
     static Response authenticateWithMid(Flow flow, String idCode, String phoneNo) {
         Response midInit = Requests.startMidAuthentication(flow, idCode, phoneNo)
-        assertEquals("Correct HTTP status code is returned", 200, midInit.statusCode())
+        assertEquals(200, midInit.statusCode(), "Correct HTTP status code is returned")
         Response midPollResult = Steps.pollMidResponse(flow)
-        assertEquals("Correct HTTP status code is returned", 200, midPollResult.statusCode())
+        assertEquals(200, midPollResult.statusCode(), "Correct HTTP status code is returned")
         assertThat(midPollResult.body().jsonPath().get("status").toString(), Matchers.not(equalTo("PENDING")))
         Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
-        assertEquals("Correct HTTP status code is returned", 302, acceptResponse.statusCode())
+        assertEquals(302, acceptResponse.statusCode(), "Correct HTTP status code is returned")
 
         Response oidcServiceResponse = Steps.getOAuthCookies(flow, acceptResponse)
-        assertEquals("Correct HTTP status code is returned", 302, oidcServiceResponse.statusCode())
+        assertEquals(302, oidcServiceResponse.statusCode(), "Correct HTTP status code is returned")
 
         Response consentResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
 
@@ -113,15 +115,15 @@ class Steps {
     @Step("Authenticate with Smart-ID")
     static Response authenticateWithSid(Flow flow, String idCode) {
         Response sidInit = initSidAuthSession(flow, flow.sessionId, idCode, Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 200, sidInit.statusCode())
+        assertEquals(200, sidInit.statusCode(), "Correct HTTP status code is returned")
         Response sidPollResult = pollSidResponse(flow)
-        assertEquals("Correct HTTP status code is returned", 200, sidPollResult.statusCode())
+        assertEquals(200, sidPollResult.statusCode(), "Correct HTTP status code is returned")
         assertThat(sidPollResult.body().jsonPath().get("status").toString(), Matchers.not(equalTo("PENDING")))
         Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
-        assertEquals("Correct HTTP status code is returned", 302, acceptResponse.statusCode())
+        assertEquals(302, acceptResponse.statusCode(), "Correct HTTP status code is returned")
 
         Response oidcServiceResponse = getOAuthCookies(flow, acceptResponse)
-        assertEquals("Correct HTTP status code is returned", 302, oidcServiceResponse.statusCode())
+        assertEquals(302, oidcServiceResponse.statusCode(), "Correct HTTP status code is returned")
 
         Response consentResponse = followRedirectWithSessionId(flow, oidcServiceResponse)
 
@@ -137,9 +139,9 @@ class Steps {
         assertThat("Correct response", response.body().jsonPath().get("status").toString(), equalTo("COMPLETED"))
 
         Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
-        assertEquals("Correct HTTP status code is returned", 302, acceptResponse.statusCode())
+        assertEquals(302, acceptResponse.statusCode(), "Correct HTTP status code is returned")
         Response oidcServiceResponse = getOAuthCookies(flow, acceptResponse)
-        assertEquals("Correct HTTP status code is returned", 302, oidcServiceResponse.statusCode())
+        assertEquals(302, oidcServiceResponse.statusCode(), "Correct HTTP status code is returned")
 
         Response consentResponse = followRedirectWithSessionId(flow, oidcServiceResponse)
 
@@ -231,7 +233,7 @@ class Steps {
     static Response submitConsentAndFollowRedirects(Flow flow, boolean consentGiven, Response consentResponse) {
         if (consentResponse.getStatusCode().toInteger() == 200) {
             consentResponse = submitConsent(flow, consentGiven)
-            assertEquals("Correct HTTP status code is returned", 302, consentResponse.statusCode())
+            assertEquals(302, consentResponse.statusCode(), "Correct HTTP status code is returned")
 
         }
         return followRedirectWithCookies(flow, consentResponse, flow.oidcService.cookies)
@@ -297,15 +299,15 @@ class Steps {
     @Step("Autheticate with mID and init legal person authorization")
     static Response authInitAsLegalPerson(Flow flow, String idCode, String phoneNo) {
         Response initMidAuthenticationSession = initMidAuthSession(flow, flow.sessionId, idCode, phoneNo, Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 200, initMidAuthenticationSession.statusCode())
+        assertEquals(200, initMidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
         Response pollResponse = pollMidResponse(flow)
-        assertEquals("Correct HTTP status code is returned", 200, pollResponse.statusCode())
+        assertEquals(200, pollResponse.statusCode(), "Correct HTTP status code is returned")
         assertThat(pollResponse.body().jsonPath().get("status").toString(), Matchers.not(equalTo("PENDING")))
         Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
-        assertEquals("Correct HTTP status code is returned", 302, acceptResponse.statusCode())
+        assertEquals(302, acceptResponse.statusCode(), "Correct HTTP status code is returned")
 
         Response initLegalResponse = followRedirectWithSessionId(flow, acceptResponse)
-        assertEquals("Correct HTTP status code is returned", 200, initLegalResponse.statusCode())
+        assertEquals(200, initLegalResponse.statusCode(), "Correct HTTP status code is returned")
         return initLegalResponse
     }
 
@@ -320,10 +322,10 @@ class Steps {
         String location = response.getHeader("location")
         assertThat(location, containsString(flow.oidcService.fullAuthenticationRequestUrl))
         Response oidcServiceResponse = getOAuthCookies(flow, response)
-        assertEquals("Correct HTTP status code is returned", 302, oidcServiceResponse.statusCode())
+        assertEquals(302, oidcServiceResponse.statusCode(), "Correct HTTP status code is returned")
 
         Response consentResponse = followRedirectWithSessionId(flow, oidcServiceResponse)
-        assertEquals("Correct HTTP status code is returned", 200, consentResponse.statusCode())
+        assertEquals(200, consentResponse.statusCode(), "Correct HTTP status code is returned")
         return consentResponse
     }
 
@@ -336,7 +338,7 @@ class Steps {
         def map2 = Utils.setParameter(cookiesMap, "SESSION", flow.sessionId)
 
         Response response = Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullAuthLegalConfirmUrl, cookiesMap, paramsMap, Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 302, response.statusCode())
+        assertEquals(302, response.statusCode(), "Correct HTTP status code is returned")
         return response
     }
 

@@ -11,9 +11,8 @@ import spock.lang.Unroll
 import org.hamcrest.Matchers
 
 import static org.hamcrest.Matchers.equalTo
-import static org.junit.Assert.assertEquals
-import static org.junit.Assert.assertThat
-import static org.junit.Assert.assertTrue
+import static org.junit.jupiter.api.Assertions.*
+import static org.hamcrest.MatcherAssert.assertThat
 
 @IgnoreIf({ properties['test.deployment.env'] == "idp" })
 class EidasAuthSpec extends TaraSpecification {
@@ -31,10 +30,10 @@ class EidasAuthSpec extends TaraSpecification {
         expect:
         Steps.startAuthenticationInTara(flow, "openid eidas")
         Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, COUNTRY, Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 200, initEidasAuthenticationSession.statusCode())
-        assertEquals("Correct Content-Type is returned", "text/html;charset=UTF-8", initEidasAuthenticationSession.getContentType())
+        assertEquals(200, initEidasAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("text/html;charset=UTF-8", initEidasAuthenticationSession.getContentType(), "Correct Content-Type is returned")
         String buttonLabel = initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@type == 'submit'}.@value")
-        assertEquals("Continue button exists", "Continue", buttonLabel)
+        assertEquals("Continue", buttonLabel, "Continue button exists")
     }
 
     @Unroll
@@ -46,8 +45,8 @@ class EidasAuthSpec extends TaraSpecification {
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
         def map = Utils.setParameter(additionalParamsMap, paramName, paramValue)
         Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, country, additionalParamsMap)
-        assertEquals("Correct HTTP status code is returned", statusCode, initEidasAuthenticationSession.statusCode())
-        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", initEidasAuthenticationSession.getContentType())
+        assertEquals(statusCode, initEidasAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("application/json;charset=UTF-8", initEidasAuthenticationSession.getContentType(), "Correct Content-Type is returned")
         assertThat(initEidasAuthenticationSession.body().jsonPath().getString("message"), Matchers.containsString(errorMessage))
         assertTrue(initEidasAuthenticationSession.body().jsonPath().get("incident_nr").toString().size() > 15)
 
@@ -68,9 +67,9 @@ class EidasAuthSpec extends TaraSpecification {
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         def map = Utils.setParameter(paramsMap, "country", COUNTRY)
         Response response = Requests.postRequestWithParams(flow, flow.loginService.fullEidasInitUrl, paramsMap, Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 403, response.statusCode())
-        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
-        assertEquals("Correct error message is returned", "Keelatud päring. Päring esitati topelt, sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"))
+        assertEquals(403, response.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
+        assertEquals("Keelatud päring. Päring esitati topelt, sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"), "Correct error message is returned")
     }
 
     @Ignore //TARA2-165
@@ -89,8 +88,8 @@ class EidasAuthSpec extends TaraSpecification {
                 cookiesMap,
                 paramsMap,
                 Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 400, response.statusCode())
-        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
+        assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
         assertThat(response.body().jsonPath().get("message").toString(), equalTo("Request method 'GET' not supported"))
     }
 
@@ -102,8 +101,8 @@ class EidasAuthSpec extends TaraSpecification {
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
         def map = Utils.setParameter(additionalParamsMap, "country", COUNTRY)
         Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, COUNTRY, additionalParamsMap)
-        assertEquals("Correct HTTP status code is returned", 400, initEidasAuthenticationSession.statusCode())
-        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", initEidasAuthenticationSession.getContentType())
+        assertEquals(400, initEidasAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("application/json;charset=UTF-8", initEidasAuthenticationSession.getContentType(), "Correct Content-Type is returned")
         String errorMessage = "Multiple request parameters with the same name not allowed"
         assertThat(initEidasAuthenticationSession.body().jsonPath().get("message"), Matchers.containsString(errorMessage))
     }
@@ -113,7 +112,7 @@ class EidasAuthSpec extends TaraSpecification {
     def "initialize Eidas authentication with scope: #scope and description #label"() {
         expect:
         Response response = Steps.startAuthenticationInTara(flow, scope, "et", false)
-        assertEquals("Correct HTTP status code is returned", statusCode, response.statusCode())
+        assertEquals(statusCode, response.statusCode(), "Correct HTTP status code is returned")
         String formUrl = response.body().htmlPath().getString("**.find { form -> form.@method == 'post' }.@action")
         assertThat("Correct domestic connector service url form", formUrl, equalTo(flow.loginService.eidasInitUrl.toString()))
         String eidasCountry = response.body().htmlPath().getString("**.find { it.@name == 'country' }.@value")
@@ -134,7 +133,7 @@ class EidasAuthSpec extends TaraSpecification {
     def "initialize Eidas authentication with eidas scope: #label"() {
         expect:
         Response response = Steps.startAuthenticationInTara(flow, scope, "et", false)
-        assertEquals("Correct HTTP status code is returned", statusCode, response.statusCode())
+        assertEquals(statusCode, response.statusCode(), "Correct HTTP status code is returned")
         assertTrue(response.htmlPath().getInt("**.findAll { it.'@data-tab' == '"+ authType +"' }.size()") > 0)
 
         where:
@@ -150,10 +149,10 @@ class EidasAuthSpec extends TaraSpecification {
         expect:
         Steps.startAuthenticationInTara(flow, "openid eidas")
         Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, COUNTRY, Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 200, initEidasAuthenticationSession.statusCode())
-        assertEquals("Correct Content-Type is returned", "text/html;charset=UTF-8", initEidasAuthenticationSession.getContentType())
+        assertEquals(200, initEidasAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("text/html;charset=UTF-8", initEidasAuthenticationSession.getContentType(), "Correct Content-Type is returned")
         String buttonLabel = initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@type == 'submit'}.@value")
-        assertEquals("Continue button exists", "Continue", buttonLabel)
+        assertEquals("Continue", buttonLabel, "Continue button exists")
 
         flow.setNextEndpoint(initEidasAuthenticationSession.body().htmlPath().getString("**.find { form -> form.@method == 'post' }.@action"))
         flow.setRelayState(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'RelayState' }.@value"))
@@ -164,9 +163,9 @@ class EidasAuthSpec extends TaraSpecification {
         EidasSteps.eidasRedirectAuthorizationResponse(flow, authorizationResponse)
         // 2
         Response redirectionResponse2 = EidasSteps.eidasRedirectAuthorizationResponse(flow, authorizationResponse, false)
-        assertEquals("Correct HTTP status code is returned", 400, redirectionResponse2.statusCode())
+        assertEquals(400, redirectionResponse2.statusCode(), "Correct HTTP status code is returned")
         assertThat("Correct Content-Type is returned", redirectionResponse2.getContentType(), Matchers.startsWith("application/json"))
-        assertEquals("Correct error is returned", "Bad Request", redirectionResponse2.body().jsonPath().get("error"))
+        assertEquals("Bad Request", redirectionResponse2.body().jsonPath().get("error"), "Correct error is returned")
         assertThat("Correct error message is returned", redirectionResponse2.body().jsonPath().getString("message"), Matchers.endsWith("Ebakorrektne päring."))
         assertTrue(redirectionResponse2.body().jsonPath().get("incident_nr").toString().size() > 15)
     }
@@ -177,10 +176,10 @@ class EidasAuthSpec extends TaraSpecification {
         expect:
         Steps.startAuthenticationInTara(flow, "openid eidas")
         Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, COUNTRY, Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 200, initEidasAuthenticationSession.statusCode())
-        assertEquals("Correct Content-Type is returned", "text/html;charset=UTF-8", initEidasAuthenticationSession.getContentType())
+        assertEquals(200, initEidasAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("text/html;charset=UTF-8", initEidasAuthenticationSession.getContentType(), "Correct Content-Type is returned")
         String buttonLabel = initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@type == 'submit'}.@value")
-        assertEquals("Continue button exists", "Continue", buttonLabel)
+        assertEquals("Continue", buttonLabel, "Continue button exists")
 
         flow.setNextEndpoint(initEidasAuthenticationSession.body().htmlPath().getString("**.find { form -> form.@method == 'post' }.@action"))
         flow.setRelayState(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'RelayState' }.@value"))
@@ -197,12 +196,12 @@ class EidasAuthSpec extends TaraSpecification {
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
         def map = Utils.setParameter(additionalParamsMap, paramName, paramValue)
         Response redirectionResponse = Requests.postRequestWithParams(flow, endpointUrl, paramsMap, additionalParamsMap)
-        assertEquals("Correct HTTP status code is returned", 400, redirectionResponse.statusCode())
+        assertEquals(400, redirectionResponse.statusCode(), "Correct HTTP status code is returned")
         assertThat("Correct Content-Type is returned", redirectionResponse.getContentType(), Matchers.startsWith("application/json"))
-        assertEquals("Correct error is returned", "Bad Request", redirectionResponse.body().jsonPath().get("error"))
+        assertEquals("Bad Request", redirectionResponse.body().jsonPath().get("error"), "Correct error is returned")
         assertThat("Correct error message is returned", redirectionResponse.body().jsonPath().getString("message"), Matchers.startsWith(errorMessage))
         assertTrue(redirectionResponse.body().jsonPath().get("incident_nr").toString().size() > 15)
-        assertEquals("Correct path is returned", flow.loginService.eidasCallbackUrl, redirectionResponse.body().jsonPath().get("path"))
+        assertEquals(flow.loginService.eidasCallbackUrl, redirectionResponse.body().jsonPath().get("path"), "Correct path is returned")
 
         where:
         paramName      | paramValue                                                                          || label                || errorMessage
@@ -216,10 +215,10 @@ class EidasAuthSpec extends TaraSpecification {
         expect:
         Steps.startAuthenticationInTara(flow, "openid eidas")
         Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, COUNTRY, Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 200, initEidasAuthenticationSession.statusCode())
-        assertEquals("Correct Content-Type is returned", "text/html;charset=UTF-8", initEidasAuthenticationSession.getContentType())
+        assertEquals(200, initEidasAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("text/html;charset=UTF-8", initEidasAuthenticationSession.getContentType(), "Correct Content-Type is returned")
         String buttonLabel = initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@type == 'submit'}.@value")
-        assertEquals("Continue button exists", "Continue", buttonLabel)
+        assertEquals("Continue", buttonLabel, "Continue button exists")
 
         flow.setNextEndpoint(initEidasAuthenticationSession.body().htmlPath().getString("**.find { form -> form.@method == 'post' }.@action"))
         flow.setRelayState(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'RelayState' }.@value"))
@@ -234,9 +233,9 @@ class EidasAuthSpec extends TaraSpecification {
         def map1 = Utils.setParameter(paramsMap, paramName1 , samlResponse)
         def map2 = Utils.setParameter(paramsMap, paramName2, relayState)
         Response redirectionResponse = Requests.postRequestWithParams(flow, endpointUrl, paramsMap, Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 400, redirectionResponse.statusCode())
+        assertEquals(400, redirectionResponse.statusCode(), "Correct HTTP status code is returned")
         assertThat("Correct Content-Type is returned", redirectionResponse.getContentType(), Matchers.startsWith("application/json"))
-        assertEquals("Correct error is returned", "Bad Request", redirectionResponse.body().jsonPath().get("error"))
+        assertEquals(redirectionResponse.body().jsonPath().get("error"), "Correct error is returned", "Bad Request")
         assertThat("Correct error message is returned", redirectionResponse.body().jsonPath().getString("message"), Matchers.startsWith(errorMessage))
         assertTrue(redirectionResponse.body().jsonPath().get("incident_nr").toString().size() > 15)
 
@@ -252,10 +251,10 @@ class EidasAuthSpec extends TaraSpecification {
         Steps.startAuthenticationInTara(flow, "openid eidas")
         String country = "CA"
         Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, country, Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 200, initEidasAuthenticationSession.statusCode())
-        assertEquals("Correct Content-Type is returned", "text/html;charset=UTF-8", initEidasAuthenticationSession.getContentType())
+        assertEquals(200, initEidasAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("text/html;charset=UTF-8", initEidasAuthenticationSession.getContentType(), "Correct Content-Type is returned")
         String buttonLabel = initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@type == 'submit'}.@value")
-        assertEquals("Continue button exists", "Continue", buttonLabel)
+        assertEquals("Continue", buttonLabel, "Continue button exists")
 
         flow.setNextEndpoint(initEidasAuthenticationSession.body().htmlPath().getString("**.find { form -> form.@method == 'post' }.@action"))
         flow.setRelayState(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'RelayState' }.@value"))
@@ -267,10 +266,9 @@ class EidasAuthSpec extends TaraSpecification {
         Response colleagueResponse = EidasSteps.eidasColleagueResponse(flow, eidasProxyResponse2)
         Response authorizationResponse2 = EidasSteps.getAuthorizationResponseFromEidas(flow, colleagueResponse)
         Response redirectionResponse = EidasSteps.eidasRedirectAuthorizationResponse(flow, authorizationResponse2, false)
-        assertEquals("Correct HTTP status code is returned", 400, redirectionResponse.statusCode())
-        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", redirectionResponse.getContentType())
-        assertThat(redirectionResponse.body().jsonPath().get("message").toString(), equalTo("eIDAS autentimine ebaõnnestus."))
-        assertThat(redirectionResponse.body().jsonPath().get("reportable"), equalTo(true))
+        assertEquals(400, redirectionResponse.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("application/json;charset=UTF-8", redirectionResponse.getContentType(), "Correct Content-Type is returned")
+        assertThat(redirectionResponse.body().jsonPath().get("message").toString(), equalTo("Eidas autentimine ebaõnnestus."))
     }
 
 
@@ -280,10 +278,10 @@ class EidasAuthSpec extends TaraSpecification {
         expect:
         Steps.startAuthenticationInTara(flow, "openid eidas")
         Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, COUNTRY, Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", 200, initEidasAuthenticationSession.statusCode())
-        assertEquals("Correct Content-Type is returned", "text/html;charset=UTF-8", initEidasAuthenticationSession.getContentType())
+        assertEquals(200, initEidasAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("text/html;charset=UTF-8", initEidasAuthenticationSession.getContentType(), "Correct Content-Type is returned")
         String buttonLabel = initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@type == 'submit'}.@value")
-        assertEquals("Continue button exists", "Continue", buttonLabel)
+        assertEquals("Continue", buttonLabel, "Continue button exists")
 
         flow.setNextEndpoint(initEidasAuthenticationSession.body().htmlPath().getString("**.find { form -> form.@method == 'post' }.@action"))
         flow.setRelayState(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'RelayState' }.@value"))
@@ -306,9 +304,9 @@ class EidasAuthSpec extends TaraSpecification {
             def map2 = Utils.setParameter(paramsMap, "RelayState", relayStateValue)
         }
         Response redirectionResponse = Requests.postRequestWithParams(flow, endpointUrl, paramsMap, Collections.emptyMap())
-        assertEquals("Correct HTTP status code is returned", statusCode, redirectionResponse.statusCode())
+        assertEquals(statusCode, redirectionResponse.statusCode(), "Correct HTTP status code is returned")
         assertThat("Correct Content-Type is returned", redirectionResponse.getContentType(), Matchers.startsWith("application/json"))
-        assertEquals("Correct error is returned", error, redirectionResponse.body().jsonPath().get("error"))
+        assertEquals(error, redirectionResponse.body().jsonPath().get("error"), "Correct error is returned")
         assertThat("Correct error message is returned", redirectionResponse.body().jsonPath().getString("message"), Matchers.startsWith(errorMessage))
         assertTrue(redirectionResponse.body().jsonPath().get("incident_nr").toString().size() > 15)
 

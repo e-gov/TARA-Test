@@ -5,15 +5,13 @@ import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import org.hamcrest.Matchers
-import spock.lang.Ignore
 import spock.lang.IgnoreIf
 import spock.lang.Unroll
 
 import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.Matchers.startsWith
-import static org.junit.Assert.assertEquals
-import static org.junit.Assert.assertThat
-import static org.junit.Assert.assertTrue
+import static org.junit.jupiter.api.Assertions.*
+import static org.hamcrest.MatcherAssert.assertThat
 
 @IgnoreIf({ properties['test.deployment.env'] == "idp" })
 class OidcUserInfoRequestSpec extends TaraSpecification {
@@ -40,15 +38,15 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
         String accessToken = tokenResponse.body().jsonPath().getString("access_token")
         Response userInfoResponse = Steps.getUserInfoResponseWithQueryParam(flow, REQUEST_TYPE_GET, accessToken)
-        assertEquals("Correct HTTP status code is returned", 200, userInfoResponse.statusCode())
-        assertEquals("Correct Content-Type is returned", "application/json; charset=utf-8", userInfoResponse.getContentType())
+        assertEquals(200, userInfoResponse.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("application/json; charset=utf-8", userInfoResponse.getContentType(), "Correct Content-Type is returned")
 
         assertThat(userInfoResponse.getBody().jsonPath().getString("acr"),  equalTo("high"))
         assertThat(userInfoResponse.getBody().jsonPath().getList("amr")[0].toString(), equalTo("mID"))
         Date date = new Date()
         long authTime = userInfoResponse.getBody().jsonPath().getLong("auth_time")
         // 10 seconds
-        assertTrue("Correct auth_time", Math.abs(date.getTime()/1000 - authTime) < 10L)
+        assertTrue(Math.abs(date.getTime()/1000 - authTime) < 10L, "Correct auth_time")
 
         assertThat(userInfoResponse.getBody().jsonPath().getString("sub"),  equalTo("EE" + idCode))
         assertThat(userInfoResponse.getBody().jsonPath().getString("date_of_birth"),  equalTo("2000-01-01"))
@@ -71,8 +69,8 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
         String accessToken = tokenResponse.body().jsonPath().getString("access_token")
         Response userInfoResponse = Steps.getUserInfoResponseWithHeaderParam(flow, REQUEST_TYPE_GET, accessToken)
-        assertEquals("Correct HTTP status code is returned", 200, userInfoResponse.statusCode())
-        assertEquals("Correct Content-Type is returned", "application/json; charset=utf-8", userInfoResponse.getContentType())
+        assertEquals(200, userInfoResponse.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("application/json; charset=utf-8", userInfoResponse.getContentType(), "Correct Content-Type is returned")
 
         assertThat(userInfoResponse.getBody().jsonPath().getString("acr"),  equalTo("high"))
         assertThat(userInfoResponse.getBody().jsonPath().getList("amr")[0].toString(), equalTo("idcard"))
@@ -100,8 +98,8 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
         String accessToken = tokenResponse.body().jsonPath().getString("access_token")
         Response userInfoResponse = Steps.getUserInfoResponseWithHeaderParam(flow, REQUEST_TYPE_POST, accessToken)
-        assertEquals("Correct HTTP status code is returned", 200, userInfoResponse.statusCode())
-        assertEquals("Correct Content-Type is returned", "application/json; charset=utf-8", userInfoResponse.getContentType())
+        assertEquals(200, userInfoResponse.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("application/json; charset=utf-8", userInfoResponse.getContentType(), "Correct Content-Type is returned")
 
         assertThat(userInfoResponse.getBody().jsonPath().getString("acr"),  equalTo("high"))
         assertThat(userInfoResponse.getBody().jsonPath().getList("amr")[0].toString(), equalTo("idcard"))
@@ -128,8 +126,8 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
         String accessToken = tokenResponse.body().jsonPath().getString("access_token")
         Response userInfoResponse = Steps.getUserInfoResponseWithHeaderParam(flow, REQUEST_TYPE_GET, accessToken)
-        assertEquals("Correct HTTP status code is returned", 200, userInfoResponse.statusCode())
-        assertEquals("Correct Content-Type is returned", "application/json; charset=utf-8", userInfoResponse.getContentType())
+        assertEquals(200, userInfoResponse.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("application/json; charset=utf-8", userInfoResponse.getContentType(), "Correct Content-Type is returned")
 
         assertThat(userInfoResponse.getBody().jsonPath().getString("acr"),  equalTo("high"))
         assertThat(userInfoResponse.getBody().jsonPath().getList("amr")[0].toString(), equalTo("idcard"))
@@ -159,8 +157,8 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
         String accessToken = tokenResponse.body().jsonPath().getString("access_token")
         Response userInfoResponse = Steps.getUserInfoResponseWithQueryParam(flow, REQUEST_TYPE_POST, accessToken)
-        assertEquals("Correct HTTP status code is returned", 200, userInfoResponse.statusCode())
-        assertEquals("Correct Content-Type is returned", "application/json; charset=utf-8", userInfoResponse.getContentType())
+        assertEquals(200, userInfoResponse.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("application/json; charset=utf-8", userInfoResponse.getContentType(), "Correct Content-Type is returned")
 
         assertThat(userInfoResponse.getBody().jsonPath().getString("given_name"),  equalTo("ONE"))
         assertThat(userInfoResponse.getBody().jsonPath().getString("sub"),  equalTo("EE" + idCode))
@@ -185,8 +183,8 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
         String accessToken = tokenResponse.body().jsonPath().getString("access_token")
         Response userInfoResponse = Steps.getUserInfoResponseWithQueryParam(flow, REQUEST_TYPE_GET, accessToken)
-        assertEquals("Correct HTTP status code is returned", 200, userInfoResponse.statusCode())
-        assertEquals("Correct Content-Type is returned", "application/json; charset=utf-8", userInfoResponse.getContentType())
+        assertEquals(200, userInfoResponse.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("application/json; charset=utf-8", userInfoResponse.getContentType(), "Correct Content-Type is returned")
 
         assertThat(userInfoResponse.getBody().jsonPath().getString("given_name"),  equalTo("ONE"))
         assertThat(userInfoResponse.getBody().jsonPath().getString("sub"),  equalTo("EE" + idCode))
@@ -213,8 +211,8 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
         String accessToken = tokenResponse.body().jsonPath().getString("access_token")
         Response userInfoResponse = Steps.getUserInfoResponseWithQueryParam(flow, REQUEST_TYPE_GET, accessToken)
-        assertEquals("Correct HTTP status code is returned", 200, userInfoResponse.statusCode())
-        assertEquals("Correct Content-Type is returned", "application/json; charset=utf-8", userInfoResponse.getContentType())
+        assertEquals(200, userInfoResponse.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("application/json; charset=utf-8", userInfoResponse.getContentType(), "Correct Content-Type is returned")
 
         assertThat(userInfoResponse.getBody().jsonPath().getString("given_name"),  equalTo("ONE"))
         assertThat(userInfoResponse.getBody().jsonPath().getString("sub"),  equalTo("EE" + idCode))
@@ -238,8 +236,9 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
         String accessToken = tokenResponse.body().jsonPath().getString("access_token")
         Response userInfoResponse = Steps.getUserInfoResponseWithQueryParam(flow, REQUEST_TYPE_GET, accessToken)
-        assertEquals("Correct HTTP status code is returned", 200, userInfoResponse.statusCode())
-        assertEquals("Correct Content-Type is returned", "application/json; charset=utf-8", userInfoResponse.getContentType())
+        assertEquals(200, userInfoResponse.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("application/json; charset=utf-8", userInfoResponse.getContentType(), "Correct Content-Type is returned")
+
         assertThat(userInfoResponse.getBody().jsonPath().getList("amr")[0].toString(), equalTo("smartid"))
         assertThat(userInfoResponse.getBody().jsonPath().getString("given_name"),  equalTo("QUALIFIED OK1"))
         assertThat(userInfoResponse.getBody().jsonPath().getString("sub"),  equalTo("EE" + idCode))
@@ -264,8 +263,8 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
         String accessToken = tokenResponse.body().jsonPath().getString("access_token")
         Response userInfoResponse = Steps.getUserInfoResponseWithQueryParam(flow, REQUEST_TYPE_GET, accessToken)
-        assertEquals("Correct HTTP status code is returned", 200, userInfoResponse.statusCode())
-        assertEquals("Correct Content-Type is returned", "application/json; charset=utf-8", userInfoResponse.getContentType())
+        assertEquals(200, userInfoResponse.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("application/json; charset=utf-8", userInfoResponse.getContentType(), "Correct Content-Type is returned")
 
         assertThat(userInfoResponse.getBody().jsonPath().getString("given_name"),  equalTo("QUALIFIED OK1"))
         assertThat(userInfoResponse.getBody().jsonPath().getString("sub"),  equalTo("EE" + idCode))
@@ -290,8 +289,8 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
         String accessToken = tokenResponse.body().jsonPath().getString("access_token")
         Response userInfoResponse = Steps.getUserInfoResponseWithQueryParam(flow, REQUEST_TYPE_GET, accessToken)
-        assertEquals("Correct HTTP status code is returned", 200, userInfoResponse.statusCode())
-        assertEquals("Correct Content-Type is returned", "application/json; charset=utf-8", userInfoResponse.getContentType())
+        assertEquals(200, userInfoResponse.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("application/json; charset=utf-8", userInfoResponse.getContentType(), "Correct Content-Type is returned")
 
         assertThat(userInfoResponse.getBody().jsonPath().getString("given_name"),  equalTo("QUALIFIED OK1"))
         assertThat(userInfoResponse.getBody().jsonPath().getString("sub"),  equalTo("EE" + idCode))
@@ -314,7 +313,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
         String accessToken = tokenResponse.body().jsonPath().getString("access_token")
         Response userInfoResponse = Steps.getUserInfoResponseWithHeaderParam(flow, requestType, accessToken)
-        assertEquals("Correct HTTP status code is returned", statusCode, userInfoResponse.statusCode())
+        assertEquals(statusCode, userInfoResponse.statusCode(), "Correct HTTP status code is returned")
 
         where:
         requestType || statusCode
@@ -331,12 +330,12 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         expect:
         String accessToken = "access.Token.12345"
         Response response = Steps.getUserInfoResponseWithHeaderParam(flow, REQUEST_TYPE_GET, accessToken)
-        assertEquals("Correct HTTP status code is returned", 401, response.statusCode())
+        assertEquals(401, response.statusCode(), "Correct HTTP status code is returned")
         assertThat("Correct Content-Type is returned", response.getContentType(), startsWith("application/json"))
-        assertEquals("Correct error is returned", "request_unauthorized", response.body().jsonPath().get("error"))
+        assertEquals("request_unauthorized", response.body().jsonPath().get("error"), "Correct error is returned")
         Map<String, String> errorMap = OpenIdUtils.getErrorFromAuthorizationHeader(response)
-        assertEquals("Correct error text is returned","request_unauthorized", errorMap.get("error"))
-        assertEquals("Correct error description is returned", "The request could not be authorized.", errorMap.get("error_description"))
+        assertEquals("request_unauthorized", errorMap.get("error"), "Correct error text is returned")
+        assertEquals("The request could not be authorized.", errorMap.get("error_description"), "Correct error description is returned")
     }
 
     @Unroll
@@ -345,11 +344,11 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         expect:
         String accessToken = "access.Token.12345"
         Response response = Steps.getUserInfoResponseWithQueryParam(flow, REQUEST_TYPE_GET, accessToken)
-        assertEquals("Correct HTTP status code is returned", 401, response.statusCode())
+        assertEquals(401, response.statusCode(), "Correct HTTP status code is returned")
         assertThat("Correct Content-Type is returned", response.getContentType(), startsWith("application/json"))
-        assertEquals("Correct error is returned", "request_unauthorized", response.body().jsonPath().get("error"))
+        assertEquals("request_unauthorized", response.body().jsonPath().get("error"), "Correct error is returned")
         Map<String, String> errorMap = OpenIdUtils.getErrorFromAuthorizationHeader(response)
-        assertEquals("Correct error text is returned","request_unauthorized", errorMap.get("error"))
+        assertEquals("request_unauthorized", errorMap.get("error"), "Correct error text is returned")
         assertThat("Correct error description is returned", errorMap.get("error_description"), startsWith("The request could not be authorized."))
     }
 
@@ -363,14 +362,14 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
                 , Collections.emptyMap()
                 , Collections.emptyMap())
 
-        assertEquals("Correct HTTP status code is returned", 401, response.statusCode())
+        assertEquals(401, response.statusCode(), "Correct HTTP status code is returned")
         assertThat("Correct Content-Type is returned", response.getContentType(), startsWith("application/json"))
-        assertEquals("Correct error is returned", "request_unauthorized", response.body().jsonPath().get("error"))
+        assertEquals("request_unauthorized", response.body().jsonPath().get("error"), "Correct error is returned")
         assertThat("Correct error_description is returned", response.body().jsonPath().getString("error_description"), Matchers.endsWith("Check that you provided valid credentials in the right format."))
 
         Map<String, String> errorMap = OpenIdUtils.getErrorFromAuthorizationHeader(response)
-        assertEquals("Correct error text is returned","request_unauthorized", errorMap.get("error"))
-        assertEquals("Correct error description is returned", "The request could not be authorized.", errorMap.get("error_description"))
+        assertEquals("request_unauthorized", errorMap.get("error"), "Correct error text is returned")
+        assertEquals("The request could not be authorized.", errorMap.get("error_description"), "Correct error description is returned")
     }
 
 }
