@@ -207,12 +207,6 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${maven.surefire.plugin.version}</version>
                 <configuration>
-                    <parallel>all</parallel>
-                    <perCoreThreadCount>false</perCoreThreadCount>
-                    <threadCount>6</threadCount>
-                    <threadCountSuites>6</threadCountSuites>
-                    <threadCountClasses>6</threadCountClasses>
-                    <threadCountMethods>6</threadCountMethods>
                     <includes>
                         <include>**/*.groovy</include>
                         <include>**/*.java</include>
