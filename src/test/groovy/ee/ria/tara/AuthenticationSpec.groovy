@@ -281,7 +281,7 @@ class AuthenticationSpec extends TaraSpecification {
         def map3 = Utils.setParameter(cookieMap, "SESSION", flow.sessionId)
         Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullAuthRejectUrl, cookieMap, paramsMap, Collections.emptyMap())
         assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
+        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
         assertEquals("authReject.errorCode: the only supported value is: 'user_cancel'", response.body().jsonPath().get("message"), "Correct error message is returned")
         assertTrue(response.body().jsonPath().get("incident_nr").toString().size() > 15)
     }
@@ -308,7 +308,7 @@ class AuthenticationSpec extends TaraSpecification {
         def map1 = Utils.setParameter(paramsMap, "error_code", REJECT_ERROR_CODE)
         Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullAuthRejectUrl, Collections.emptyMap(), paramsMap, Collections.emptyMap())
         assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
+        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
         assertEquals("Teie sessiooni ei leitud! Sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"), "Correct error message is returned")
     }
     
@@ -352,7 +352,7 @@ class AuthenticationSpec extends TaraSpecification {
         def map4 = Utils.setParameter(additionalParamsMap, "error_code", REJECT_ERROR_CODE)
         Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullAuthRejectUrl, cookieMap, paramsMap, additionalParamsMap)
         assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
+        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
         assertEquals("Multiple request parameters with the same name not allowed", response.body().jsonPath().get("message"), "Correct error message is returned")
         assertTrue(response.body().jsonPath().get("incident_nr").toString().size() > 15)
     }
