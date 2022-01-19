@@ -47,17 +47,18 @@ class EidasAuthSpec extends TaraSpecification {
         Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, country, additionalParamsMap)
         assertEquals(statusCode, initEidasAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
         assertEquals("application/json;charset=UTF-8", initEidasAuthenticationSession.getContentType(), "Correct Content-Type is returned")
-        assertThat(initEidasAuthenticationSession.body().jsonPath().getString("message"), Matchers.containsString(errorMessage))
+        assertThat(initEidasAuthenticationSession.body().jsonPath().getString("message"), Matchers.startsWith(errorMessage))
+        assertThat(initEidasAuthenticationSession.body().jsonPath().getString("message"), Matchers.containsString(messageCountry))
         assertTrue(initEidasAuthenticationSession.body().jsonPath().get("incident_nr").toString().size() > 15)
 
         where:
-        country | paramName | paramValue || statusCode || label                       || errorMessage
-        _       | _         | _          || 400        || "missing country parameter" || "Required String parameter 'country' is not present"
-        "bg"    | _         | _          || 400        || "country code is not in list" || "Antud riigikood ei ole lubatud. Lubatud riigikoodid on: CA"
-        "BG"    | _         | _          || 400        || "capitalized country code is not in list" || "Antud riigikood ei ole lubatud. Lubatud riigikoodid on: CA"
-        "ca"    | _         | _          || 400        || "country code must be capitalized" || "Antud riigikood ei ole lubatud. Lubatud riigikoodid on: CA"
-        "F"     | _         | _          || 400        || "country code must be capitalized" || "Antud riigikood ei ole lubatud. Lubatud riigikoodid on: CA"
-        "a1"     | _         | _          || 400        || "country code is not in list" || "Antud riigikood ei ole lubatud. Lubatud riigikoodid on: CA"
+        country | paramName | paramValue | statusCode | label                                     | errorMessage                                               | messageCountry
+        _       | _         | _          | 400        | "missing country parameter"               | "Required String parameter 'country' is not present"       | "country"
+        "bg"    | _         | _          | 400        | "country code is not in list"             | "Antud riigikood ei ole lubatud. Lubatud riigikoodid on: " | "CA"
+        "BG"    | _         | _          | 400        | "capitalized country code is not in list" | "Antud riigikood ei ole lubatud. Lubatud riigikoodid on: " | "CA"
+        "ca"    | _         | _          | 400        | "country code must be capitalized"        | "Antud riigikood ei ole lubatud. Lubatud riigikoodid on: " | "CA"
+        "F"     | _         | _          | 400        | "country code must be capitalized"        | "Antud riigikood ei ole lubatud. Lubatud riigikoodid on: " | "CA"
+        "a1"    | _         | _          | 400        | "country code is not in list"             | "Antud riigikood ei ole lubatud. Lubatud riigikoodid on: " | "CA"
     }
 
     @Unroll
