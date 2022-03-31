@@ -52,13 +52,13 @@ class EidasAuthSpec extends TaraSpecification {
         assertTrue(initEidasAuthenticationSession.body().jsonPath().get("incident_nr").toString().size() > 15)
 
         where:
-        country | paramName | paramValue | statusCode | label                                     | errorMessage                                               | messageCountry
-        _       | _         | _          | 400        | "missing country parameter"               | "Required String parameter 'country' is not present"       | "country"
-        "bg"    | _         | _          | 400        | "country code is not in list"             | "Antud riigikood ei ole lubatud. Lubatud riigikoodid on: " | "CA"
-        "BG"    | _         | _          | 400        | "capitalized country code is not in list" | "Antud riigikood ei ole lubatud. Lubatud riigikoodid on: " | "CA"
-        "ca"    | _         | _          | 400        | "country code must be capitalized"        | "Antud riigikood ei ole lubatud. Lubatud riigikoodid on: " | "CA"
-        "F"     | _         | _          | 400        | "country code must be capitalized"        | "Antud riigikood ei ole lubatud. Lubatud riigikoodid on: " | "CA"
-        "a1"    | _         | _          | 400        | "country code is not in list"             | "Antud riigikood ei ole lubatud. Lubatud riigikoodid on: " | "CA"
+        country | paramName | paramValue | statusCode | label                                     | errorMessage                                                                          | messageCountry
+        _       | _         | _          | 400        | "missing country parameter"               | "Required request parameter 'country' for method parameter type String is not present"| "country"
+        "bg"    | _         | _          | 400        | "country code is not in list"             | "Antud riigikood ei ole lubatud. Lubatud riigikoodid on: "                            | "CA"
+        "BG"    | _         | _          | 400        | "capitalized country code is not in list" | "Antud riigikood ei ole lubatud. Lubatud riigikoodid on: "                            | "CA"
+        "ca"    | _         | _          | 400        | "country code must be capitalized"        | "Antud riigikood ei ole lubatud. Lubatud riigikoodid on: "                            | "CA"
+        "F"     | _         | _          | 400        | "country code must be capitalized"        | "Antud riigikood ei ole lubatud. Lubatud riigikoodid on: "                            | "CA"
+        "a1"    | _         | _          | 400        | "country code is not in list"             | "Antud riigikood ei ole lubatud. Lubatud riigikoodid on: "                            | "CA"
     }
 
     @Unroll
@@ -242,8 +242,8 @@ class EidasAuthSpec extends TaraSpecification {
 
         where:
         paramName1     | paramName2   || label          || errorMessage
-        "SAMLResponse" | _            || "RelayState"   || "Required String parameter 'RelayState' is not present"
-        _              | "RelayState" || "SAMLResponse" || "Required String parameter 'SAMLResponse' is not present"
+        "SAMLResponse" | _            || "RelayState"   || "Required request parameter 'RelayState' for method parameter type String is not present"
+        _              | "RelayState" || "SAMLResponse" || "Required request parameter 'SAMLResponse' for method parameter type String is not present"
     }
 
     @Feature("EIDAS_AUTH_CALLBACK_ENDPOINT")

@@ -85,7 +85,7 @@ class AuthInitSpec extends TaraSpecification {
         paramName1        | paramValue1 | paramName2        | paramValue2 | label                                   || errorMessage
         "lang"            | "zu"        | "login_challenge" | "default"   | "invalid language code"                 || "authInit.language: supported values are: 'et', 'en', 'ru'"
         "login_challenge" | "12345"     | _                 | _           | "not existing login_challenge value"    || "Vigane päring. Päringu volituskood ei ole korrektne."
-        _                 | _           | _                 | _           | "login_challenge param is missing"      || "Required String parameter 'login_challenge' is not present"
+        _                 | _           | _                 | _           | "login_challenge param is missing"      || "Required request parameter 'login_challenge' for method parameter type String is not present"
         "login_challenge" | _           | _                 | _           | "empty login_challenge value"           || "authInit.loginChallenge: only characters and numbers allowed"
         "login_challenge" | "+372& (aa" | _                 | _           | "invalid symbols &( in login_challenge" || "authInit.loginChallenge: only characters and numbers allowed"
         _                 | _           | "login_challenge" | "+372"      | "invalid symbols + in login_challenge"  || "authInit.loginChallenge: only characters and numbers allowed"
