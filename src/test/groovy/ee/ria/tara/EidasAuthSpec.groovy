@@ -312,10 +312,10 @@ class EidasAuthSpec extends TaraSpecification {
         assertTrue(redirectionResponse.body().jsonPath().get("incident_nr").toString().size() > 15)
 
         where:
-        samlResponseValue                           | relayStateValue || statusCode || error                   || label                      || errorMessage
-        "AB-"                                       | "default"       || 500        || "Internal Server Error" || "SAMLResponse short value" || "Autentimine ebaõnnestus teenuse tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti."
-        RandomStringUtils.random(11000, true, true) | "default"       || 500        || "Internal Server Error" || "SAMLResponse long value"  || "Autentimine ebaõnnestus teenuse tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti."
-        "default"                                   | "DC@"          || 400        || "Bad Request"           || "RelayState short value"   || "Ebakorrektne päring."
+        samlResponseValue                           | relayStateValue || statusCode || error         || label                      || errorMessage
+        "AB-"                                       | "default"       || 502        || "Bad Gateway" || "SAMLResponse short value" || "eIDAS teenuses esinevad tehnilised tõrked. Palun proovige mõne aja pärast uuesti."
+        RandomStringUtils.random(11000, true, true) | "default"       || 502        || "Bad Gateway" || "SAMLResponse long value"  || "eIDAS teenuses esinevad tehnilised tõrked. Palun proovige mõne aja pärast uuesti."
+        "default"                                   | "DC@"           || 400        || "Bad Request" || "RelayState short value"   || "Ebakorrektne päring."
 
     }
 }
