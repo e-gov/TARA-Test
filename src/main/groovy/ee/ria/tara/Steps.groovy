@@ -279,7 +279,8 @@ class Steps {
         assertThat(response.getHeader("Strict-Transport-Security"), containsString("includeSubDomains"))
         assertThat(response.getHeader("Cache-Control"), equalTo("no-cache, no-store, max-age=0, must-revalidate"))
         assertThat(response.getHeader("X-Content-Type-Options"), equalTo("nosniff"))
-        assertThat(response.getHeader("X-XSS-Protection"), equalTo("1; mode=block"))
+        assertThat(response.getHeader("X-XSS-Protection"), equalTo("0"))
+        assertThat(response.getHeader("Expires"), equalTo("0"))
     }
 
     @Step("Get user info response with header parameter")
