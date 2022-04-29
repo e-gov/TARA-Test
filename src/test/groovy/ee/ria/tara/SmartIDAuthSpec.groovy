@@ -1,5 +1,7 @@
 package ee.ria.tara
 
+import com.nimbusds.jose.jwk.JWKSet
+import com.nimbusds.jwt.JWTClaimsSet
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
@@ -8,6 +10,7 @@ import spock.lang.IgnoreIf
 import spock.lang.Unroll
 import org.hamcrest.Matchers
 
+import static org.hamcrest.Matchers.equalTo
 import static org.junit.jupiter.api.Assertions.*
 import static org.hamcrest.MatcherAssert.assertThat
 
@@ -17,6 +20,32 @@ class SmartIDAuthSpec extends TaraSpecification {
 
     def setup() {
         flow.cookieFilter = new CookieFilter()
+        flow.openIdServiceConfiguration = Requests.getOpenidConfiguration(flow.oidcService.fullConfigurationUrl)
+        flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.oidcService.fullJwksUrl))
+    }
+
+    @Unroll
+    @Feature("SID_AUTH_SPECIAL_ACCOUNTS")
+    def "Authenticate with Smart-id account: #label"() {
+        expect:
+        Steps.startAuthenticationInTara(flow, "openid smartid")
+        Response sidAuthResponse = Steps.authenticateWithSid(flow, idCode)
+        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, sidAuthResponse)
+        Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
+
+        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        assertThat(claims.getAudience().get(0), equalTo(flow.oidcClient.clientId))
+        assertThat(claims.getSubject(), equalTo("EE" + idCode))
+        assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo(givenName))
+        assertThat(claims.getJSONObjectClaim("profile_attributes").get("family_name"), equalTo(familyName))
+        assertThat(claims.getJSONObjectClaim("profile_attributes").get("date_of_birth"), equalTo(dateOfBirth))
+
+        where:
+        idCode        | givenName      | familyName   | dateOfBirth  | label
+        "39912319997" | "BOD"          | "TESTNUMBER" | "1999-12-31" | "New certificate profile (no personal code in CN)"
+        "50701019992" | "MINOR"        | "TESTNUMBER" | "2007-01-01" | "User age is under 18 (01.01.2007)"
+        "30303039903" | "QUALIFIED OK" | "TESTNUMBER" | "1903-03-03" | "No numbers in names"
+        "30303039816" | "MULTIPLE OK"  | "TESTNUMBER" | "1903-03-03" | "User has other active account"
     }
 
     @Unroll
@@ -88,8 +117,8 @@ class SmartIDAuthSpec extends TaraSpecification {
         where:
         login_locale | label             || errorMessage
         "et"         | "Estonian locale" || "Kasutajal puudub"
-        "en"         | "English locale"  || "User has no Smart-ID account."
-        "ru"         | "Russian locale"  || "У пользователя нет учетной записи Smart-ID."
+//        "en"         | "English locale"  || "User has no Smart-ID account."
+//        "ru"         | "Russian locale"  || "У пользователя нет учетной записи Smart-ID."
     }
 
     @Unroll
