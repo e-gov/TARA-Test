@@ -39,6 +39,21 @@ class AuthenticationSpec extends TaraSpecification {
         assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo("ONE"))
     }
 
+    @Unroll
+    @Feature("AUTHENTICATION")
+    def "request authentication with mobile-ID. TEST of EID-SK 2016 chain certificate"() {
+        expect:
+        Steps.startAuthenticationInTara(flow)
+        Response midAuthResponse = Steps.authenticateWithMid(flow,"60001017869", "68000769")
+        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
+        Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
+
+        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        assertThat(claims.getAudience().get(0), equalTo(flow.oidcClient.clientId))
+        assertThat(claims.getSubject(), equalTo("EE60001017869"))
+        assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo("EID2016"))
+    }
+
     @IgnoreIf({ properties['test.deployment.env'] == "idp" })
     @Unroll
     @Feature("AUTHENTICATION")
