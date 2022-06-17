@@ -196,7 +196,7 @@ class MobileIDAuthSpec extends TaraSpecification {
         Response response = Requests.pollMid(flow)
         assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
         assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
-        assertEquals("Teie sessiooni ei leitud! Sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"), "Correct error message is returned")
+        assertEquals("Teie seanssi ei leitud! Seanss aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"), "Correct error message is returned")
     }
 
     @Unroll
@@ -276,7 +276,7 @@ class MobileIDAuthSpec extends TaraSpecification {
         assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
         // _csrf is directly related with SESSION cookie
         assertThat(response.body().jsonPath().get("error").toString(), equalTo("Forbidden"))
-        String message = "Keelatud päring. Päring esitati topelt, sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud."
+        String message = "Keelatud päring. Päring esitati topelt, seanss aegus või on küpsiste kasutamine Teie brauseris piiratud."
         assertThat(response.body().jsonPath().get("message").toString(), equalTo(message))
     }
 

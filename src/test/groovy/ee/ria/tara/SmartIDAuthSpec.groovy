@@ -246,7 +246,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         Response response = Requests.pollSid(flow)
         assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
         assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
-        assertEquals("Teie sessiooni ei leitud! Sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"), "Correct error message is returned")
+        assertEquals("Teie seanssi ei leitud! Seanss aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"), "Correct error message is returned")
     }
 
     @Unroll
@@ -325,7 +325,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
 
         assertEquals("Forbidden", response.body().jsonPath().get("error"), "Correct error text is returned")
-        String errorMessage = "Keelatud päring. Päring esitati topelt, sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud."
+        String errorMessage = "Keelatud päring. Päring esitati topelt, seanss aegus või on küpsiste kasutamine Teie brauseris piiratud."
         assertEquals(errorMessage, response.body().jsonPath().get("message"), "Correct error message is returned")
     }
 

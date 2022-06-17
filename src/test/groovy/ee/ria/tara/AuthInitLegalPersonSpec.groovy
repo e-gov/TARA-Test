@@ -68,7 +68,7 @@ class AuthInitLegalPersonSpec extends TaraSpecification {
         Response response = Requests.getRequestWithSessionId(flow, flow.loginService.fullAuthLegalInitUrl)
         assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
         assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
-        assertEquals("Teie sessiooni ei leitud! Sessioon aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"), "Correct error message is returned")
+        assertEquals("Teie seanssi ei leitud! Seanss aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"), "Correct error message is returned")
     }
 
     @Ignore // TARA2-80 TARA2-165
