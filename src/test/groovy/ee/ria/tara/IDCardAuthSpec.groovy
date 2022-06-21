@@ -27,7 +27,7 @@ class IDCardAuthSpec extends TaraSpecification {
     def "Init ID-Card authentication"() {
         expect:
         String certificate = Utils.getCertificateAsString("src/test/resources/joeorg-auth.pem")
-        Response initClientAuthenticationSession = Steps.startAuthenticationInTara(flow)
+        Steps.startAuthenticationInTara(flow)
         HashMap<String, String> headersMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(headersMap, "XCLIENTCERTIFICATE", certificate)
         Response response = Requests.idCardAuthentication(flow, headersMap)
@@ -43,7 +43,7 @@ class IDCardAuthSpec extends TaraSpecification {
     def "Init ID-Card authentication with expired certificate"() {
         expect:
         String certificate = Utils.getCertificateAsString("src/test/resources/expired-cert.pem")
-        Response initClientAuthenticationSession = Steps.startAuthenticationInTara(flow)
+        Steps.startAuthenticationInTara(flow)
         HashMap<String, String> headersMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(headersMap, "XCLIENTCERTIFICATE", certificate)
         Response response = Requests.idCardAuthentication(flow, headersMap)
@@ -54,11 +54,43 @@ class IDCardAuthSpec extends TaraSpecification {
     }
 
     @Unroll
+    @Feature("ESTEID_AUTH_ENDPOINT")
+    @Feature("REJECT_UNKNOWN_CERTS")
+    def "Init ID-Card authentication with revoked certificate"() {
+        expect:
+        String certificate = Utils.getCertificateAsString("src/test/resources/revoked-cert.pem")
+        Steps.startAuthenticationInTara(flow)
+        HashMap<String, String> headersMap = (HashMap) Collections.emptyMap()
+        Utils.setParameter(headersMap, "XCLIENTCERTIFICATE", certificate)
+        Response response = Requests.idCardAuthentication(flow, headersMap)
+        assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
+        assertThat("Correct response", response.body().jsonPath().get("status").toString(), equalTo("ERROR"))
+        assertThat("Correct error message", response.body().jsonPath().get("message").toString(), equalTo("ID-kaardi sertifikaadid on peatatud või tühistatud. Palun pöörduge Politsei- ja Piirivalveameti teenindusse."))
+        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
+    }
+
+    @Unroll
+    @Feature("ESTEID_AUTH_ENDPOINT")
+    @Feature("REJECT_UNKNOWN_CERTS")
+    def "Init ID-Card authentication with unknown certificate"() {
+        expect:
+        String certificate = Utils.getCertificateAsString("src/test/resources/unknown-cert.pem")
+        Steps.startAuthenticationInTara(flow)
+        HashMap<String, String> headersMap = (HashMap) Collections.emptyMap()
+        Utils.setParameter(headersMap, "XCLIENTCERTIFICATE", certificate)
+        Response response = Requests.idCardAuthentication(flow, headersMap)
+        assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
+        assertThat("Correct response", response.body().jsonPath().get("status").toString(), equalTo("ERROR"))
+        assertThat("Correct error message", response.body().jsonPath().get("message").toString(), equalTo("ID-kaardi sertifikaadid on peatatud või tühistatud. Palun pöörduge Politsei- ja Piirivalveameti teenindusse."))
+        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
+    }
+
+    @Unroll
     @Feature("IDCARD_AUTH_SUCCESSFUL")
     def "Authenticate with ID-Card"() {
         expect:
         String certificate = Utils.getCertificateAsString("src/test/resources/joeorg-auth.pem")
-        Response initClientAuthenticationSession = Steps.startAuthenticationInTara(flow)
+        Steps.startAuthenticationInTara(flow)
         HashMap<String, String> headersMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(headersMap, "XCLIENTCERTIFICATE", certificate)
         Response response = Requests.idCardAuthentication(flow, headersMap)
@@ -97,7 +129,7 @@ class IDCardAuthSpec extends TaraSpecification {
     def "Authenticate with ID-Card. Esteid 2015 chain certificate"() {
         expect:
         String certificate = Utils.getCertificateAsString("src/test/resources/Mari-Liis-Esteid-2015_auth.pem")
-        Response initClientAuthenticationSession = Steps.startAuthenticationInTara(flow)
+        Steps.startAuthenticationInTara(flow)
         HashMap<String, String> headersMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(headersMap, "XCLIENTCERTIFICATE", certificate)
         Response response = Requests.idCardAuthentication(flow, headersMap)
@@ -141,7 +173,7 @@ class IDCardAuthSpec extends TaraSpecification {
     def "Verify ID-Card authentication response headers"() {
         expect:
         String certificate = Utils.getCertificateAsString("src/test/resources/joeorg-auth.pem")
-        Response initClientAuthenticationSession = Steps.startAuthenticationInTara(flow)
+        Steps.startAuthenticationInTara(flow)
         HashMap<String, String> headersMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(headersMap, "XCLIENTCERTIFICATE", certificate)
         Response response = Requests.idCardAuthentication(flow, headersMap)
@@ -154,7 +186,7 @@ class IDCardAuthSpec extends TaraSpecification {
     def "Init ID-Card authentication with invalid session"() {
         expect:
         String certificate = Utils.getCertificateAsString("src/test/resources/joeorg-auth.pem")
-        Response initClientAuthenticationSession = Steps.startAuthenticationInTara(flow)
+        Steps.startAuthenticationInTara(flow)
         HashMap<String, String> headersMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(headersMap, "XCLIENTCERTIFICATE", certificate)
         flow.setSessionId("123456789")
@@ -170,7 +202,7 @@ class IDCardAuthSpec extends TaraSpecification {
     def "Init ID-Card authentication with missing session cookie"() {
         expect:
         String certificate = Utils.getCertificateAsString("src/test/resources/joeorg-auth.pem")
-        Response initClientAuthenticationSession = Steps.startAuthenticationInTara(flow)
+        Steps.startAuthenticationInTara(flow)
         HashMap<String, String> headersMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(headersMap, "XCLIENTCERTIFICATE", certificate)
         Response response = Requests.idCardAuthenticationWithoutSession(flow, headersMap)
