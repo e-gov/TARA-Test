@@ -62,6 +62,17 @@ class Steps {
         return initLoginSession
     }
 
+    @Step("Start authentication in TARA with Specific Proxy Service and follow redirects")
+    static Response startAuthenticationInTaraWithSpecificProxyService(Flow flow, String scopeList = "openid", String login_locale = "et", boolean checkStatusCode = true) {
+        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersForSpecificProxyService(flow, scopeList, login_locale)
+        Response initOIDCServiceSession = startAuthenticationInOidcWithParams(flow, paramsMap)
+        Response initLoginSession = createLoginSession(flow, initOIDCServiceSession)
+        if (checkStatusCode) {
+            assertEquals(200, initLoginSession.statusCode(), "Correct HTTP status code is returned")
+        }
+        return initLoginSession
+    }
+
     @Step("Initialize Mobile-ID authentication session")
     static Response initMidAuthSession(Flow flow, String sessionId
                                        , Object idCode, Object telephoneNumber

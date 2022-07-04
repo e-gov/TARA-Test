@@ -11,6 +11,7 @@ class Flow {
     OidcService oidcService
     LoginService loginService
     OidcClient oidcClient
+    SpecificProxyService specificProxyService
     ForeignIdpProvider foreignIdpProvider
     ForeignProxyService foreignProxyService
     TaraAdminService taraAdminService
@@ -35,6 +36,7 @@ class Flow {
         this.loginService = new LoginService(properties)
         this.oidcService = new OidcService(properties)
         this.oidcClient = new OidcClient(properties)
+        this.specificProxyService = new SpecificProxyService(properties)
         this.foreignIdpProvider = new ForeignIdpProvider(properties)
         this.foreignProxyService = new ForeignProxyService(properties)
         this.taraAdminService = new TaraAdminService(properties)
@@ -200,6 +202,36 @@ class OidcService {
                 return ""
             }
         }
+}
+
+@Canonical
+class SpecificProxyService {
+    String host
+    String port
+    String protocol
+    String responseUrl
+    String clientId
+    String clientSecret
+    HashMap <String, String> cookies
+
+    @Lazy fullResponseUrl = "${protocol}://${host}${portCheck()}${responseUrl}"
+
+    SpecificProxyService(Properties properties) {
+        this.host = properties."specificproxyservice.host"
+        this.port = properties."specificproxyservice.port"
+        this.protocol = properties."specificproxyservice.protocol"
+        this.responseUrl = properties."specificproxyservice.responseUrl"
+        this.clientId = properties."specificproxyservice.clientId"
+        this.clientSecret = properties."specificproxyservice.secret"
+        this.cookies = new HashMap<String, String>()
+    }
+    private String portCheck() {
+        if (port != null && port.isInteger()) {
+            return ":${port}"
+        } else {
+            return ""
+        }
+    }
 }
 
 @Canonical
