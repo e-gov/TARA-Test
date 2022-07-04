@@ -5,7 +5,6 @@ import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import org.apache.commons.lang.RandomStringUtils
 import spock.lang.Ignore
-import spock.lang.IgnoreIf
 import spock.lang.Unroll
 
 import java.nio.charset.StandardCharsets
@@ -14,7 +13,6 @@ import static org.hamcrest.Matchers.startsWith
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.junit.jupiter.api.Assertions.*
 
-@IgnoreIf({ properties['test.deployment.env'] != "idp" })
 class AuthConsentConfirmSpec extends TaraSpecification {
     Flow flow = new Flow(props)
 
@@ -27,7 +25,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
     @Feature("UI_CONSENT_VIEW")
     def "Consent with authentication results"() {
         expect:
-        Steps.startAuthenticationInTara(flow)
+        Steps.startAuthenticationInTaraWithSpecificProxyService(flow)
         Response response = Steps.authenticateWithMid(flow,"60001017716", "69100366")
         assertEquals(200, response.statusCode(), "Correct HTTP status code is returned")
         List<String> identityFields = response.body().htmlPath().getList("**.findAll {th -> th.@colspan == '1'}.b")
@@ -44,7 +42,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
     @Feature("USER_CONSENT_ENDPOINT")
     def "Consent with authentication results. Invalid session ID"() {
         expect:
-        Steps.startAuthenticationInTara(flow)
+        Steps.startAuthenticationInTaraWithSpecificProxyService(flow)
         Requests.startMidAuthentication(flow, "60001017716", "69100366")
         Steps.pollMidResponse(flow)
         Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
@@ -77,7 +75,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
     @Feature("USER_CONSENT_ENDPOINT")
     def "Consent with authentication results. Missing session ID"() {
         expect:
-        Steps.startAuthenticationInTara(flow)
+        Steps.startAuthenticationInTaraWithSpecificProxyService(flow)
         Requests.startMidAuthentication(flow, "60001017716", "69100366")
         Steps.pollMidResponse(flow)
         Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
@@ -92,7 +90,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
     @Feature("USER_CONSENT_ENDPOINT")
     def "Consent with authentication results. #label"() {
         expect:
-        Steps.startAuthenticationInTara(flow)
+        Steps.startAuthenticationInTaraWithSpecificProxyService(flow)
         Requests.startMidAuthentication(flow,"60001017716", "69100366")
         Steps.pollMidResponse(flow)
         Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
@@ -112,7 +110,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
 
         where:
         paramName           | paramValue                               | additionalParamName | additionalParamValue | label                                                      || statusCode || errorMessage
-        _                   | _                                        | _                   | _                    | "Missing parameter consent_challenge"                      || 400        || "Required String parameter 'consent_challenge' is not present"
+        _                   | _                                        | _                   | _                    | "Missing parameter consent_challenge"                      || 400        || "Required request parameter 'consent_challenge' for method parameter type String is not present"
         "consent_challenge" | _                                        | _                   | _                    | "Empty parameter consent_challenge value"                  || 400        || "authConsent.consentChallenge: only characters and numbers allowed"
         "consent_challenge" | RandomStringUtils.random(51, true, true) | _                   | _                    | "Too long consent_challenge"                               || 400        || "authConsent.consentChallenge: size must be between 0 and 50"
         "consent_challenge" | "342%26abz"                              | _                   | _                    | "Invalid symbols in the consent_challenge parameter value" || 400        || "authConsent.consentChallenge: only characters and numbers allowed"
@@ -123,7 +121,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
     @Feature("USER_CONSENT_POST_ACCEPT")
     def "Consent with invalid consent challenge value"() {
         expect:
-        Steps.startAuthenticationInTara(flow)
+        Steps.startAuthenticationInTaraWithSpecificProxyService(flow)
         Requests.startMidAuthentication(flow,"60001017716", "69100366")
         Steps.pollMidResponse(flow)
         Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
@@ -147,20 +145,20 @@ class AuthConsentConfirmSpec extends TaraSpecification {
     @Feature("USER_CONSENT_POST_ACCEPT")
     def "Confirm consent"() {
         expect:
-        Steps.startAuthenticationInTara(flow)
+        Steps.startAuthenticationInTaraWithSpecificProxyService(flow)
         Steps.authenticateWithMid(flow,"60001017727" , "69200366")
         Response consentConfirmResponse = Steps.submitConsent(flow, true)
         assertEquals(302, consentConfirmResponse.statusCode(), "Correct HTTP status code is returned")
-        assertThat(consentConfirmResponse.getHeader("location"), startsWith(flow.oidcService.fullAuthenticationRequestUrl))
+        assertThat(consentConfirmResponse.getHeader("location"), startsWith(flow.oidcService.baseUrl + "/oidc/authorize"))
         assertThat(Utils.getParamValueFromResponseHeader(consentConfirmResponse, "state"), equalTo(flow.state))
-        assertThat(consentConfirmResponse.getCookie("SESSION"), equalTo(""), "Session cookie is invalidated")
+        assertThat("Session cookie is invalidated", consentConfirmResponse.getCookie("SESSION"), equalTo(""))
     }
 
     @Unroll
     @Feature("USER_CONSENT_CONFIRM_ENDPOINT")
     def "Confirm consent with authentication results. Invalid session ID"() {
         expect:
-        Steps.startAuthenticationInTara(flow)
+        Steps.startAuthenticationInTaraWithSpecificProxyService(flow)
         Response oidcServiceResponse = Steps.authenticateWithMid(flow,"60001017727" , "69200366")
         assertEquals(200, oidcServiceResponse.statusCode(), "Correct HTTP status code is returned")
         flow.setSessionId("1234567")
@@ -191,7 +189,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
     @Feature("USER_CONSENT_CONFIRM_ENDPOINT")
     def "Confirm consent with authentication results. Missing session ID"() {
         expect:
-        Steps.startAuthenticationInTara(flow)
+        Steps.startAuthenticationInTaraWithSpecificProxyService(flow)
         Steps.authenticateWithMid(flow,"60001017727" , "69200366")
 
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
@@ -209,7 +207,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
     @Feature("USER_CONSENT_CONFIRM_ENDPOINT")
     def "Confirm consent with authentication results. #label"() {
         expect:
-        Steps.startAuthenticationInTara(flow)
+        Steps.startAuthenticationInTaraWithSpecificProxyService(flow)
         Steps.authenticateWithMid(flow,"60001017727" , "69200366")
 
         HashMap<String, String> cookiesMap = (HashMap) Collections.emptyMap()
@@ -226,7 +224,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
 
         where:
         paramName       | paramValue | additionalParamName | additionalParamValue | label                                 || statusCode || errorMessage
-        _               | _          | _                   | _                    | "Missing parameter consent_given"     || 400        || "Required String parameter 'consent_given' is not present"
+        _               | _          | _                   | _                    | "Missing parameter consent_given"     || 400        || "Required request parameter 'consent_given' for method parameter type String is not present"
         "consent_given" | _          | _                   | _                    | "Empty parameter consent_given value" || 400        || "authConsentConfirm.consentGiven: supported values are: 'true', 'false'"
         "consent_given" | "abc123"   | _                   | _                    | "Invalid consent_given value"         || 400        || "authConsentConfirm.consentGiven: supported values are: 'true', 'false'"
         "consent_given" | "false"    | "consent_given"     | "true"               | "Multiple consent_given parameters"   || 400        || "Multiple request parameters with the same name not allowed"
@@ -236,7 +234,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
     @Feature("USER_CONSENT_POST_REJECT")
     def "Reject consent with authentication results"() {
         expect:
-        Steps.startAuthenticationInTara(flow)
+        Steps.startAuthenticationInTaraWithSpecificProxyService(flow)
         Steps.authenticateWithMid(flow,"60001017716", "69100366")
         Response consentRejectResult = Steps.submitConsent(flow, false)
         assertEquals(302, consentRejectResult.statusCode(), "Correct HTTP status code is returned")

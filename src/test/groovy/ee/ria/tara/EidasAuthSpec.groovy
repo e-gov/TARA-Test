@@ -6,7 +6,6 @@ import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import org.apache.commons.lang.RandomStringUtils
 import spock.lang.Ignore
-import spock.lang.IgnoreIf
 import spock.lang.Unroll
 import org.hamcrest.Matchers
 
@@ -14,7 +13,6 @@ import static org.hamcrest.Matchers.equalTo
 import static org.junit.jupiter.api.Assertions.*
 import static org.hamcrest.MatcherAssert.assertThat
 
-@IgnoreIf({ properties['test.deployment.env'] == "idp" })
 class EidasAuthSpec extends TaraSpecification {
     Flow flow = new Flow(props)
 

@@ -5,13 +5,11 @@ import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import org.hamcrest.Matchers
-import spock.lang.IgnoreIf
 import spock.lang.Unroll
 
 import static org.junit.jupiter.api.Assertions.*
 import static org.hamcrest.MatcherAssert.assertThat
 
-@IgnoreIf({ properties['test.deployment.env'] == "idp" })
 class OidcRedirectRequestSpec extends TaraSpecification {
     Flow flow = new Flow(props)
 

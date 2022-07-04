@@ -6,7 +6,6 @@ import org.hamcrest.Matchers
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
-import spock.lang.IgnoreIf
 import spock.lang.Unroll
 
 import static org.hamcrest.CoreMatchers.is
@@ -108,7 +107,6 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
         assertThat(response.body().jsonPath().get("message").toString(), startsWith("Päringus puudub scope parameeter."))
     }
 
-    @IgnoreIf({ properties['test.deployment.env'] == "idp" })
     @Unroll
     @Feature("OIDC_SCOPE_IDCARD")
     @Feature("OIDC_SCOPE_MID")
@@ -131,7 +129,6 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
 
     }
 
-    @IgnoreIf({ properties['test.deployment.env'] == "idp" })
     @Unroll
     @Feature("OIDC_SCOPE_EMAIL")
     @Feature("https://e-gov.github.io/TARA-Doku/TechnicalSpecification#41-authentication-request")
@@ -148,7 +145,6 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
         assertThat(claims.getClaim("email_verified"), equalTo(false))
     }
 
-    @IgnoreIf({ properties['test.deployment.env'] == "idp" })
     @Unroll
     @Feature("OIDC_SCOPE_PHONE")
     @Feature("https://e-gov.github.io/TARA-Doku/TechnicalSpecification#41-authentication-request")

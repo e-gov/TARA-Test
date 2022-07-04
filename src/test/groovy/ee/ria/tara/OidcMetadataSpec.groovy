@@ -4,12 +4,10 @@ import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.path.json.JsonPath
 import io.restassured.response.Response
-import spock.lang.IgnoreIf
 import spock.lang.Unroll
 
 import static org.junit.jupiter.api.Assertions.*
 
-@IgnoreIf({ properties['test.deployment.env'] == "idp" })
 class OidcMetadataSpec extends TaraSpecification {
     Flow flow = new Flow(props)
     def setup() {

@@ -4,13 +4,12 @@ import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import spock.lang.Ignore
-import spock.lang.IgnoreIf
 import spock.lang.Unroll
 
 import static org.junit.jupiter.api.Assertions.assertEquals
 
 
-@IgnoreIf({ properties['test.deployment.env'] == "idp" })
+@Ignore
 class TaraAdminSpec extends TaraSpecification {
     Flow flow = new Flow(props)
 
@@ -18,7 +17,6 @@ class TaraAdminSpec extends TaraSpecification {
         flow.cookieFilter = new CookieFilter()
     }
 
-    @Ignore
     @Unroll
     @Feature("TARA_MGMT_CLIENT_ADD_RESPONSE_SUCCESS")
     @Feature("TARA_MGMT_ADDCLIENT_UPDATEINSTITUTION")

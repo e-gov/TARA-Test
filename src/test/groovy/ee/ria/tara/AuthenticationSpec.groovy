@@ -7,7 +7,6 @@ import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import org.hamcrest.Matchers
 import spock.lang.Ignore
-import spock.lang.IgnoreIf
 import spock.lang.Unroll
 
 import static org.hamcrest.Matchers.equalTo
@@ -54,7 +53,6 @@ class AuthenticationSpec extends TaraSpecification {
         assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo("EID2016"))
     }
 
-    @IgnoreIf({ properties['test.deployment.env'] == "idp" })
     @Unroll
     @Feature("AUTHENTICATION")
     def "request authentication with Smart-ID"() {
@@ -70,7 +68,6 @@ class AuthenticationSpec extends TaraSpecification {
         assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo("QUALIFIED OK1"))
     }
 
-    @IgnoreIf({ properties['test.deployment.env'] == "idp" })
     @Unroll
     @Feature("AUTHENTICATION")
     def "request authentication with Eidas"() {
@@ -103,7 +100,6 @@ class AuthenticationSpec extends TaraSpecification {
         assertThat(claims.getJSONObjectClaim("profile_attributes").get("date_of_birth"), equalTo("1965-01-01"))
     }
 
-    @IgnoreIf({ properties['test.deployment.env'] == "idp" })
     @Unroll
     @Feature("AUTHENTICATION")
     def "request authentication with Eidas. Low level of assurance."() {
