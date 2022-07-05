@@ -102,6 +102,21 @@ class AuthenticationSpec extends TaraSpecification {
 
     @Unroll
     @Feature("AUTHENTICATION")
+    def "request authentication with mobile-ID with Specific Proxy Service as OIDC client"() {
+        expect:
+        Steps.startAuthenticationInTaraWithSpecificProxyService(flow)
+        Response midAuthResponse = Steps.authenticateWithMid(flow,"60001017716", "69100366")
+        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
+        Response tokenResponse = Steps.getIdentityTokenResponseWithClient(flow, authenticationFinishedResponse, flow.specificProxyService.fullResponseUrl, flow.specificProxyService.clientId, flow.specificProxyService.clientSecret)
+
+        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        assertThat(claims.getAudience().get(0), equalTo(flow.specificProxyService.clientId))
+        assertThat(claims.getSubject(), equalTo("EE60001017716"))
+        assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo("ONE"))
+    }
+
+    @Unroll
+    @Feature("AUTHENTICATION")
     def "request authentication with Eidas. Low level of assurance."() {
         expect:
         Steps.startAuthenticationInTara(flow, "openid eidas")

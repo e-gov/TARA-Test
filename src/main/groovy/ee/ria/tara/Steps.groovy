@@ -256,6 +256,12 @@ class Steps {
         return Requests.getWebToken(flow, authorizationCode)
     }
 
+    @Step("Get identity token response with OIDC client details")
+    static Response getIdentityTokenResponseWithClient(Flow flow, Response response, String redirectUrl, String clientId, String clientSecret) {
+        String authorizationCode = Utils.getParamValueFromResponseHeader(response, "code")
+        return Requests.getWebTokenWithClient(flow, authorizationCode, redirectUrl, clientId, clientSecret)
+    }
+
     @Step("verify token")
     static SignedJWT verifyTokenAndReturnSignedJwtObject(Flow flow, String token) throws ParseException, JOSEException, IOException {
         SignedJWT signedJWT = SignedJWT.parse(token)
@@ -269,7 +275,6 @@ class Steps {
             //NullPointerException when running test from IntelliJ
         }
         assertThat("Token Signature is not valid!", OpenIdUtils.isTokenSignatureValid(flow.jwkSet, signedJWT), is(true))
-        assertThat(signedJWT.getJWTClaimsSet().getAudience().get(0), equalTo(flow.oidcClient.clientId))
         assertThat(signedJWT.getJWTClaimsSet().getIssuer(), equalTo(flow.openIdServiceConfiguration.get("issuer")))
         Date date = new Date()
         assertThat("Expected current: " + date + " to be before exp: " + signedJWT.getJWTClaimsSet().getExpirationTime(), date.before(signedJWT.getJWTClaimsSet().getExpirationTime()), is(true))

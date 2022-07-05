@@ -384,6 +384,22 @@ class Requests {
                 .extract().response()
     }
 
+    @Step("Get token with client")
+    static Response getWebTokenWithClient(Flow flow, String authorizationCode, String redirectUri, String clientId, String clientSecret) {
+        return given()
+                .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
+                .filter(new AllureRestAssured())
+                .formParam("grant_type", "authorization_code")
+                .formParam("code", authorizationCode)
+                .formParam("redirect_uri", redirectUri)
+                .auth().preemptive().basic(clientId, clientSecret)
+                .when()
+                .urlEncodingEnabled(true)
+                .post(flow.openIdServiceConfiguration.getString("token_endpoint"))
+                .then()
+                .extract().response()
+    }
+
     @Step("Get token response body")
     static Response getWebTokenResponseBody(Flow flow, Map<String, String> formParams) {
         return given()

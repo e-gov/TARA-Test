@@ -47,6 +47,19 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
     }
 
     @Unroll
+    @Feature("https://e-gov.github.io/TARA-Doku/TechnicalSpecification#41-authentication-request")
+    def "Authentication request with disabled scope for OIDC client"() {
+        expect:
+        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersForSpecificProxyService(flow, "openid smartid")
+        Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
+
+        String errorDescription= "The requested scope is invalid, unknown, or malformed. The OAuth 2.0 Client is not allowed to request scope 'smartid'."
+        assertThat("Correct HTTP status code is returned", initOIDCServiceSession.statusCode() == 302)
+        assertThat("Correct error message is returned", Utils.getParamValueFromResponseHeader(initOIDCServiceSession, "error") == "invalid_scope")
+        assertThat("Correct error_description is returned", Utils.getParamValueFromResponseHeader(initOIDCServiceSession, "error_description") == errorDescription)
+    }
+
+    @Unroll
     @Feature("OIDC_LANGUAGE_SELECTION")
     def "Authentication request with different ui_locales: #label"() {
         expect:
