@@ -33,7 +33,7 @@ class AuthenticationSpec extends TaraSpecification {
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
 
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
-        assertThat(claims.getAudience().get(0), equalTo(flow.oidcClient.clientId))
+        assertThat(claims.getAudience().get(0), equalTo(flow.oidcClientPublic.clientId))
         assertThat(claims.getSubject(), equalTo("EE60001017716"))
         assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo("ONE"))
     }
@@ -48,7 +48,7 @@ class AuthenticationSpec extends TaraSpecification {
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
 
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
-        assertThat(claims.getAudience().get(0), equalTo(flow.oidcClient.clientId))
+        assertThat(claims.getAudience().get(0), equalTo(flow.oidcClientPublic.clientId))
         assertThat(claims.getSubject(), equalTo("EE60001017869"))
         assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo("EID2016"))
     }
@@ -63,14 +63,14 @@ class AuthenticationSpec extends TaraSpecification {
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
 
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
-        assertThat(claims.getAudience().get(0), equalTo(flow.oidcClient.clientId))
+        assertThat(claims.getAudience().get(0), equalTo(flow.oidcClientPublic.clientId))
         assertThat(claims.getSubject(), equalTo("EE30303039914"))
         assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo("QUALIFIED OK1"))
     }
 
     @Unroll
     @Feature("AUTHENTICATION")
-    def "request authentication with Eidas"() {
+    def "request authentication with eIDAS"() {
         expect:
         Steps.startAuthenticationInTara(flow, "openid eidas")
         String country = "CA"
@@ -93,12 +93,45 @@ class AuthenticationSpec extends TaraSpecification {
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, redirectResponse)
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
-        assertThat(claims.getAudience().get(0), equalTo(flow.oidcClient.clientId))
+        assertThat(claims.getAudience().get(0), equalTo(flow.oidcClientPublic.clientId))
         assertThat(claims.getSubject(), equalTo("CA12345"))
         assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo("javier"))
         assertThat(claims.getJSONObjectClaim("profile_attributes").get("family_name"), equalTo("Garcia"))
         assertThat(claims.getJSONObjectClaim("profile_attributes").get("date_of_birth"), equalTo("1965-01-01"))
     }
+
+    @Unroll
+    @Feature("AUTHENTICATION")
+    def "request authentication with eIDAS with privet sector client"() {
+        expect:
+        Steps.startAuthenticationInTaraWithClient(flow, "openid eidas", flow.oidcClientPrivate.clientId, flow.oidcClientPrivate.fullResponseUrl)
+        String country = "CA"
+        Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, country, Collections.emptyMap())
+        assertEquals(200, initEidasAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("text/html;charset=UTF-8", initEidasAuthenticationSession.getContentType(), "Correct Content-Type is returned")
+        String buttonLabel = initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@type == 'submit'}.@value")
+        assertEquals("Continue", buttonLabel, "Continue button exists")
+
+        flow.setNextEndpoint(initEidasAuthenticationSession.body().htmlPath().getString("**.find { form -> form.@method == 'post' }.@action"))
+        flow.setRelayState(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'RelayState' }.@value"))
+        flow.setRequestMessage(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'SAMLRequest' }.@value"))
+        Response colleagueResponse = EidasSteps.continueEidasAuthenticationFlow(flow, IDP_USERNAME, IDP_PASSWORD, EIDASLOA)
+        Response authorizationResponse = EidasSteps.getAuthorizationResponseFromEidas(flow, colleagueResponse)
+        Response redirectionResponse = EidasSteps.eidasRedirectAuthorizationResponse(flow, authorizationResponse)
+        Response acceptResponse = EidasSteps.eidasAcceptAuthorizationResult(flow, redirectionResponse)
+        assertEquals(302, acceptResponse.statusCode(), "Correct HTTP status code is returned")
+        Response oidcServiceResponse = Steps.getOAuthCookies(flow, acceptResponse)
+        Response redirectResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
+        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, redirectResponse)
+        Response tokenResponse = Steps.getIdentityTokenResponseWithClient(flow, authenticationFinishedResponse, flow.oidcClientPrivate.fullResponseUrl, flow.oidcClientPrivate.clientId, flow.oidcClientPrivate.clientSecret)
+        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
+        assertThat(claims.getAudience().get(0), equalTo(flow.oidcClientPrivate.clientId))
+        assertThat(claims.getSubject(), equalTo("CA12345"))
+        assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo("javier"))
+        assertThat(claims.getJSONObjectClaim("profile_attributes").get("family_name"), equalTo("Garcia"))
+        assertThat(claims.getJSONObjectClaim("profile_attributes").get("date_of_birth"), equalTo("1965-01-01"))
+    }
+
 
     @Unroll
     @Feature("AUTHENTICATION")
@@ -186,7 +219,7 @@ class AuthenticationSpec extends TaraSpecification {
         Response tokenResponse = Requests.getWebToken(flow, authorizationCode)
 
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
-        assertThat(claims.getAudience().get(0), equalTo(flow.oidcClient.clientId))
+        assertThat(claims.getAudience().get(0), equalTo(flow.oidcClientPublic.clientId))
         assertThat(claims.getSubject(), equalTo("EE60001017716"))
         assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo("ONE"))
     }
@@ -204,7 +237,7 @@ class AuthenticationSpec extends TaraSpecification {
         Response response = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
         assertEquals(302, response.statusCode(), "Correct HTTP status code is returned")
         assertThat(response.getHeader("location"), Matchers.startsWith(flow.openIdServiceConfiguration.getString("authorization_endpoint")))
-        assertEquals(flow.oidcClient.clientId, Utils.getParamValueFromResponseHeader(response, "client_id"), "Location field contains correct client_id value")
+        assertEquals(flow.oidcClientPublic.clientId, Utils.getParamValueFromResponseHeader(response, "client_id"), "Location field contains correct client_id value")
     }
 
     @Ignore // TARA2-82 , TARA2-165
@@ -261,7 +294,7 @@ class AuthenticationSpec extends TaraSpecification {
         Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullAuthRejectUrl, cookieMap, paramsMap, Collections.emptyMap())
         assertEquals(302, response.statusCode(), "Correct HTTP status code is returned")
         assertThat(response.getHeader("location"), Matchers.startsWith(flow.openIdServiceConfiguration.getString("authorization_endpoint")))
-        assertEquals(flow.oidcClient.clientId, Utils.getParamValueFromResponseHeader(response, "client_id"), "Location field contains correct client_id value")
+        assertEquals(flow.oidcClientPublic.clientId, Utils.getParamValueFromResponseHeader(response, "client_id"), "Location field contains correct client_id value")
         Response oidcserviceResponse = Steps.followRedirectWithCookies(flow, response, flow.oidcService.cookies)
         assertEquals(302, oidcserviceResponse.statusCode(), "Correct HTTP status code is returned")
         assertThat(oidcserviceResponse.getHeader("location"), Matchers.containsString("user_cancel"))

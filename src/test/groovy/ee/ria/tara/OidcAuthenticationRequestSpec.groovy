@@ -169,7 +169,7 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
 
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
-        assertThat(claims.getAudience().get(0), equalTo(flow.oidcClient.clientId))
+        assertThat(claims.getAudience().get(0), equalTo(flow.oidcClientPublic.clientId))
         assertThat(claims.getSubject(), equalTo("EE60001017716"))
         assertThat(claims.getStringArrayClaim("amr")[0], equalTo("mID"))
         assertThat(claims.getClaim("phone_number"), equalTo("+37269100366"))
@@ -207,7 +207,7 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
         String authorizationCode = Utils.getParamValueFromResponseHeader(oidcserviceResponse, "code")
         Response tokenResponse = Requests.getWebToken(flow, authorizationCode)
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
-        assertThat(claims.getAudience().get(0), equalTo(flow.oidcClient.clientId))
+        assertThat(claims.getAudience().get(0), equalTo(flow.oidcClientPublic.clientId))
         assertThat(claims.getSubject(), equalTo("EE38001085718"))
         assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo("JAAK-KRISTJAN"))
         assertThat(claims.getJSONObjectClaim("profile_attributes").get("family_name"), equalTo("JÕEORG"))

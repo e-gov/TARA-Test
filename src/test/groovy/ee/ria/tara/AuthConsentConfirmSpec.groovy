@@ -239,7 +239,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         Response consentRejectResult = Steps.submitConsent(flow, false)
         assertEquals(302, consentRejectResult.statusCode(), "Correct HTTP status code is returned")
         assertThat("Session cookie is invalidated", consentRejectResult.getCookie("SESSION"), equalTo(""))
-        Response response = Steps.followRedirectWithCookies(flow, consentRejectResult, flow.oidcClient.cookies)
+        Response response = Steps.followRedirectWithCookies(flow, consentRejectResult, flow.oidcClientPublic.cookies)
         assertEquals("user_cancel", Utils.getParamValueFromResponseHeader(response, "error"), "Correct error value")
         String actualErrorDescription = URLDecoder.decode(Utils.getParamValueFromResponseHeader(response, "error_description"), StandardCharsets.UTF_8)
         String errorDescription = "Consent not given. User canceled the authentication process."

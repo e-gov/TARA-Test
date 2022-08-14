@@ -10,7 +10,8 @@ class Flow {
     Properties properties
     OidcService oidcService
     LoginService loginService
-    OidcClient oidcClient
+    OidcClientPublic oidcClientPublic
+    OidcClientPrivate oidcClientPrivate
     SpecificProxyService specificProxyService
     ForeignIdpProvider foreignIdpProvider
     ForeignProxyService foreignProxyService
@@ -35,7 +36,8 @@ class Flow {
         this.properties = properties
         this.loginService = new LoginService(properties)
         this.oidcService = new OidcService(properties)
-        this.oidcClient = new OidcClient(properties)
+        this.oidcClientPublic = new OidcClientPublic(properties)
+        this.oidcClientPrivate = new OidcClientPrivate(properties)
         this.specificProxyService = new SpecificProxyService(properties)
         this.foreignIdpProvider = new ForeignIdpProvider(properties)
         this.foreignProxyService = new ForeignProxyService(properties)
@@ -174,25 +176,24 @@ class OidcService {
 }
 
 @Canonical
-    class OidcClient {
+    class OidcClientPublic {
         String host
         String port
         String protocol
         String responseUrl
-        String requestUrl
         String clientId
         String clientSecret
         HashMap <String, String> cookies
 
         @Lazy fullResponseUrl = "${protocol}://${host}${portCheck()}${responseUrl}"
 
-        OidcClient(Properties properties) {
-            this.host = properties."oidcclient.host"
-            this.port = properties."oidcclient.port"
-            this.protocol = properties."oidcclient.protocol"
-            this.responseUrl = properties."oidcclient.responseUrl"
-            this.clientId = properties."oidcclient.clientId"
-            this.clientSecret = properties."oidcclient.secret"
+        OidcClientPublic(Properties properties) {
+            this.host = properties."oidcclientpublic.host"
+            this.port = properties."oidcclientpublic.port"
+            this.protocol = properties."oidcclientpublic.protocol"
+            this.responseUrl = properties."oidcclientpublic.responseUrl"
+            this.clientId = properties."oidcclientpublic.clientId"
+            this.clientSecret = properties."oidcclientpublic.secret"
             this.cookies = new HashMap<String, String>()
         }
         private String portCheck() {
@@ -202,6 +203,36 @@ class OidcService {
                 return ""
             }
         }
+}
+
+@Canonical
+class OidcClientPrivate {
+    String host
+    String port
+    String protocol
+    String responseUrl
+    String clientId
+    String clientSecret
+    HashMap <String, String> cookies
+
+    @Lazy fullResponseUrl = "${protocol}://${host}${portCheck()}${responseUrl}"
+
+    OidcClientPrivate(Properties properties) {
+        this.host = properties."oidcclientprivate.host"
+        this.port = properties."oidcclientprivate.port"
+        this.protocol = properties."oidcclientprivate.protocol"
+        this.responseUrl = properties."oidcclientprivate.responseUrl"
+        this.clientId = properties."oidcclientprivate.clientId"
+        this.clientSecret = properties."oidcclientprivate.secret"
+        this.cookies = new HashMap<String, String>()
+    }
+    private String portCheck() {
+        if (port != null && port.isInteger()) {
+            return ":${port}"
+        } else {
+            return ""
+        }
+    }
 }
 
 @Canonical

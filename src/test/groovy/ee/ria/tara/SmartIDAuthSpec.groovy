@@ -32,7 +32,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
 
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
-        assertThat(claims.getAudience().get(0), equalTo(flow.oidcClient.clientId))
+        assertThat(claims.getAudience().get(0), equalTo(flow.oidcClientPublic.clientId))
         assertThat(claims.getSubject(), equalTo("EE" + idCode))
         assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo(givenName))
         assertThat(claims.getJSONObjectClaim("profile_attributes").get("family_name"), equalTo(familyName))

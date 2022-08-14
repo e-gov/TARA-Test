@@ -53,7 +53,7 @@ class OidcIdendityTokenRequestSpec extends TaraSpecification {
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
         assertTrue(claims.getJWTID().size() > 35, "Correct jti claim exists")
         assertThat("Correct issuer claim", claims.getIssuer(), equalTo(flow.openIdServiceConfiguration.get("issuer")))
-        assertThat(claims.getAudience().get(0), equalTo(flow.oidcClient.clientId))
+        assertThat(claims.getAudience().get(0), equalTo(flow.oidcClientPublic.clientId))
         Date date = new Date()
         assertThat("Expected current: " + date + " to be after nbf: " + claims.getNotBeforeTime(), date.after(claims.getNotBeforeTime()), Matchers.is(true))
         // 10 seconds

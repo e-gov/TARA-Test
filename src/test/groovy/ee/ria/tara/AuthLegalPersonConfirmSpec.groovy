@@ -43,7 +43,7 @@ class AuthLegalPersonConfirmSpec extends TaraSpecification {
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
 
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
-        assertThat(claims.getAudience().get(0), equalTo(flow.oidcClient.clientId))
+        assertThat(claims.getAudience().get(0), equalTo(flow.oidcClientPublic.clientId))
         assertThat(claims.getSubject(), equalTo("EE60001019906"))
         assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo("MARY ÄNN"))
         assertThat(claims.getJSONObjectClaim("profile_attributes").get("represents_legal_person").getAt("registry_code"), equalTo(legalPersonIdentifier))

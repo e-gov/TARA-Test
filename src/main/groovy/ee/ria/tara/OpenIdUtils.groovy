@@ -28,8 +28,22 @@ class OpenIdUtils {
         queryParams.put("ui_locales", uiLocales)
         queryParams.put("response_type", "code")
         queryParams.put("scope", scope)
-        queryParams.put("client_id",flow.getOidcClient().getClientId())
-        queryParams.put("redirect_uri", flow.getOidcClient().getFullResponseUrl().toString())
+        queryParams.put("client_id",flow.getOidcClientPublic().getClientId())
+        queryParams.put("redirect_uri", flow.getOidcClientPublic().getFullResponseUrl().toString())
+        queryParams.put("state", flow.state)
+        queryParams.put("nonce", flow.nonce)
+        return queryParams
+    }
+
+    static Map<String, String> getAuthorizationParametersWithClient(Flow flow, String scope = "openid", String clientID, String redirectUri) {
+        Map<String, String> queryParams = new HashMap<>()
+        flow.setState(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
+        flow.setNonce(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
+        queryParams.put("ui_locales", "et")
+        queryParams.put("response_type", "code")
+        queryParams.put("scope", scope)
+        queryParams.put("client_id", clientID)
+        queryParams.put("redirect_uri", redirectUri)
         queryParams.put("state", flow.state)
         queryParams.put("nonce", flow.nonce)
         return queryParams
