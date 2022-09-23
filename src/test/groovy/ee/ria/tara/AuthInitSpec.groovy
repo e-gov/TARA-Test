@@ -3,7 +3,7 @@ package ee.ria.tara
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
-import org.apache.commons.lang.RandomStringUtils
+import org.apache.commons.lang3.RandomStringUtils
 import org.hamcrest.Matchers
 import org.spockframework.lang.Wildcard
 import spock.lang.Unroll

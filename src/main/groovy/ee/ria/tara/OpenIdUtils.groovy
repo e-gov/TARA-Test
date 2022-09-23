@@ -6,7 +6,7 @@ import com.nimbusds.jose.crypto.RSASSAVerifier
 import com.nimbusds.jose.jwk.*
 import com.nimbusds.jwt.SignedJWT
 import org.apache.commons.codec.digest.DigestUtils
-import org.apache.commons.lang.RandomStringUtils
+import org.apache.commons.lang3.RandomStringUtils
 import io.restassured.response.Response
 
 class OpenIdUtils {

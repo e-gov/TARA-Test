@@ -5,7 +5,7 @@ import com.nimbusds.jwt.JWTClaimsSet
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
-import org.apache.commons.lang.RandomStringUtils
+import org.apache.commons.lang3.RandomStringUtils
 import org.hamcrest.Matchers
 import spock.lang.Ignore
 import spock.lang.Unroll
