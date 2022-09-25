@@ -74,12 +74,12 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
         paramName    | paramValue | label                                     || expectedValue
         "ui_locales" | "zu"       | "Fallback into default language et"       || "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
         "ui_locales" | "et"       | "Estonian"                                || "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
-        "ui_locales" | "ru"       | "Russian"                                 || "Национальный сервис аутентификации - Для безопасной аутентификации в э-услугах"
-        "ui_locales" | "en"       | "English"                                 || "National authentication service - Secure authentication for e-services"
-        "ui_locales" | "fi ru en" | "Select first supported locale from list" || "Национальный сервис аутентификации - Для безопасной аутентификации в э-услугах"
+        "ui_locales" | "ru"       | "Russian"                                 || "Государственная услуга аутентификации - Для безопасной аутентификации в э-услугах"
+        "ui_locales" | "en"       | "English"                                 || "State authentication service - Secure authentication for e-services"
+        "ui_locales" | "fi ru en" | "Select first supported locale from list" || "Государственная услуга аутентификации - Для безопасной аутентификации в э-услугах"
         "ui_locales" | "ET"       | "Estonian with big letters"               || "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
-        "ui_locales" | "RU"       | "Russian with big letters"                || "Национальный сервис аутентификации - Для безопасной аутентификации в э-услугах"
-        "ui_locales" | "EN"       | "English with big letters"                || "National authentication service - Secure authentication for e-services"
+        "ui_locales" | "RU"       | "Russian with big letters"                || "Государственная услуга аутентификации - Для безопасной аутентификации в э-услугах"
+        "ui_locales" | "EN"       | "English with big letters"                || "State authentication service - Secure authentication for e-services"
         "ui_locales" | _          | "Without locale parameter"                || "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
     }
 
