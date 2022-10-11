@@ -332,8 +332,8 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         assertThat("Correct Content-Type is returned", response.getContentType(), startsWith("application/json"))
         assertEquals("request_unauthorized", response.body().jsonPath().get("error"), "Correct error is returned")
         Map<String, String> errorMap = OpenIdUtils.getErrorFromAuthorizationHeader(response)
-        assertEquals("request_unauthorized", errorMap.get("error"), "Correct error text is returned")
-        assertEquals("The request could not be authorized.", errorMap.get("error_description"), "Correct error description is returned")
+        assertEquals("\"request_unauthorized\"", errorMap.get("Bearer error"), "Correct error text is returned")
+        assertEquals("\"The request could not be authorized. Check that you provided valid credentials in the right format.\"", errorMap.get("error_description"), "Correct error description is returned")
     }
 
     @Unroll
@@ -346,8 +346,8 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         assertThat("Correct Content-Type is returned", response.getContentType(), startsWith("application/json"))
         assertEquals("request_unauthorized", response.body().jsonPath().get("error"), "Correct error is returned")
         Map<String, String> errorMap = OpenIdUtils.getErrorFromAuthorizationHeader(response)
-        assertEquals("request_unauthorized", errorMap.get("error"), "Correct error text is returned")
-        assertThat("Correct error description is returned", errorMap.get("error_description"), startsWith("The request could not be authorized."))
+        assertEquals("\"request_unauthorized\"", errorMap.get("Bearer error"), "Correct error text is returned")
+        assertEquals("\"The request could not be authorized. Check that you provided valid credentials in the right format.\"", errorMap.get("error_description"), "Correct error description is returned")
     }
 
     @Unroll
@@ -366,8 +366,8 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         assertThat("Correct error_description is returned", response.body().jsonPath().getString("error_description"), Matchers.endsWith("Check that you provided valid credentials in the right format."))
 
         Map<String, String> errorMap = OpenIdUtils.getErrorFromAuthorizationHeader(response)
-        assertEquals("request_unauthorized", errorMap.get("error"), "Correct error text is returned")
-        assertEquals("The request could not be authorized.", errorMap.get("error_description"), "Correct error description is returned")
+        assertEquals("\"request_unauthorized\"", errorMap.get("Bearer error"), "Correct error text is returned")
+        assertEquals("\"The request could not be authorized. Check that you provided valid credentials in the right format.\"", errorMap.get("error_description"), "Correct error description is returned")
     }
 
 }

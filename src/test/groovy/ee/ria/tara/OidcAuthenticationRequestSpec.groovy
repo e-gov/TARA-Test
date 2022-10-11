@@ -40,9 +40,9 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
         where:
         paramName       | paramValue                || statusCode || error                       || errorSuffix || errorPreffix
         "redirect_uri"  | "https://www.example.com" || 302        || "invalid_request"           || "The request is missing a required parameter" || "pre-registered redirect urls."
-        "scope"         | "my_scope"                || 302        || "invalid_scope"             || "The requested scope is invalid" || " is not allowed to request scope 'my_scope'."
-        "scope"         | "openid,eidas"            || 302        || "invalid_scope"             || "The requested scope is invalid" || " is not allowed to request scope 'openid,eidas'."
-        "response_type" | "token"                   || 302        || "unsupported_response_type" || "The authorization server does not support obtaining a token" || "is not allowed to request response_type 'token'."
+        "scope"         | "my_scope"                || 303        || "invalid_scope"             || "The requested scope is invalid" || " is not allowed to request scope 'my_scope'."
+        "scope"         | "openid,eidas"            || 303        || "invalid_scope"             || "The requested scope is invalid" || " is not allowed to request scope 'openid,eidas'."
+        "response_type" | "token"                   || 303        || "unsupported_response_type" || "The authorization server does not support obtaining a token" || "is not allowed to request response_type 'token'."
         "client_id"     | "my_client"               || 302        || "invalid_client"            || "Client authentication failed" || "The requested OAuth 2.0 Client does not exist."
     }
 
@@ -54,7 +54,7 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
         Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
 
         String errorDescription= "The requested scope is invalid, unknown, or malformed. The OAuth 2.0 Client is not allowed to request scope 'smartid'."
-        assertThat("Correct HTTP status code is returned", initOIDCServiceSession.statusCode() == 302)
+        assertThat("Correct HTTP status code is returned", initOIDCServiceSession.statusCode() == 303)
         assertThat("Correct error message is returned", Utils.getParamValueFromResponseHeader(initOIDCServiceSession, "error") == "invalid_scope")
         assertThat("Correct error_description is returned", Utils.getParamValueFromResponseHeader(initOIDCServiceSession, "error_description") == errorDescription)
     }

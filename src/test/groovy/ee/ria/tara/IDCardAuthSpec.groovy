@@ -110,7 +110,7 @@ class IDCardAuthSpec extends TaraSpecification {
 
         assertEquals(302, consentResponse.statusCode(), "Correct HTTP status code is returned")
         Response oidcserviceResponse = Steps.followRedirectWithCookies(flow, consentResponse, flow.oidcService.cookies)
-        assertEquals(302, oidcserviceResponse.statusCode(), "Correct HTTP status code is returned")
+        assertEquals(303, oidcserviceResponse.statusCode(), "Correct HTTP status code is returned")
         String authorizationCode = Utils.getParamValueFromResponseHeader(oidcserviceResponse, "code")
         Response tokenResponse = Requests.getWebToken(flow, authorizationCode)
         assertEquals(200, tokenResponse.statusCode(), "Correct HTTP status code is returned")
@@ -149,7 +149,7 @@ class IDCardAuthSpec extends TaraSpecification {
 
         assertEquals(302, consentResponse.statusCode(), "Correct HTTP status code is returned")
         Response oidcserviceResponse = Steps.followRedirectWithCookies(flow, consentResponse, flow.oidcService.cookies)
-        assertEquals(302, oidcserviceResponse.statusCode(), "Correct HTTP status code is returned")
+        assertEquals(303, oidcserviceResponse.statusCode(), "Correct HTTP status code is returned")
         String authorizationCode = Utils.getParamValueFromResponseHeader(oidcserviceResponse, "code")
         Response tokenResponse = Requests.getWebToken(flow, authorizationCode)
         assertEquals(200, tokenResponse.statusCode(), "Correct HTTP status code is returned")

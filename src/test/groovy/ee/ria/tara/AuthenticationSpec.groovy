@@ -214,7 +214,7 @@ class AuthenticationSpec extends TaraSpecification {
         }
 
         Response oidcserviceResponse = Steps.followRedirectWithCookies(flow, consentResponse, flow.oidcService.cookies)
-        assertEquals(302, oidcserviceResponse.statusCode(), "Correct HTTP status code is returned")
+        assertEquals(303, oidcserviceResponse.statusCode(), "Correct HTTP status code is returned")
         String authorizationCode = Utils.getParamValueFromResponseHeader(oidcserviceResponse, "code")
         Response tokenResponse = Requests.getWebToken(flow, authorizationCode)
 
@@ -296,7 +296,7 @@ class AuthenticationSpec extends TaraSpecification {
         assertThat(response.getHeader("location"), Matchers.startsWith(flow.openIdServiceConfiguration.getString("authorization_endpoint")))
         assertEquals(flow.oidcClientPublic.clientId, Utils.getParamValueFromResponseHeader(response, "client_id"), "Location field contains correct client_id value")
         Response oidcserviceResponse = Steps.followRedirectWithCookies(flow, response, flow.oidcService.cookies)
-        assertEquals(302, oidcserviceResponse.statusCode(), "Correct HTTP status code is returned")
+        assertEquals(303, oidcserviceResponse.statusCode(), "Correct HTTP status code is returned")
         assertThat(oidcserviceResponse.getHeader("location"), Matchers.containsString("user_cancel"))
     }
 

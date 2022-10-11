@@ -101,8 +101,8 @@ class OidcMetadataSpec extends TaraSpecification {
         Response userInfoResponse = Steps.getUserInfoResponseWithHeaderParam(flow, REQUEST_TYPE_GET, "456789")
         assertEquals(401, userInfoResponse.statusCode(), "Correct HTTP status code is returned")
         Map<String, String> errorMap = OpenIdUtils.getErrorFromAuthorizationHeader(userInfoResponse)
-        assertEquals("request_unauthorized", errorMap.get("error"), "Correct error text is returned")
-        assertEquals("The request could not be authorized.", errorMap.get("error_description"), "Correct error description is returned")
+        assertEquals("\"request_unauthorized\"", errorMap.get("Bearer error"), "Correct error text is returned")
+        assertEquals("\"The request could not be authorized. Check that you provided valid credentials in the right format.\"", errorMap.get("error_description"), "Correct error description is returned")
     }
 
     @Unroll
