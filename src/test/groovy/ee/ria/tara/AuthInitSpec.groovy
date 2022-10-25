@@ -8,9 +8,6 @@ import org.hamcrest.Matchers
 import org.spockframework.lang.Wildcard
 import spock.lang.Unroll
 
-import io.restassured.path.xml.XmlPath
-import io.restassured.path.xml.XmlPath.CompatibilityMode
-
 import static org.junit.jupiter.api.Assertions.*
 import static org.hamcrest.MatcherAssert.assertThat
 
@@ -35,8 +32,9 @@ class AuthInitSpec extends TaraSpecification {
         String sessionHeader = response.getHeader("Set-Cookie")
         assertEquals("SESSION=${sessionCookie}; Path=/; Secure; HttpOnly; SameSite=Strict".toString(), sessionHeader, "Correct header attribute Set-Cookie")
         assertEquals("et", response.getHeader("Content-Language"), "Correct header attribute Content-Language")
-        XmlPath xmlPath = new XmlPath(CompatibilityMode.HTML, response.body().toString())
         int count = response.body().htmlPath().getInt("**.find { a -> a.text() == 'Tagasi teenusepakkuja juurde' }.size()")
+        assertThat("Web-eID warning message present", response.body().asString().contains("webeid-warning"))
+        assertThat("Web-eID error message present", response.body().asString().contains("webeid-error"))
         assertTrue(count > 0, "Link in estoninan exists")
     }
 
@@ -72,7 +70,7 @@ class AuthInitSpec extends TaraSpecification {
             def map1 = Utils.setParameter(paramsMap, paramName1, Utils.encodeUrl(paramValue1.toString()))
         }
 
-        if (paramName2.equals("login_challenge") && paramValue2.equals("default")) {
+        if (paramName2 == "login_challenge" && paramValue2 == "default") {
             def map2 = Utils.setParameter(paramsMap, "login_challenge", loginChallenge)
         } else {
             def map2 = Utils.setParameter(paramsMap, paramName2, paramValue2)
@@ -127,8 +125,9 @@ class AuthInitSpec extends TaraSpecification {
         String sessionHeader = response.getHeader("Set-Cookie")
         assertEquals("SESSION=${sessionCookie}; Path=/; Secure; HttpOnly; SameSite=Strict".toString(), sessionHeader, "Correct header attribute Set-Cookie")
         assertEquals("ru", response.getHeader("Content-Language"), "Correct header attribute Content-Language")
-        XmlPath xmlPath = new XmlPath(CompatibilityMode.HTML, response.body().toString())
         int count = response.body().htmlPath().getInt("**.find { a -> a.text() == 'Вернуться к поставщику услуг' }.size()")
+        assertThat("Web-eID warning message present", response.body().asString().contains("webeid-warning"))
+        assertThat("Web-eID error message present", response.body().asString().contains("webeid-error"))
         assertTrue(count > 0, "Link in Russian exists")
     }
 
@@ -146,8 +145,9 @@ class AuthInitSpec extends TaraSpecification {
         String sessionHeader = response.getHeader("Set-Cookie")
         assertEquals("SESSION=${sessionCookie}; Path=/; Secure; HttpOnly; SameSite=Strict".toString(), sessionHeader, "Correct header attribute Set-Cookie")
         assertEquals("en", response.getHeader("Content-Language"), "Correct header attribute Content-Language")
-        XmlPath xmlPath = new XmlPath(CompatibilityMode.HTML, response.body().toString())
         int count = response.body().htmlPath().getInt("**.find { a -> a.text() == 'Return to service provider' }.size()")
+        assertThat("Web-eID warning message present", response.body().asString().contains("webeid-warning"))
+        assertThat("Web-eID error message present", response.body().asString().contains("webeid-error"))
         assertTrue(count > 0, "Link in English exists")
     }
 }
