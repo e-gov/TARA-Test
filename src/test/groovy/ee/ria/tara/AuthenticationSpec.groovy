@@ -65,7 +65,7 @@ class AuthenticationSpec extends TaraSpecification {
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat(claims.getAudience().get(0), equalTo(flow.oidcClientPublic.clientId))
         assertThat(claims.getSubject(), equalTo("EE30303039914"))
-        assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo("QUALIFIED OK1"))
+        assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo("OK"))
     }
 
     @Unroll

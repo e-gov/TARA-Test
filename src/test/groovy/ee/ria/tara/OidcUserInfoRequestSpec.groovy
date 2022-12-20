@@ -238,7 +238,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         assertEquals("application/json; charset=utf-8", userInfoResponse.getContentType(), "Correct Content-Type is returned")
 
         assertThat(userInfoResponse.getBody().jsonPath().getList("amr")[0].toString(), equalTo("smartid"))
-        assertThat(userInfoResponse.getBody().jsonPath().getString("given_name"),  equalTo("QUALIFIED OK1"))
+        assertThat(userInfoResponse.getBody().jsonPath().getString("given_name"),  equalTo("OK"))
         assertThat(userInfoResponse.getBody().jsonPath().getString("sub"),  equalTo("EE" + idCode))
         assertThat(userInfoResponse.getBody().jsonPath().getString("date_of_birth"),  equalTo("1903-03-03"))
         assertThat(userInfoResponse.getBody().jsonPath().getString("family_name"),  equalTo("TESTNUMBER"))
@@ -264,7 +264,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         assertEquals(200, userInfoResponse.statusCode(), "Correct HTTP status code is returned")
         assertEquals("application/json; charset=utf-8", userInfoResponse.getContentType(), "Correct Content-Type is returned")
 
-        assertThat(userInfoResponse.getBody().jsonPath().getString("given_name"),  equalTo("QUALIFIED OK1"))
+        assertThat(userInfoResponse.getBody().jsonPath().getString("given_name"),  equalTo("OK"))
         assertThat(userInfoResponse.getBody().jsonPath().getString("sub"),  equalTo("EE" + idCode))
         assertThat(userInfoResponse.getBody().jsonPath().getString("date_of_birth"),  equalTo("1903-03-03"))
         assertThat(userInfoResponse.getBody().jsonPath().getString("family_name"),  equalTo("TESTNUMBER"))
@@ -290,7 +290,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         assertEquals(200, userInfoResponse.statusCode(), "Correct HTTP status code is returned")
         assertEquals("application/json; charset=utf-8", userInfoResponse.getContentType(), "Correct Content-Type is returned")
 
-        assertThat(userInfoResponse.getBody().jsonPath().getString("given_name"),  equalTo("QUALIFIED OK1"))
+        assertThat(userInfoResponse.getBody().jsonPath().getString("given_name"),  equalTo("OK"))
         assertThat(userInfoResponse.getBody().jsonPath().getString("sub"),  equalTo("EE" + idCode))
         assertThat(userInfoResponse.getBody().jsonPath().getString("date_of_birth"),  equalTo("1903-03-03"))
         assertThat(userInfoResponse.getBody().jsonPath().getString("family_name"),  equalTo("TESTNUMBER"))
