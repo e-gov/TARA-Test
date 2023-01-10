@@ -104,7 +104,7 @@ class SmartIDAuthSpec extends TaraSpecification {
     def "initialize Smart-ID authentication with no smart-id contract: #label"() {
         expect:
         Steps.startAuthenticationInTara(flow, "openid smartid",login_locale)
-        Steps.initSidAuthSession(flow, flow.sessionId, "60001019906", Collections.emptyMap())
+        Steps.initSidAuthSession(flow, flow.sessionId, "29101290233", Collections.emptyMap())
         Response pollResponse = Steps.pollSidResponse(flow, 1000L)
         assertEquals(400, pollResponse.statusCode(), "Correct HTTP status code is returned")
         assertEquals("application/json;charset=UTF-8", pollResponse.getContentType(), "Correct Content-Type is returned")
@@ -114,8 +114,8 @@ class SmartIDAuthSpec extends TaraSpecification {
         where:
         login_locale | label             || errorMessage
         "et"         | "Estonian locale" || "Kasutajal puudub"
-//        "en"         | "English locale"  || "User has no Smart-ID account."
-//        "ru"         | "Russian locale"  || "У пользователя нет учетной записи Smart-ID."
+        "en"         | "English locale"  || "User has no Smart-ID account."
+        "ru"         | "Russian locale"  || "У пользователя нет учетной записи Smart-ID."
     }
 
     @Unroll
