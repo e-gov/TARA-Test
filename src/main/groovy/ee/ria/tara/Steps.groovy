@@ -62,6 +62,17 @@ class Steps {
         return initLoginSession
     }
 
+    @Step("Start authentication in TARA with acr_values and follow redirects")
+    static Response startAuthenticationInTaraWithAcr(Flow flow, String acr_values, boolean checkStatusCode = true) {
+        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithAcrValues(flow, acr_values)
+        Response initOIDCServiceSession = startAuthenticationInOidcWithParams(flow, paramsMap)
+        Response initLoginSession = createLoginSession(flow, initOIDCServiceSession)
+        if (checkStatusCode) {
+            assertEquals(200, initLoginSession.statusCode(), "Correct HTTP status code is returned")
+        }
+        return initLoginSession
+    }
+
     @Step("Start authentication in TARA with specified client and follow redirects")
     static Response startAuthenticationInTaraWithClient(Flow flow, String scopeList = "openid", String clientId, String redirectUri, boolean checkStatusCode = true) {
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersWithClient(flow, scopeList, clientId, redirectUri)

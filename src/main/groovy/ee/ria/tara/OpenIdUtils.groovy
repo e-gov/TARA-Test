@@ -63,6 +63,21 @@ class OpenIdUtils {
         return queryParams
     }
 
+    static Map<String, String> getAuthorizationParametersWithAcrValues(Flow flow, String acr_values = "substantial") {
+        Map<String, String> queryParams = new HashMap<>()
+        flow.setState(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
+        flow.setNonce(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
+        queryParams.put("acr_values", acr_values)
+        queryParams.put("ui_locales", "et")
+        queryParams.put("response_type", "code")
+        queryParams.put("scope", "openid")
+        queryParams.put("client_id",flow.getOidcClientPublic().getClientId())
+        queryParams.put("redirect_uri", flow.getOidcClientPublic().getFullResponseUrl().toString())
+        queryParams.put("state", flow.state)
+        queryParams.put("nonce", flow.nonce)
+        return queryParams
+    }
+
     static Map<String, String> getErrorFromAuthorizationHeader(Response errorResponse) {
         String[] errorList = errorResponse.getHeader("WWW-Authenticate").toString().split(",")
         Map<String, String> myMap = new HashMap<String, String>()

@@ -23,8 +23,9 @@ class TaraSpecification extends Specification {
     static String REJECT_ERROR_CODE = "user_cancel"
     static String IDP_USERNAME = "xavi"
     static String IDP_PASSWORD = "creus"
-    static String EIDASLOA = "E"
+    static String EIDASLOA_HIGH = "E"
     static String EIDASLOA_LOW = "A"
+    static String EIDASLOA_NOT_NOTIFIED = "http://non.eidas.eu/NotNotified/LoA/1"
     static String COUNTRY = "CA"
 
     def setupSpec() {
