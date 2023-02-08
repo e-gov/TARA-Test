@@ -205,8 +205,8 @@ class AuthenticationSpec extends TaraSpecification {
         Utils.setParameter(paramsMap, "SAMLResponse" , samlResponse)
         Utils.setParameter(paramsMap, "RelayState", relayState)
         Response redirectionResponse = Requests.postRequestWithParams(flow, endpointUrl, paramsMap, Collections.emptyMap())
-        assertThat(redirectionResponse.body().jsonPath().get("status"), equalTo(400))
-        assertThat(redirectionResponse.body().jsonPath().get("message").toString(), equalTo("Autentimine ebaõnnestus teenuse tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti."))
+        assertThat(redirectionResponse.body().jsonPath().get("status") as Integer, equalTo(400))
+        assertThat(redirectionResponse.body().jsonPath().get("message").toString(), equalTo("Teie poolt valitud välisriigi autentimisvahend on teenuse poolt nõutust madalama autentimistasemega. Palun valige mõni muu autentimisvahend."))
     }
 
     @Unroll
