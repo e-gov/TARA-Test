@@ -61,11 +61,9 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
     def "Verify user info response: auth id-card, email scope"() {
         expect:
         Steps.startAuthenticationInTara(flow, "openid email")
-        Response idCardAuthResponse = Steps.authenticateWithIdCard(flow, "src/test/resources/joeorg-auth.pem")
+        Response idCardAuthResponse = Steps.authenticateWithWebeID(flow)
 
-        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, idCardAuthResponse)
-        Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
-        String accessToken = tokenResponse.body().jsonPath().getString("access_token")
+        String accessToken = idCardAuthResponse.body().jsonPath().getString("access_token")
         Response userInfoResponse = Steps.getUserInfoResponseWithHeaderParam(flow, REQUEST_TYPE_GET, accessToken)
         assertEquals(200, userInfoResponse.statusCode(), "Correct HTTP status code is returned")
         assertEquals("application/json; charset=utf-8", userInfoResponse.getContentType(), "Correct Content-Type is returned")
@@ -77,7 +75,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         assertThat(userInfoResponse.getBody().jsonPath().getString("date_of_birth"),  equalTo("1980-01-08"))
         assertThat(userInfoResponse.getBody().jsonPath().getString("family_name"),  equalTo("JÕEORG"))
         assertThat(userInfoResponse.getBody().jsonPath().getString("given_name"),  equalTo("JAAK-KRISTJAN"))
-        assertThat(userInfoResponse.getBody().jsonPath().getString("email"), equalTo("38001085718@eesti.ee"))
+        assertThat(userInfoResponse.getBody().jsonPath().getString("email"), equalTo("jaak-kristjan.joeorg@eesti.ee"))
         assertEquals(false, userInfoResponse.getBody().jsonPath().getBoolean("email_verified"))
     }
 
@@ -90,11 +88,9 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
     def "Verify user info response: auth id-card, phone scope"() {
         expect:
         Steps.startAuthenticationInTara(flow, "openid email")
-        Response idCardAuthResponse = Steps.authenticateWithIdCard(flow, "src/test/resources/joeorg-auth.pem")
+        Response idCardAuthResponse = Steps.authenticateWithWebeID(flow)
 
-        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, idCardAuthResponse)
-        Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
-        String accessToken = tokenResponse.body().jsonPath().getString("access_token")
+        String accessToken = idCardAuthResponse.body().jsonPath().getString("access_token")
         Response userInfoResponse = Steps.getUserInfoResponseWithHeaderParam(flow, REQUEST_TYPE_POST, accessToken)
         assertEquals(200, userInfoResponse.statusCode(), "Correct HTTP status code is returned")
         assertEquals("application/json; charset=utf-8", userInfoResponse.getContentType(), "Correct Content-Type is returned")
@@ -118,11 +114,9 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
     def "Verify user info response: auth id-card, openid scope"() {
         expect:
         Steps.startAuthenticationInTara(flow, "openid")
-        Response idCardAuthResponse = Steps.authenticateWithIdCard(flow, "src/test/resources/joeorg-auth.pem")
+        Response idCardAuthResponse = Steps.authenticateWithWebeID(flow)
 
-        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, idCardAuthResponse)
-        Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
-        String accessToken = tokenResponse.body().jsonPath().getString("access_token")
+        String accessToken = idCardAuthResponse.body().jsonPath().getString("access_token")
         Response userInfoResponse = Steps.getUserInfoResponseWithHeaderParam(flow, REQUEST_TYPE_GET, accessToken)
         assertEquals(200, userInfoResponse.statusCode(), "Correct HTTP status code is returned")
         assertEquals("application/json; charset=utf-8", userInfoResponse.getContentType(), "Correct Content-Type is returned")
@@ -305,11 +299,9 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
     def "Unsupported request types in header #requestType"() {
         expect:
         Steps.startAuthenticationInTara(flow, "openid")
-        Response idCardAuthResponse = Steps.authenticateWithIdCard(flow, "src/test/resources/joeorg-auth.pem")
+        Response idCardAuthResponse = Steps.authenticateWithWebeID(flow)
 
-        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, idCardAuthResponse)
-        Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
-        String accessToken = tokenResponse.body().jsonPath().getString("access_token")
+        String accessToken = idCardAuthResponse.body().jsonPath().getString("access_token")
         Response userInfoResponse = Steps.getUserInfoResponseWithHeaderParam(flow, requestType, accessToken)
         assertEquals(statusCode, userInfoResponse.statusCode(), "Correct HTTP status code is returned")
 

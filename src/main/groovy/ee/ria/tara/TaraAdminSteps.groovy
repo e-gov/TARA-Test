@@ -55,7 +55,7 @@ class TaraAdminSteps {
         HashMap<String, String> cookiesMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(cookiesMap, "XSRF-TOKEN", flow.taraAdminService.xsrfToken)
         Utils.setParameter(cookiesMap, "JSESSIONID", flow.taraAdminService.jsessionId)
-        Response response = Requests.postRequestWithJsonBody(flow, flow.taraAdminService.fullBaseUrl + "/institutions", cookiesMap, builder.toString())
+        Response response = Requests.postRequestAdminApiWithJsonBody(flow, flow.taraAdminService.fullBaseUrl + "/institutions", cookiesMap, builder.toString())
         if (checkStatusCode) {
             assertEquals("Correct HTTP status code is returned", 200, response.statusCode())
         }
@@ -149,7 +149,7 @@ class TaraAdminSteps {
         HashMap<String, String> cookiesMap = (HashMap) Collections.emptyMap()
         Utils.setParameter(cookiesMap, "XSRF-TOKEN", flow.taraAdminService.xsrfToken)
         Utils.setParameter(cookiesMap, "JSESSIONID", flow.taraAdminService.jsessionId)
-        Response response = Requests.postRequestWithJsonBody(flow, flow.taraAdminService.fullBaseUrl + "/institutions/${registryCode}/clients", cookiesMap, builder.toString())
+        Response response = Requests.postRequestAdminApiWithJsonBody(flow, flow.taraAdminService.fullBaseUrl + "/institutions/${registryCode}/clients", cookiesMap, builder.toString())
         if (checkStatusCode) {
             assertEquals("Correct HTTP status code is returned", 200, response.statusCode())
         }

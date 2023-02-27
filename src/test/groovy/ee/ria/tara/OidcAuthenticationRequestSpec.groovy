@@ -148,13 +148,11 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
     def "Authentication request with email scope"() {
         expect:
         Steps.startAuthenticationInTara(flow, "openid email")
-        Response idCardAuthResponse = Steps.authenticateWithIdCard(flow, "src/test/resources/joeorg-auth.pem")
-        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, idCardAuthResponse)
-        Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
+        Response tokenResponse = Steps.authenticateWithWebeID(flow)
 
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat(claims.getStringArrayClaim("amr")[0], equalTo("idcard"))
-        assertThat(claims.getClaim("email"), equalTo("38001085718@eesti.ee"))
+        assertThat(claims.getClaim("email"), equalTo("jaak-kristjan.joeorg@eesti.ee"))
         assertThat(claims.getClaim("email_verified"), equalTo(false))
     }
 
@@ -187,25 +185,8 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
         }
         Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
         Steps.createLoginSession(flow, initOIDCServiceSession)
+        Response tokenResponse = Steps.authenticateWithWebeID(flow)
 
-        String certificate = Utils.getCertificateAsString("src/test/resources/joeorg-auth.pem")
-        HashMap<String, String> headersMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(headersMap, "XCLIENTCERTIFICATE", certificate)
-        Requests.idCardAuthentication(flow, headersMap)
-        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
-        Response oidcServiceResponse = Steps.getOAuthCookies(flow, acceptResponse)
-
-        Response consentResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
-
-        if (consentResponse.getStatusCode() == 200) {
-            consentResponse = Steps.submitConsent(flow, true)
-            assertEquals(302, consentResponse.statusCode(), "Correct HTTP status code is returned")
-            Steps.verifyResponseHeaders(consentResponse)
-        }
-        Response oidcserviceResponse = Steps.followRedirectWithCookies(flow, consentResponse, flow.oidcService.cookies)
-        Response sa = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
-        String authorizationCode = Utils.getParamValueFromResponseHeader(oidcserviceResponse, "code")
-        Response tokenResponse = Requests.getWebToken(flow, authorizationCode)
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat(claims.getAudience().get(0), equalTo(flow.oidcClientPublic.clientId))
         assertThat(claims.getSubject(), equalTo("EE38001085718"))

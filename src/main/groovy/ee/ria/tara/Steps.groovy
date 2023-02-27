@@ -7,6 +7,7 @@ import io.qameta.allure.Allure
 import io.qameta.allure.Step
 import io.restassured.response.Response
 import org.hamcrest.Matchers
+import org.json.JSONObject
 import org.spockframework.lang.Wildcard
 
 import java.text.ParseException
@@ -131,16 +132,16 @@ class Steps {
     static Response authenticateWithMid(Flow flow, String idCode, String phoneNo) {
         Response midInit = Requests.startMidAuthentication(flow, idCode, phoneNo)
         assertEquals(200, midInit.statusCode(), "Correct HTTP status code is returned")
-        Response midPollResult = Steps.pollMidResponse(flow)
+        Response midPollResult = pollMidResponse(flow)
         assertEquals(200, midPollResult.statusCode(), "Correct HTTP status code is returned")
         assertThat(midPollResult.body().jsonPath().get("status").toString(), Matchers.not(equalTo("PENDING")))
         Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
         assertEquals(302, acceptResponse.statusCode(), "Correct HTTP status code is returned")
 
-        Response oidcServiceResponse = Steps.getOAuthCookies(flow, acceptResponse)
+        Response oidcServiceResponse = getOAuthCookies(flow, acceptResponse)
         assertEquals(302, oidcServiceResponse.statusCode(), "Correct HTTP status code is returned")
 
-        Response consentResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
+        Response consentResponse = followRedirectWithSessionId(flow, oidcServiceResponse)
 
         return consentResponse
     }
@@ -163,22 +164,22 @@ class Steps {
         return consentResponse
     }
 
-    @Step("Authenticate with ID-Card")
-    static Response authenticateWithIdCard(Flow flow, String certificateFileName) {
-        String certificate = Utils.getCertificateAsString(certificateFileName)
-        HashMap<String, String> headersMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(headersMap, "XCLIENTCERTIFICATE", certificate)
-        Response response = Requests.idCardAuthentication(flow, headersMap)
-        assertThat("Correct response", response.body().jsonPath().get("status").toString(), equalTo("COMPLETED"))
+    @Step("Authenticate with Web eID")
+    static Response authenticateWithWebeID(Flow flow) {
+
+        Response initWebEid = Requests.postRequestWithSessionId(flow, flow.loginService.fullWebEidInitUrl)
+        String signAuthValue = Utils.signAuthenticationValue(flow, flow.loginService.baseUrl, initWebEid.jsonPath().get("nonce"))
+        JSONObject authToken = Utils.getWebEidAuthTokenParameters(flow, signAuthValue)
+        Requests.postRequestWithJsonBody(flow, flow.loginService.fullWebEidLoginUrl, authToken)
 
         Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
-        assertEquals(302, acceptResponse.statusCode(), "Correct HTTP status code is returned")
         Response oidcServiceResponse = getOAuthCookies(flow, acceptResponse)
-        assertEquals(302, oidcServiceResponse.statusCode(), "Correct HTTP status code is returned")
-
         Response consentResponse = followRedirectWithSessionId(flow, oidcServiceResponse)
+        Response oidcserviceResponse = followRedirectWithCookies(flow, consentResponse, flow.oidcService.cookies)
+        String authorizationCode = Utils.getParamValueFromResponseHeader(oidcserviceResponse, "code")
+        Response tokenResponse = Requests.getWebToken(flow, authorizationCode)
 
-        return consentResponse
+        return tokenResponse
     }
 
     @Step("Initialize Smart-ID authentication session")

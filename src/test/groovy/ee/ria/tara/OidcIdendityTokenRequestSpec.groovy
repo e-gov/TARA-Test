@@ -95,14 +95,12 @@ class OidcIdendityTokenRequestSpec extends TaraSpecification {
         expect:
         String scopeList = "openid email"
         Steps.startAuthenticationInTara(flow, scopeList)
-        Response idCardAuthResponse = Steps.authenticateWithIdCard(flow, "src/test/resources/joeorg-auth.pem")
-        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, idCardAuthResponse)
-        Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
+        Response tokenResponse = Steps.authenticateWithWebeID(flow)
         assertEquals("bearer", tokenResponse.body().jsonPath().getString("token_type"), "Correct token_type value")
         assertEquals(scopeList, tokenResponse.body().jsonPath().getString("scope"), "Correct scope value")
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
         assertThat("Correct subject claim", claims.getSubject(), equalTo("EE38001085718"))
-        assertThat("Phone_number claim exists", claims.getStringClaim("email"), equalTo("38001085718@eesti.ee"))
+        assertThat("Phone_number claim exists", claims.getStringClaim("email"), equalTo("jaak-kristjan.joeorg@eesti.ee"))
         assertThat("Phone_number_verified claim exists", claims.getBooleanClaim("email_verified"), equalTo(false))
     }
 }

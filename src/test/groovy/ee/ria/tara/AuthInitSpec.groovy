@@ -33,8 +33,6 @@ class AuthInitSpec extends TaraSpecification {
         assertEquals("SESSION=${sessionCookie}; Path=/; Secure; HttpOnly; SameSite=Strict".toString(), sessionHeader, "Correct header attribute Set-Cookie")
         assertEquals("et", response.getHeader("Content-Language"), "Correct header attribute Content-Language")
         int count = response.body().htmlPath().getInt("**.find { a -> a.text() == 'Tagasi teenusepakkuja juurde' }.size()")
-        assertThat("Web-eID warning message present", response.body().asString().contains("webeid-warning"))
-        assertThat("Web-eID error message present", response.body().asString().contains("webeid-error"))
         assertTrue(count > 0, "Link in estoninan exists")
     }
 
@@ -126,8 +124,6 @@ class AuthInitSpec extends TaraSpecification {
         assertEquals("SESSION=${sessionCookie}; Path=/; Secure; HttpOnly; SameSite=Strict".toString(), sessionHeader, "Correct header attribute Set-Cookie")
         assertEquals("ru", response.getHeader("Content-Language"), "Correct header attribute Content-Language")
         int count = response.body().htmlPath().getInt("**.find { a -> a.text() == 'Вернуться к поставщику услуг' }.size()")
-        assertThat("Web-eID warning message present", response.body().asString().contains("webeid-warning"))
-        assertThat("Web-eID error message present", response.body().asString().contains("webeid-error"))
         assertTrue(count > 0, "Link in Russian exists")
     }
 
@@ -146,8 +142,6 @@ class AuthInitSpec extends TaraSpecification {
         assertEquals("SESSION=${sessionCookie}; Path=/; Secure; HttpOnly; SameSite=Strict".toString(), sessionHeader, "Correct header attribute Set-Cookie")
         assertEquals("en", response.getHeader("Content-Language"), "Correct header attribute Content-Language")
         int count = response.body().htmlPath().getInt("**.find { a -> a.text() == 'Return to service provider' }.size()")
-        assertThat("Web-eID warning message present", response.body().asString().contains("webeid-warning"))
-        assertThat("Web-eID error message present", response.body().asString().contains("webeid-error"))
         assertTrue(count > 0, "Link in English exists")
     }
 }

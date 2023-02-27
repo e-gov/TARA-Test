@@ -6,6 +6,7 @@ import io.restassured.RestAssured
 import io.restassured.http.ContentType
 import io.restassured.path.json.JsonPath
 import io.restassured.response.Response
+import org.json.JSONObject
 
 import static io.restassured.RestAssured.given
 import static io.restassured.config.EncoderConfig.encoderConfig
@@ -124,6 +125,23 @@ class Requests {
                 .when()
                 .redirects().follow(false)
                 .post(location)
+                .then()
+                .extract().response()
+    }
+
+    @Step("Login service post request with session id")
+    static Response requestWithSessionId(Flow flow, String requestType, String location) {
+        return given()
+                .filter(flow.cookieFilter)
+                .filter(new AllureRestAssured())
+                .cookie("SESSION", flow.sessionId)
+                .formParam("_csrf", flow.csrf)
+                .log().cookies()
+                .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
+                .baseUri(flow.loginService.baseUrl)
+                .when()
+                .redirects().follow(false)
+                .request(requestType, location)
                 .then()
                 .extract().response()
     }
@@ -311,39 +329,6 @@ class Requests {
                 .extract().response()
     }
 
-    @Step("Get request with ID-Card authentication")
-    static Response idCardAuthentication(Flow flow , Map<String, String> headers) {
-        return given()
-                .filter(flow.cookieFilter)
-                .headers(headers)
-                .auth().preemptive().basic(flow.loginService.idCardEndpointUsername, flow.loginService.idCardEndpointPassword)
-                .cookie("SESSION", flow.sessionId)
-                .relaxedHTTPSValidation()
-                .log().cookies()
-                .filter(new AllureRestAssured())
-                .redirects().follow(false)
-                .urlEncodingEnabled(false)
-                .get(flow.loginService.fullIdCardInitUrl)
-                .then()
-                .extract().response()
-    }
-
-    @Step("Get request with ID-Card authentication and without session cookie")
-    static Response idCardAuthenticationWithoutSession(Flow flow , Map<String, String> headers) {
-        return given()
-                .filter(flow.cookieFilter)
-                .headers(headers)
-                .auth().preemptive().basic(flow.loginService.idCardEndpointUsername, flow.loginService.idCardEndpointPassword)
-                .relaxedHTTPSValidation()
-                .log().cookies()
-                .filter(new AllureRestAssured())
-                .redirects().follow(false)
-                .urlEncodingEnabled(false)
-                .get(flow.loginService.fullIdCardInitUrl)
-                .then()
-                .extract().response()
-    }
-
     @Step("Download openid service configuration")
     static JsonPath getOpenidConfiguration(String url) {
         return given()
@@ -456,8 +441,26 @@ class Requests {
                 .extract().response()
     }
 
+    @Step("Post request with json body")
+    static Response postRequestWithJsonBody(Flow flow, String location, JSONObject body) {
+        return given()
+                .filter(flow.cookieFilter)
+                .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
+                .filter(new AllureRestAssured())
+                .cookie("SESSION", flow.sessionId)
+                .contentType("application/json")
+                .header("X-CSRF-TOKEN", flow.csrf)
+                .body(body.toString())
+                .when()
+                .urlEncodingEnabled(true)
+                .post(location)
+                .then()
+                .log().cookies()
+                .extract().response()
+    }
+
     @Step("Post request with json for admin api")
-    static Response postRequestWithJsonBody(Flow flow, String location, Map<String, String> cookies, String body) {
+    static Response postRequestAdminApiWithJsonBody(Flow flow, String location, Map<String, String> cookies, String body) {
         return given()
                 .filter(flow.cookieFilter)
                 .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()

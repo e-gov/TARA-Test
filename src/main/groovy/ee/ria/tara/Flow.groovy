@@ -22,6 +22,7 @@ class Flow {
     String login_locale
     String csrf
     String loginChallenge
+    String authCertificate
 
     String state
     String nonce
@@ -57,7 +58,8 @@ class LoginService {
     String midInitUrl
     String midPollUrl
     String midCancelUrl
-    String idCardInitUrl
+    String webEidInitUrl
+    String webEidLoginUrl
     String sidInitUrl
     String sidPollUrl
     String sidCancelUrl
@@ -79,7 +81,8 @@ class LoginService {
     @Lazy fullMidInitUrl = "${protocol}://${host}${portCheck()}${midInitUrl}"
     @Lazy fullMidPollUrl = "${protocol}://${host}${portCheck()}${midPollUrl}"
     @Lazy fullMidCancelUrl = "${protocol}://${host}${portCheck()}${midCancelUrl}"
-    @Lazy fullIdCardInitUrl = "${nodeProtocol}://${nodeHost}${nodePortCheck()}${idCardInitUrl}"
+    @Lazy fullWebEidInitUrl = "${protocol}://${host}${webEidInitUrl}"
+    @Lazy fullWebEidLoginUrl = "${protocol}://${host}${webEidLoginUrl}"
     @Lazy fullSidInitUrl = "${protocol}://${host}${portCheck()}${sidInitUrl}"
     @Lazy fullSidPollUrl = "${protocol}://${host}${portCheck()}${sidPollUrl}"
     @Lazy fullSidCancelUrl = "${protocol}://${host}${portCheck()}${sidCancelUrl}"
@@ -90,11 +93,10 @@ class LoginService {
     @Lazy fullHeartbeatUrl = "${nodeProtocol}://${nodeHost}${nodePortCheck()}${heartbeatUrl}"
     @Lazy fullErrorUrl = "${protocol}://${host}${portCheck()}${errorUrl}"
     @Lazy fullEidasInitUrl = "${protocol}://${host}${portCheck()}${eidasInitUrl}"
-    @Lazy fullEidasCallbackUrl = "${protocol}://${host}${portCheck()}${eidasCallbackUrl}"
     @Lazy fullAuthLegalInitUrl = "${protocol}://${host}${portCheck()}${authLegalInitUrl}"
     @Lazy fullAuthLegalPersonUrl = "${protocol}://${host}${portCheck()}${authLegalPersonUrl}"
     @Lazy fullAuthLegalConfirmUrl = "${protocol}://${host}${portCheck()}${authLegalConfirmUrl}"
-    @Lazy baseUrl = "${protocol}://${host}${portCheck()}"
+    @Lazy baseUrl = "${protocol}://${host}"
 
     LoginService(Properties properties) {
         this.host = properties."loginservice.host"
@@ -107,7 +109,8 @@ class LoginService {
         this.midInitUrl = properties."loginservice.midInitUrl"
         this.midPollUrl = properties."loginservice.midPollUrl"
         this.midCancelUrl = properties."loginservice.midCancelUrl"
-        this.idCardInitUrl = properties."loginservice.idCardInitUrl"
+        this.webEidInitUrl = properties."loginservice.webEidInitUrl"
+        this.webEidLoginUrl = properties."loginservice.webEidLoginUrl"
         this.sidInitUrl = properties."loginservice.sidInitUrl"
         this.sidPollUrl = properties."loginservice.sidPollUrl"
         this.sidCancelUrl = properties."loginservice.sidCancelUrl"
