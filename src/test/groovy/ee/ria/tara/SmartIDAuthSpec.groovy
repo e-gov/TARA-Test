@@ -5,11 +5,12 @@ import com.nimbusds.jwt.JWTClaimsSet
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
-import spock.lang.Ignore
 import spock.lang.Unroll
-import org.hamcrest.Matchers
 
 import static org.hamcrest.Matchers.equalTo
+import static org.hamcrest.Matchers.is
+import static org.hamcrest.Matchers.containsString
+import static org.hamcrest.Matchers.startsWith
 import static org.junit.jupiter.api.Assertions.*
 import static org.hamcrest.MatcherAssert.assertThat
 
@@ -58,7 +59,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         assertEquals(4, controlCode.size(), "Verification code exists")
     }
 
-    @Ignore // TARA2-165
+    //TODO: AUT-630
     @Unroll
     @Feature("SID_AUTH_INIT_ENDPOINT")
     def "initialize Smart-ID authentication with invalid method get"() {
@@ -70,8 +71,8 @@ class SmartIDAuthSpec extends TaraSpecification {
         def map3 = Utils.setParameter(cookieMap, "SESSION", flow.sessionId)
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
         Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullSidInitUrl, cookieMap, paramsMap, additionalParamsMap)
-        assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
-        assertThat(response.body().jsonPath().get("message").toString(), Matchers.equalTo("Request method 'GET' not supported"))
+        assertEquals(500, response.statusCode(), "Correct HTTP status code is returned")
+        assertThat(response.body().jsonPath().get("message").toString(), equalTo("Autentimine ebaõnnestus teenuse tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti."))
     }
 
     @Unroll
@@ -85,7 +86,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, idCode, additionalParamsMap)
         assertEquals(400, initSidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
         assertEquals("application/json;charset=UTF-8", initSidAuthenticationSession.getContentType(), "Correct Content-Type is returned")
-        assertThat(initSidAuthenticationSession.body().jsonPath().get("message"), Matchers.containsString(errorMessage))
+        assertThat(initSidAuthenticationSession.body().jsonPath().get("message"), containsString(errorMessage))
 
         where:
         idCode         | additionalParameterName | additionalParameterValue               | label                        || errorMessage
@@ -108,7 +109,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         Response pollResponse = Steps.pollSidResponse(flow, 1000L)
         assertEquals(400, pollResponse.statusCode(), "Correct HTTP status code is returned")
         assertEquals("application/json;charset=UTF-8", pollResponse.getContentType(), "Correct Content-Type is returned")
-        assertThat(pollResponse.body().jsonPath().get("message"), Matchers.containsString(errorMessage))
+        assertThat(pollResponse.body().jsonPath().get("message"), containsString(errorMessage))
         assertTrue(pollResponse.body().jsonPath().get("incident_nr").toString().size() > 15)
 
         where:
@@ -129,8 +130,8 @@ class SmartIDAuthSpec extends TaraSpecification {
         String messageText = "Correct HTTP status code is returned. Response body: " + pollResponse.body().jsonPath().prettify()
         assertEquals(400, pollResponse.statusCode(), messageText)
         assertEquals("application/json;charset=UTF-8", pollResponse.getContentType(), "Correct Content-Type is returned")
-        assertThat(pollResponse.body().jsonPath().get("message"), Matchers.startsWith(errorMessage))
-        assertThat(pollResponse.body().jsonPath().get("reportable"), Matchers.is(false))
+        assertThat(pollResponse.body().jsonPath().get("message"), startsWith(errorMessage))
+        assertThat(pollResponse.body().jsonPath().get("reportable") as Boolean, is(false))
 
         where:
         idCode        | label                                             || errorMessage
@@ -154,8 +155,8 @@ class SmartIDAuthSpec extends TaraSpecification {
         String messageText = "Correct HTTP status code is returned. Response body: " + pollResponse.body().jsonPath().prettify()
         assertEquals(400, pollResponse.statusCode(), messageText)
         assertEquals("application/json;charset=UTF-8", pollResponse.getContentType(), "Correct Content-Type is returned")
-        assertThat(pollResponse.body().jsonPath().get("message"), Matchers.startsWith(errorMessage))
-        assertThat(pollResponse.body().jsonPath().get("reportable"), Matchers.is(false))
+        assertThat(pollResponse.body().jsonPath().get("message"), startsWith(errorMessage))
+        assertThat(pollResponse.body().jsonPath().get("reportable") as Boolean, is(false))
 
 
         where:
@@ -180,8 +181,8 @@ class SmartIDAuthSpec extends TaraSpecification {
         String messageText = "Correct HTTP status code is returned. Response body: " + pollResponse.body().jsonPath().prettify()
         assertEquals(400, pollResponse.statusCode(), messageText)
         assertEquals("application/json;charset=UTF-8", pollResponse.getContentType(), "Correct Content-Type is returned")
-        assertThat(pollResponse.body().jsonPath().get("message"), Matchers.startsWith(errorMessage))
-        assertThat(pollResponse.body().jsonPath().get("reportable"), Matchers.is(false))
+        assertThat(pollResponse.body().jsonPath().get("message"), startsWith(errorMessage))
+        assertThat(pollResponse.body().jsonPath().get("reportable") as Boolean, is(false))
 
 
         where:
@@ -206,8 +207,8 @@ class SmartIDAuthSpec extends TaraSpecification {
         String messageText = "Correct HTTP status code is returned. Response body: " + pollResponse.body().jsonPath().prettify()
         assertEquals(400, pollResponse.statusCode(), messageText)
         assertEquals("application/json;charset=UTF-8", pollResponse.getContentType(), "Correct Content-Type is returned")
-        assertThat(pollResponse.body().jsonPath().get("message"), Matchers.startsWith(errorMessage))
-        assertThat(pollResponse.body().jsonPath().get("reportable"), Matchers.is(false))
+        assertThat(pollResponse.body().jsonPath().get("message"), startsWith(errorMessage))
+        assertThat(pollResponse.body().jsonPath().get("reportable") as Boolean, is(false))
 
 
         where:
@@ -262,7 +263,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         assertEquals("COMPLETED", response.body().jsonPath().get("status"), "Correct Mobile-ID status")
     }
 
-    @Ignore // TARA2-165
+    //TODO: AUT-630
     @Unroll
     @Feature("SID_AUTH_STATUS_CHECK_ENDPOINT")
     def "poll Smart-ID authentication with invalid method post"() {
@@ -272,8 +273,8 @@ class SmartIDAuthSpec extends TaraSpecification {
         Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, "30303039914", additionalParamsMap)
         assertEquals(200, initSidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
         Response response = Requests.postRequestWithSessionId(flow, flow.loginService.fullSidPollUrl)
-        assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
-        assertThat(response.body().jsonPath().get("message").toString(), Matchers.equalTo("Request method 'POST' not supported"))
+        assertEquals(500, response.statusCode(), "Correct HTTP status code is returned")
+        assertThat(response.body().jsonPath().get("message").toString(), equalTo("Autentimine ebaõnnestus teenuse tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti."))
     }
 
     @Unroll
@@ -287,7 +288,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         assertEquals(200, initSidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
         Response response = Requests.postRequestWithSessionId(flow, flow.loginService.fullSidCancelUrl)
         assertEquals(302, response.statusCode(), "Correct HTTP status code is returned")
-        assertThat(response.getHeader("location"), Matchers.startsWith(flow.loginService.initUrl + "?login_challenge=" + flow.loginChallenge))
+        assertThat(response.getHeader("location"), startsWith(flow.loginService.initUrl + "?login_challenge=" + flow.loginChallenge))
     }
 
     @Unroll
@@ -327,7 +328,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         assertEquals(errorMessage, response.body().jsonPath().get("message"), "Correct error message is returned")
     }
 
-    @Ignore // TARA2-165
+    //TODO: AUT-630
     @Unroll
     @Feature("SID_AUTH_STATUS_CHECK_ENDPOINT")
     def "cancel Smart-ID authentication with invalid method get"() {
@@ -338,7 +339,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         assertEquals(200, initSidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
 
         Response response = Requests.getRequestWithSessionId(flow, flow.loginService.fullSidCancelUrl)
-        assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
-        assertThat(response.body().jsonPath().get("message").toString(), Matchers.equalTo("Request method 'GET' not supported"))
+        assertEquals(500, response.statusCode(), "Correct HTTP status code is returned")
+        assertThat(response.body().jsonPath().get("message").toString(), equalTo("Autentimine ebaõnnestus teenuse tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti."))
     }
 }

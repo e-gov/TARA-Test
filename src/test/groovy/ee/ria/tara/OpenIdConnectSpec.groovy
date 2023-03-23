@@ -5,7 +5,6 @@ import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import org.hamcrest.Matchers
-import spock.lang.Ignore;
 import spock.lang.Unroll
 import com.nimbusds.jose.jwk.JWKSet
 
@@ -57,16 +56,18 @@ class OpenIdConnectSpec extends TaraSpecification {
         assertThat("Correct error_description is returned", tokenResponse2.body().jsonPath().getString("error_description"), Matchers.endsWith("The authorization code has already been used."))
     }
 
-    @Ignore // Etapp 4
     @Unroll
     @Feature("OPENID_CONNECT")
     def "Request with empty scope"() {
         expect:
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
         paramsMap.put("scope", "")
-        Response response = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
-        assertEquals(302, response.statusCode(), "Correct HTTP status code is returned")
-        assertEquals(" error text here", Utils.getParamValueFromResponseHeader(response, "error"), "Correct error value")
+        Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
+        Response initLoginSession = Steps.followRedirect(flow, initOIDCServiceSession)
+        assertThat("Correct status code", initLoginSession.getStatusCode(), equalTo(400))
+        assertThat("Correct error", initLoginSession.getBody().jsonPath().get("error") as String, equalTo("Bad Request"))
+        assertThat("Correct message", initLoginSession.getBody().jsonPath().get("message") as String, equalTo("Päringus puudub scope parameeter."))
+        assertThat("Correct path", initLoginSession.getBody().jsonPath().get("path") as String, equalTo("/auth/init"))
     }
 
     @Unroll

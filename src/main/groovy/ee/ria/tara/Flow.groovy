@@ -12,6 +12,7 @@ class Flow {
     LoginService loginService
     OidcClientPublic oidcClientPublic
     OidcClientPrivate oidcClientPrivate
+    OidcClientLegal oidcClientLegal
     SpecificProxyService specificProxyService
     ForeignIdpProvider foreignIdpProvider
     ForeignProxyService foreignProxyService
@@ -39,6 +40,7 @@ class Flow {
         this.oidcService = new OidcService(properties)
         this.oidcClientPublic = new OidcClientPublic(properties)
         this.oidcClientPrivate = new OidcClientPrivate(properties)
+        this.oidcClientLegal = new OidcClientLegal(properties)
         this.specificProxyService = new SpecificProxyService(properties)
         this.foreignIdpProvider = new ForeignIdpProvider(properties)
         this.foreignProxyService = new ForeignProxyService(properties)
@@ -148,33 +150,27 @@ class LoginService {
 @Canonical
 class OidcService {
     String host
-    String port
     String protocol
     String authenticationRequestUrl
+    String authorizationUrl
     String jwksUrl
     String configurationUrl
     HashMap <String, String> cookies
 
-    @Lazy fullAuthenticationRequestUrl = "${protocol}://${host}${portCheck()}${authenticationRequestUrl}"
-    @Lazy fullJwksUrl = "${protocol}://${host}${portCheck()}${jwksUrl}"
-    @Lazy fullConfigurationUrl = "${protocol}://${host}${portCheck()}${configurationUrl}"
-    @Lazy baseUrl = "${protocol}://${host}${portCheck()}"
+    @Lazy fullAuthenticationRequestUrl = "${protocol}://${host}${authenticationRequestUrl}"
+    @Lazy fullAuthorizationUrl = "${protocol}://${host}${authorizationUrl}"
+    @Lazy fullJwksUrl = "${protocol}://${host}${jwksUrl}"
+    @Lazy fullConfigurationUrl = "${protocol}://${host}${configurationUrl}"
+    @Lazy baseUrl = "${protocol}://${host}"
 
     OidcService(Properties properties) {
         this.host = properties."oidcservice.host"
-        this.port = properties."oidcservice.port"
         this.protocol = properties."oidcservice.protocol"
         this.authenticationRequestUrl = properties."oidcservice.authenticationRequestUrl"
+        this.authorizationUrl = properties."oidcservice.authorizationUrl"
         this.jwksUrl = properties."oidcservice.jwksUrl"
         this.configurationUrl = properties."oidcservice.configurationUrl"
         this.cookies = new HashMap<String, String>()
-    }
-    private String portCheck() {
-        if (port != null && port.isInteger()) {
-            return ":${port}"
-        } else {
-            return ""
-        }
     }
 }
 
@@ -227,6 +223,36 @@ class OidcClientPrivate {
         this.responseUrl = properties."oidcclientprivate.responseUrl"
         this.clientId = properties."oidcclientprivate.clientId"
         this.clientSecret = properties."oidcclientprivate.secret"
+        this.cookies = new HashMap<String, String>()
+    }
+    private String portCheck() {
+        if (port != null && port.isInteger()) {
+            return ":${port}"
+        } else {
+            return ""
+        }
+    }
+}
+
+@Canonical
+class OidcClientLegal {
+    String host
+    String port
+    String protocol
+    String responseUrl
+    String clientId
+    String clientSecret
+    HashMap <String, String> cookies
+
+    @Lazy fullResponseUrl = "${protocol}://${host}${portCheck()}${responseUrl}"
+
+    OidcClientLegal(Properties properties) {
+        this.host = properties."oidcclientlegal.host"
+        this.port = properties."oidcclientlegal.port"
+        this.protocol = properties."oidcclientlegal.protocol"
+        this.responseUrl = properties."oidcclientlegal.responseUrl"
+        this.clientId = properties."oidcclientlegal.clientId"
+        this.clientSecret = properties."oidcclientlegal.secret"
         this.cookies = new HashMap<String, String>()
     }
     private String portCheck() {

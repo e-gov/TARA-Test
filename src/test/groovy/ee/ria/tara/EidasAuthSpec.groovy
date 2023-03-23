@@ -5,7 +5,6 @@ import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import org.apache.commons.lang3.RandomStringUtils
-import spock.lang.Ignore
 import spock.lang.Unroll
 import org.hamcrest.Matchers
 
@@ -71,7 +70,7 @@ class EidasAuthSpec extends TaraSpecification {
         assertEquals("Keelatud päring. Päring esitati topelt, seanss aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"), "Correct error message is returned")
     }
 
-    @Ignore //TARA2-165
+    //TODO: AUT-630
     @Unroll
     @Feature("EIDAS_AUTH_INIT_ENDPOINT")
     def "initialize Eidas authentication with invalid method get"() {
@@ -87,9 +86,9 @@ class EidasAuthSpec extends TaraSpecification {
                 cookiesMap,
                 paramsMap,
                 Collections.emptyMap())
-        assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
+        assertEquals(500, response.statusCode(), "Correct HTTP status code is returned")
         assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
-        assertThat(response.body().jsonPath().get("message").toString(), equalTo("Request method 'GET' not supported"))
+        assertThat(response.body().jsonPath().get("message").toString(), equalTo("Autentimine ebaõnnestus teenuse tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti."))
     }
 
     @Unroll

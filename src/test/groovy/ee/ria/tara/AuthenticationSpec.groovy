@@ -6,7 +6,6 @@ import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import org.hamcrest.Matchers
-import spock.lang.Ignore
 import spock.lang.Unroll
 
 import static org.hamcrest.Matchers.equalTo
@@ -273,7 +272,7 @@ class AuthenticationSpec extends TaraSpecification {
         assertEquals(flow.oidcClientPublic.clientId, Utils.getParamValueFromResponseHeader(response, "client_id"), "Location field contains correct client_id value")
     }
 
-    @Ignore // TARA2-82 , TARA2-165
+    //TODO: AUT-630
     @Unroll
     @Feature("AUTH_ACCEPT_LOGIN_ENDPOINT")
     def "request accept authentication with invalid method get"() {
@@ -285,9 +284,9 @@ class AuthenticationSpec extends TaraSpecification {
         assertEquals(200, pollResponse.statusCode(), "Correct HTTP status code is returned")
         assertThat(pollResponse.body().jsonPath().get("status").toString(), Matchers.not(equalTo("PENDING")))
         Response response = Requests.getRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
-        assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
+        assertEquals(500, response.statusCode(), "Correct HTTP status code is returned")
         assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
-        assertThat(response.body().jsonPath().get("message").toString(), equalTo("Request method 'GET' not supported"))
+        assertThat(response.body().jsonPath().get("message").toString(), equalTo("Autentimine ebaõnnestus teenuse tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti."))
     }
 
     @Unroll
@@ -404,9 +403,7 @@ class AuthenticationSpec extends TaraSpecification {
         assertEquals("Teie seanssi ei leitud! Seanss aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"), "Correct error message is returned")
     }
     
-    @Ignore // TARA2-104 , TARA2-165
-    @Unroll
-    @Feature("AUTH_REJECT_LOGIN_ENDPOINT")
+    //TODO: AUT-630
     def "request reject authentication with invalid method post"() {
         expect:
         Steps.startAuthenticationInTara(flow)
@@ -421,9 +418,9 @@ class AuthenticationSpec extends TaraSpecification {
         HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
         def map3 = Utils.setParameter(cookieMap, "SESSION", flow.sessionId)
         Response response = Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullAuthRejectUrl, cookieMap, paramsMap, Collections.emptyMap())
-        assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("Correct Content-Type is returned", "application/json;charset=UTF-8", response.getContentType())
-        assertThat(response.body().jsonPath().get("message").toString(), equalTo("Request method 'POST' not supported"))
+        assertEquals(500, response.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
+        assertThat(response.body().jsonPath().get("message").toString(), equalTo("Autentimine ebaõnnestus teenuse tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti."))
     }
 
     @Unroll

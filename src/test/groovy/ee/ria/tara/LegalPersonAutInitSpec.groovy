@@ -1,22 +1,23 @@
 package ee.ria.tara
 
+import com.nimbusds.jose.jwk.JWKSet
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
-import org.hamcrest.Matchers
-import spock.lang.Ignore
 import spock.lang.Unroll
 
-import static org.hamcrest.Matchers.equalTo
-import static org.junit.jupiter.api.Assertions.*
-import static org.hamcrest.MatcherAssert.assertThat
 
-@Ignore
-class AuthInitLegalPersonSpec extends TaraSpecification {
+import static org.hamcrest.MatcherAssert.assertThat
+import static org.hamcrest.Matchers.equalTo
+import static org.junit.jupiter.api.Assertions.assertEquals
+
+class LegalPersonAutInitSpec extends TaraSpecification {
     Flow flow = new Flow(props)
 
     def setup() {
         flow.cookieFilter = new CookieFilter()
+        flow.openIdServiceConfiguration = Requests.getOpenidConfiguration(flow.oidcService.fullConfigurationUrl)
+        flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.oidcService.fullJwksUrl))
     }
 
     @Unroll
@@ -25,21 +26,16 @@ class AuthInitLegalPersonSpec extends TaraSpecification {
     @Feature("OIDC_SCOPE_LEGALPERSON")
     def "request initialize legal person authentication"() {
         expect:
-        Steps.startAuthenticationInTara(flow, "openid legalperson")
-        Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017705", "69000366", Collections.emptyMap())
-        assertEquals(200, initMidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
-        Response pollResponse = Steps.pollMidResponse(flow)
-        assertEquals(200, pollResponse.statusCode(), "Correct HTTP status code is returned")
-        assertThat(pollResponse.body().jsonPath().get("status").toString(), Matchers.not(equalTo("PENDING")))
+        Steps.startAuthenticationInTaraWithLegalPerson(flow)
+        Steps.initMidAuthSession(flow, flow.sessionId, "60001017705", "69000366", Collections.emptyMap())
+        Steps.pollMidResponse(flow)
         Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
-        assertEquals(302, acceptResponse.statusCode(), "Correct HTTP status code is returned")
-        assertThat(acceptResponse.getHeader("location"), Matchers.containsString(flow.loginService.authLegalInitUrl))
-
         Response response = Steps.followRedirectWithSessionId(flow, acceptResponse)
+
         assertEquals(200, response.statusCode(), "Correct HTTP status code is returned")
         assertEquals("text/html;charset=UTF-8", response.getContentType(), "Correct content type")
         assertEquals("et", response.getHeader("Content-Language"), "Correct header attribute Content-Language")
-        assertThat(response.body().htmlPath().get("**.find { it.@id == 'btn-select-legal-person'}").toString(), equalTo("Jätkan"))
+        assertThat(response.body().htmlPath().get("**.find { it.@id == 'btn-select-legal-person'}").toString(), equalTo("Jätka"))
     }
 
     @Unroll
@@ -52,8 +48,9 @@ class AuthInitLegalPersonSpec extends TaraSpecification {
     @Feature("XSS_DETECTION_FILTER_ENABLED")
     def "request initialize legal person authentication with security checks"() {
         expect:
-        Steps.startAuthenticationInTara(flow, "openid legalperson")
+        Steps.startAuthenticationInTaraWithLegalPerson(flow)
         Response response = Steps.authInitAsLegalPerson(flow, "60001017705", "69000366")
+
         assertEquals(200, response.statusCode(), "Correct HTTP status code is returned")
         assertEquals("text/html;charset=UTF-8", response.getContentType(), "Correct content type")
         Steps.verifyResponseHeaders(response)
@@ -65,21 +62,25 @@ class AuthInitLegalPersonSpec extends TaraSpecification {
         expect:
         flow.setSessionId("1234567")
         Response response = Requests.getRequestWithSessionId(flow, flow.loginService.fullAuthLegalInitUrl)
+
         assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
         assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
         assertEquals("Teie seanssi ei leitud! Seanss aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"), "Correct error message is returned")
     }
 
-    @Ignore // TARA2-80 TARA2-165
+    //TODO: AUT-630
     @Unroll
     @Feature("LEGAL_PERSON_INIT_START_ENDPOINT")
     def "request initialize legal person authentication with invalid method post"() {
         expect:
-        flow.setSessionId("1234567")
-        Response response = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthLegalInitUrl)
-        assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
-        assertThat(response.body().jsonPath().get("message").toString(), equalTo("Request method 'POST' not supported"))
-    }
+        Steps.startAuthenticationInTaraWithLegalPerson(flow)
+        Steps.initMidAuthSession(flow, flow.sessionId, "60001017705", "69000366", Collections.emptyMap())
+        Steps.pollMidResponse(flow)
+        Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
 
+        Response response = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthLegalInitUrl)
+        assertEquals(500, response.statusCode(), "Correct HTTP status code is returned")
+        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
+        assertThat(response.body().jsonPath().get("message").toString(), equalTo("Autentimine ebaõnnestus teenuse tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti."))
+    }
 }

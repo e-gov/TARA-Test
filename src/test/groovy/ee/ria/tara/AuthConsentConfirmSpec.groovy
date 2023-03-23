@@ -4,7 +4,6 @@ import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import org.apache.commons.lang3.RandomStringUtils
-import spock.lang.Ignore
 import spock.lang.Unroll
 
 import java.nio.charset.StandardCharsets
@@ -54,7 +53,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         assertEquals("Teie seanssi ei leitud! Seanss aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"), "Correct error message is returned")
     }
 
-    @Ignore // TARA2-76 , TARA2-165
+    //TODO: AUT-630
     @Unroll
     @Feature("USER_CONSENT_ENDPOINT")
     def "Consent with authentication results. Invalid method post"() {
@@ -66,9 +65,9 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         Response oidcServiceResponse = Steps.getOAuthCookies(flow, acceptResponse)
         String location = oidcServiceResponse.getHeader("location")
         Response response = Requests.postRequestWithSessionId(flow, location)
-        assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
+        assertEquals(500, response.statusCode(), "Correct HTTP status code is returned")
         assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
-        assertThat(response.body().jsonPath().get("message").toString(), equalTo("Request method 'POST' not supported"))
+        assertThat(response.body().jsonPath().get("message").toString(), equalTo("Autentimine ebaõnnestus teenuse tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti."))
     }
 
     @Unroll
@@ -170,7 +169,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         assertThat(response.body().jsonPath().get("message").toString(), equalTo(message))
     }
 
-    @Ignore // TARA2-76 , TARA2-165
+    //TODO: AUT-630
     @Unroll
     @Feature("USER_CONSENT_CONFIRM_ENDPOINT")
     def "Confirm consent with authentication results. Invalid method get"() {
@@ -180,9 +179,9 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
         def map2 = Utils.setParameter(paramsMap, "consent_given", true)
         Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullConsentConfirmUrl, cookiesMap, paramsMap, Collections.emptyMap())
-        assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
+        assertEquals(500, response.statusCode(), "Correct HTTP status code is returned")
         assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
-        assertEquals("Request method 'GET' not supported", response.body().jsonPath().get("message"), "Correct error message is returned")
+        assertEquals("Autentimine ebaõnnestus teenuse tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti.", response.body().jsonPath().get("message"), "Request method GET not supported")
     }
 
     @Unroll

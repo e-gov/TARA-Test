@@ -8,7 +8,7 @@ import spock.lang.Unroll
 
 import static org.junit.jupiter.api.Assertions.assertEquals
 
-
+// TODO: AUT-1186
 @Ignore
 class TaraAdminSpec extends TaraSpecification {
     Flow flow = new Flow(props)

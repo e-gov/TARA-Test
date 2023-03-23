@@ -85,6 +85,17 @@ class Steps {
         return initLoginSession
     }
 
+    @Step("Start authentication in TARA with legalperson client and follow redirects")
+    static Response startAuthenticationInTaraWithLegalPerson(Flow flow, String scopeList = "openid legalperson", boolean checkStatusCode = true) {
+        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersForLegalPersonClient(flow, scopeList)
+        Response initOIDCServiceSession = startAuthenticationInOidcWithParams(flow, paramsMap)
+        Response initLoginSession = createLoginSession(flow, initOIDCServiceSession)
+        if (checkStatusCode) {
+            assertEquals(200, initLoginSession.statusCode(), "Correct HTTP status code is returned")
+        }
+        return initLoginSession
+    }
+
     @Step("Start authentication in TARA with Specific Proxy Service and follow redirects")
     static Response startAuthenticationInTaraWithSpecificProxyService(Flow flow, String scopeList = "openid", String login_locale = "et", boolean checkStatusCode = true) {
         Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersForSpecificProxyService(flow, scopeList, login_locale)
@@ -360,12 +371,12 @@ class Steps {
     static Response selectLegalPersonAndConfirmIt(Flow flow, String legalPersonIdentifier) {
         Response response = selectLegalPerson(flow, legalPersonIdentifier)
         String location = response.getHeader("location")
-        assertThat(location, containsString(flow.oidcService.fullAuthenticationRequestUrl))
+        assertThat(location, containsString(flow.oidcService.fullAuthorizationUrl))
         Response oidcServiceResponse = getOAuthCookies(flow, response)
         assertEquals(302, oidcServiceResponse.statusCode(), "Correct HTTP status code is returned")
 
         Response consentResponse = followRedirectWithSessionId(flow, oidcServiceResponse)
-        assertEquals(200, consentResponse.statusCode(), "Correct HTTP status code is returned")
+        assertEquals(302, consentResponse.statusCode(), "Correct HTTP status code is returned")
         return consentResponse
     }
 

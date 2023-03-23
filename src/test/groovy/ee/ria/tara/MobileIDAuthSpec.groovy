@@ -3,7 +3,6 @@ package ee.ria.tara
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
-import spock.lang.Ignore
 import spock.lang.Unroll
 import org.hamcrest.Matchers
 import org.apache.commons.lang3.RandomStringUtils
@@ -32,7 +31,7 @@ class MobileIDAuthSpec extends TaraSpecification {
         assertEquals(4, controlCode.size(), "Verification code exists")
     }
 
-    @Ignore // TARA2-80 , TARA2-165
+    //TODO: AUT-630
     @Feature("MID_INIT_ENDPOINT")
     def "initialize mobile-ID authentication with invalid method get"() {
         expect:
@@ -44,8 +43,8 @@ class MobileIDAuthSpec extends TaraSpecification {
         def map3 = Utils.setParameter(cookieMap, "SESSION", flow.sessionId)
         HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
         Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullMidInitUrl, cookieMap, paramsMap, additionalParamsMap)
-        assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
-        assertThat(response.body().jsonPath().get("message").toString(), equalTo("Request method 'GET' not supported"))
+        assertEquals(500, response.statusCode(), "Correct HTTP status code is returned")
+        assertThat(response.body().jsonPath().get("message").toString(), equalTo("Autentimine ebaõnnestus teenuse tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti."))
     }
 
     @Unroll
@@ -215,7 +214,7 @@ class MobileIDAuthSpec extends TaraSpecification {
         assertEquals("COMPLETED", response.body().jsonPath().get("status"), "Correct Mobile-ID status")
     }
 
-    @Ignore // TARA2-80 , TARA2-165
+    //TODO: AUT-630
     @Unroll
     @Feature("MID_AUTH_STATUS_CHECK_ENDPOINT")
     def "poll mobile-ID authentication with invalid method post"() {
@@ -225,8 +224,8 @@ class MobileIDAuthSpec extends TaraSpecification {
         Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", additionalParamsMap)
         assertEquals(200, initMidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
         Response response = Requests.postRequestWithSessionId(flow, flow.loginService.fullMidPollUrl)
-        assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
-        assertThat(response.body().jsonPath().get("message").toString(), equalTo("Request method 'POST' not supported"))
+        assertEquals(500, response.statusCode(), "Correct HTTP status code is returned")
+        assertThat(response.body().jsonPath().get("message").toString(), equalTo("Autentimine ebaõnnestus teenuse tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti."))
     }
 
     @Unroll
@@ -280,7 +279,7 @@ class MobileIDAuthSpec extends TaraSpecification {
         assertThat(response.body().jsonPath().get("message").toString(), equalTo(message))
     }
 
-    @Ignore //TARA2-80 , TARA2-165
+    //TODO: AUT-630
     @Unroll
     @Feature("MID_AUTH_STATUS_CHECK_ENDPOINT")
     def "cancel mobile-ID authentication with invalid method get"() {
@@ -290,7 +289,7 @@ class MobileIDAuthSpec extends TaraSpecification {
         Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", additionalParamsMap)
         assertEquals(200, initMidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
         Response response = Requests.getRequestWithSessionId(flow, flow.loginService.fullMidCancelUrl)
-        assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
-        assertThat(response.body().jsonPath().get("message").toString(), equalTo("Request method 'GET' not supported"))
+        assertEquals(500, response.statusCode(), "Correct HTTP status code is returned")
+        assertThat(response.body().jsonPath().get("message").toString(), equalTo("Autentimine ebaõnnestus teenuse tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti."))
     }
 }

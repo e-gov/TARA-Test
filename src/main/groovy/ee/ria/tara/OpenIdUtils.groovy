@@ -49,6 +49,20 @@ class OpenIdUtils {
         return queryParams
     }
 
+    static Map<String, String> getAuthorizationParametersForLegalPersonClient(Flow flow, String scope = "openid legalperson", String uiLocales = "et") {
+        Map<String, String> queryParams = new HashMap<>()
+        flow.setState(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
+        flow.setNonce(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
+        queryParams.put("ui_locales", uiLocales)
+        queryParams.put("response_type", "code")
+        queryParams.put("scope", scope)
+        queryParams.put("client_id",flow.getOidcClientLegal().getClientId())
+        queryParams.put("redirect_uri", flow.getOidcClientLegal().getFullResponseUrl().toString())
+        queryParams.put("state", flow.state)
+        queryParams.put("nonce", flow.nonce)
+        return queryParams
+    }
+
     static Map<String, String> getAuthorizationParametersForSpecificProxyService(Flow flow, String scope = "openid", String uiLocales = "et") {
         Map<String, String> queryParams = new HashMap<>()
         flow.setState(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))

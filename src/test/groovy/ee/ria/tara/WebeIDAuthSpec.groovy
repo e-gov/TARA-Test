@@ -82,6 +82,7 @@ class WebeIDAuthSpec extends TaraSpecification {
         assertThat("Correct message is returned", initWebEid.jsonPath().get("message").toString(), is("Keelatud päring. Päring esitati topelt, seanss aegus või on küpsiste kasutamine Teie brauseris piiratud."))
     }
 
+    //TODO: AUT-630
     @Unroll
     def "Init Web eID authentication with unsupported request type: #requestType"() {
         expect:
