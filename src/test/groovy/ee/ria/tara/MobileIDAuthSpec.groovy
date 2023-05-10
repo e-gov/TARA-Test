@@ -106,7 +106,7 @@ class MobileIDAuthSpec extends TaraSpecification {
         "00000666"                                | "60001019961" | _                       | _                        | true       | "Created signature is not valid"                 || "Autentimine Mobiil-ID-ga ei õnnestunud."
         "01200266"                                | "60001019972" | _                       | _                        | false      | "Phone cannot receive Mobile-ID auth messages"   || "Kasutaja mobiiltelefoni ei saa Mobiil-ID autentimise sõnumeid saata."
         "13100266"                                | "60001019983" | _                       | _                        | false      | "Phone is not in coverage area"                  || "Kasutaja mobiiltelefon on levialast väljas."
-        "66000266"                                | "50001018908" | _                       | _                        | false      | "User timeout"                                   || ""
+        "66000266"                                | "50001018908" | _                       | _                        | false      | "User timeout"                                   || "Kasutaja ei autentinud mobiiltelefonil oodatud aja jooksul. Palun proovige uuesti."
         RandomStringUtils.random(15, false, true) | "60001019939" | _                       | _                        | false      | "Telephone number length check"                  || "Kasutajal pole telefoninumbril Mobiil-ID lepingut."
     }
 
