@@ -2,17 +2,15 @@ package ee.ria.tara
 
 import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jwt.JWTClaimsSet
-import org.hamcrest.Matchers
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
-import spock.lang.Unroll
 
-import static org.hamcrest.CoreMatchers.is
-import static org.hamcrest.Matchers.equalTo
-import static org.hamcrest.Matchers.startsWith
-import static org.junit.jupiter.api.Assertions.*
 import static org.hamcrest.MatcherAssert.assertThat
+import static org.hamcrest.Matchers.allOf
+import static org.hamcrest.Matchers.endsWith
+import static org.hamcrest.Matchers.is
+import static org.hamcrest.Matchers.startsWith
 
 
 class OidcAuthenticationRequestSpec extends TaraSpecification {
@@ -24,51 +22,57 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
         flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.oidcService.fullJwksUrl))
     }
 
-    @Unroll
     @Feature("https://e-gov.github.io/TARA-Doku/TechnicalSpecification#41-authentication-request")
     def "Authentication request with invalid param values #paramName"() {
-        expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "openid")
-        def value = paramsMap.put(paramName, paramValue)
-        Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
-        assertEquals(statusCode, initOIDCServiceSession.statusCode(), "Correct HTTP status code is returned")
-        assertEquals(error, Utils.getParamValueFromResponseHeader(initOIDCServiceSession, "error"), "Correct error message is returned")
-        String errorDescription = Utils.getParamValueFromResponseHeader(initOIDCServiceSession, "error_description")
-        assertThat("Correct error_description suffix", errorDescription, startsWith(errorSuffix))
-        assertThat("Correct error_description preffix", errorDescription, Matchers.endsWith(errorPreffix))
+        given:
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "openid")
+        paramsMap.put(paramName, paramValue)
+
+        when:
+        Response response = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
+
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(statusCode))
+        assertThat("Correct error", Utils.getParamValueFromResponseHeader(response, "error"), is(error))
+        assertThat("Correct error_description", Utils.getParamValueFromResponseHeader(response, "error_description"), allOf(startsWith(errorSuffix), endsWith(errorPrefix)))
 
         where:
-        paramName       | paramValue                || statusCode || error                       || errorSuffix || errorPreffix
-        "redirect_uri"  | "https://www.example.com" || 302        || "invalid_request"           || "The request is missing a required parameter" || "pre-registered redirect urls."
-        "scope"         | "my_scope"                || 303        || "invalid_scope"             || "The requested scope is invalid" || " is not allowed to request scope 'my_scope'."
-        "scope"         | "openid,eidas"            || 303        || "invalid_scope"             || "The requested scope is invalid" || " is not allowed to request scope 'openid,eidas'."
-        "response_type" | "token"                   || 303        || "unsupported_response_type" || "The authorization server does not support obtaining a token" || "is not allowed to request response_type 'token'."
-        "client_id"     | "my_client"               || 302        || "invalid_client"            || "Client authentication failed" || "The requested OAuth 2.0 Client does not exist."
+        paramName       | paramValue                || statusCode | error                       | errorSuffix                                                   | errorPrefix
+        "redirect_uri"  | "https://www.example.com" || 302        | ERROR_REQUEST               | "The request is missing a required parameter"                 | "pre-registered redirect urls."
+        "scope"         | "my_scope"                || 303        | ERROR_SCOPE                 | "The requested scope is invalid"                              | " is not allowed to request scope 'my_scope'."
+        "scope"         | "openid,eidas"            || 303        | ERROR_SCOPE                 | "The requested scope is invalid"                              | " is not allowed to request scope 'openid,eidas'."
+        "response_type" | "token"                   || 303        | "unsupported_response_type" | "The authorization server does not support obtaining a token" | "is not allowed to request response_type 'token'."
+        "client_id"     | "my_client"               || 302        | ERROR_CLIENT                | "Client authentication failed"                                | "The requested OAuth 2.0 Client does not exist."
     }
 
-    @Unroll
     @Feature("https://e-gov.github.io/TARA-Doku/TechnicalSpecification#41-authentication-request")
     def "Authentication request with disabled scope for OIDC client"() {
-        expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParametersForSpecificProxyService(flow, "openid smartid")
-        Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
+        given:
+        Map paramsMap = OpenIdUtils.getAuthorizationParametersForSpecificProxyService(flow, "openid smartid")
 
-        String errorDescription= "The requested scope is invalid, unknown, or malformed. The OAuth 2.0 Client is not allowed to request scope 'smartid'."
-        assertThat("Correct HTTP status code is returned", initOIDCServiceSession.statusCode() == 303)
-        assertThat("Correct error message is returned", Utils.getParamValueFromResponseHeader(initOIDCServiceSession, "error") == "invalid_scope")
-        assertThat("Correct error_description is returned", Utils.getParamValueFromResponseHeader(initOIDCServiceSession, "error_description") == errorDescription)
+        when:
+        Response response = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
+
+        then:
+        String errorDescription = "The requested scope is invalid, unknown, or malformed. The OAuth 2.0 Client is not allowed to request scope 'smartid'."
+        assertThat("Correct HTTP status code", response.statusCode, is(303))
+        assertThat("Correct error", Utils.getParamValueFromResponseHeader(response, "error"), is(ERROR_SCOPE))
+        assertThat("Correct error description", Utils.getParamValueFromResponseHeader(response, "error_description"), is(errorDescription))
     }
 
-    @Unroll
     @Feature("OIDC_LANGUAGE_SELECTION")
     def "Authentication request with different ui_locales: #label"() {
-        expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "openid")
+        given:
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "openid")
         def value = Utils.setParameter(paramsMap, paramName, paramValue)
         Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
+
+        when:
         Response response = Steps.followRedirect(flow, initOIDCServiceSession)
-        assertEquals(200, response.statusCode(), "Correct HTTP status code is returned")
-        response.then().body("html.head.title", equalTo(expectedValue))
+
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(200))
+        assertThat("Correct HTML title", response.htmlPath().getString("html.head.title"), is(expectedValue))
 
         where:
         paramName    | paramValue | label                                     || expectedValue
@@ -83,143 +87,158 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
         "ui_locales" | _          | "Without locale parameter"                || "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
     }
 
-    @Unroll
     @Feature("https://e-gov.github.io/TARA-Doku/TechnicalSpecification#41-authentication-request")
     def "Authentication request with unknown parameter"() {
-        expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "openid")
+        given:
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, 'openid')
         def value = paramsMap.put("my_parameter", "654321")
-        Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
-        assertEquals(302, initOIDCServiceSession.statusCode(), "Correct HTTP status code is returned")
-        assertThat(initOIDCServiceSession.getHeader("location"), Matchers.containsString("?login_challenge="))
+
+        when:
+        Response response = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
+
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(302))
+        assertThat("Correct location header", response.header("location"), endsWith("?login_challenge=" + flow.loginChallenge))
     }
 
-    @Unroll
     @Feature("https://e-gov.github.io/TARA-Doku/TechnicalSpecification#41-authentication-request")
     @Feature("TECHNICAL_ERRORS")
     def "Authentication request with invalid acr_values parameter value"() {
-        expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "openid")
+        given:
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "openid")
         def value = paramsMap.put("acr_values", "medium")
         Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
+
+        when:
         Response response = Steps.followRedirect(flow, initOIDCServiceSession)
-        assertEquals(500, response.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
-        assertThat(response.body().jsonPath().get("message").toString(), startsWith("Autentimine ebaõnnestus teenuse tehnilise vea tõttu."))
+
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(500))
+        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
+        assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_INTERNAL_ERROR))
     }
 
-    @Unroll
     @Feature("OIDC_SCOPE_EMPTY")
     def "Authentication request with empty scope"() {
-        expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "")
+        given:
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "")
         Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
+
+        when:
         Response response = Steps.followRedirect(flow, initOIDCServiceSession)
-        assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
-        assertThat(response.body().jsonPath().get("message").toString(), startsWith("Päringus puudub scope parameeter."))
+
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(400))
+        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
+        assertThat("Correct message", response.jsonPath().getString("message"), is("Päringus puudub scope parameeter."))
     }
 
-    @Unroll
     @Feature("OIDC_SCOPE_IDCARD")
     @Feature("OIDC_SCOPE_MID")
     @Feature("OIDC_SCOPE_SMARTID")
     def "Authentication request with different scopes: #label"() {
-        expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "openid " + scopes)
+        given:
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "openid " + scopes)
         Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
+
+        when:
         Response response = Steps.followRedirect(flow, initOIDCServiceSession)
-        assertEquals(200, response.statusCode(), "Correct HTTP status code is returned")
+
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(200))
         assertThat("Correct ID-Card scope value", isIdCardPresent(response), is(idCard))
         assertThat("Correct MID scope value", isMidPresent(response), is(mID))
         assertThat("Correct Smart-ID scope value", isSmartIdPresent(response), is(smartID))
 
         where:
-        scopes            | label                  || idCard || mID   || smartID
-        "idcard"          | "with idcard"          || true   || false || false
-        "mid"             | "with mid"             || false  || true  || false
-        "smartid"         | "with smartid"         || false  || false || true
+        scopes    | label          || idCard | mID   | smartID
+        "idcard"  | "with idcard"  || true   | false | false
+        "mid"     | "with mid"     || false  | true  | false
+        "smartid" | "with smartid" || false  | false | true
 
     }
 
-    @Unroll
     @Feature("OIDC_SCOPE_EMAIL")
     @Feature("https://e-gov.github.io/TARA-Doku/TechnicalSpecification#41-authentication-request")
     def "Authentication request with email scope"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow, "openid email")
-        Response tokenResponse = Steps.authenticateWithWebeID(flow)
 
-        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
-        assertThat(claims.getStringArrayClaim("amr")[0], equalTo("idcard"))
-        assertThat(claims.getClaim("email"), equalTo("jaak-kristjan.joeorg@eesti.ee"))
-        assertThat(claims.getClaim("email_verified"), equalTo(false))
+        when:
+        Response tokenResponse = Steps.authenticateWithWebeID(flow)
+        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.jsonPath().get("id_token")).JWTClaimsSet
+
+        then:
+        assertThat("Correct authentication method", claims.getStringArrayClaim("amr")[0], is("idcard"))
+        assertThat("Correct email", claims.getClaim("email"), is("jaak-kristjan.joeorg@eesti.ee"))
+        assertThat("Email_verified is false", claims.getClaim("email_verified"), is(false))
     }
 
-    @Unroll
     @Feature("OIDC_SCOPE_PHONE")
     @Feature("https://e-gov.github.io/TARA-Doku/TechnicalSpecification#41-authentication-request")
     def "Authentication request with phone scope"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow, "openid phone")
-        Response midAuthResponse = Steps.authenticateWithMid(flow,"60001017716", "69100366")
+        Response midAuthResponse = Steps.authenticateWithMid(flow, "60001017716", "69100366")
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
-        Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
 
-        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
-        assertThat(claims.getAudience().get(0), equalTo(flow.oidcClientPublic.clientId))
-        assertThat(claims.getSubject(), equalTo("EE60001017716"))
-        assertThat(claims.getStringArrayClaim("amr")[0], equalTo("mID"))
-        assertThat(claims.getClaim("phone_number"), equalTo("+37269100366"))
-        assertThat(claims.getClaim("phone_number_verified"), equalTo(true))
+        when:
+        Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
+        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.jsonPath().get("id_token")).JWTClaimsSet
+
+        then:
+        assertThat("Correct authentication method", claims.getStringArrayClaim("amr")[0], is("mID"))
+        assertThat("Correct phone number", claims.getClaim("phone_number"), is('+37269100366'))
+        assertThat("Phone number is verified", claims.getClaim("phone_number_verified"), is(true))
     }
 
-    @Unroll
     @Feature("https://e-gov.github.io/TARA-Doku/TechnicalSpecification#41-authentication-request")
     def "Authentication request with empty optional parameters: #paramName"() {
-        expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "openid")
-        def value = Utils.setParameter(paramsMap, paramName, paramValue)
+        given:
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "openid")
+        Map value = Utils.setParameter(paramsMap, paramName, paramValue)
         if (paramName.equalsIgnoreCase("nonce")) {
-            flow.setNonce("")
+            flow.nonce = ''
         }
+
         Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
         Steps.createLoginSession(flow, initOIDCServiceSession)
-        Response tokenResponse = Steps.authenticateWithWebeID(flow)
 
-        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
-        assertThat(claims.getAudience().get(0), equalTo(flow.oidcClientPublic.clientId))
-        assertThat(claims.getSubject(), equalTo("EE38001085718"))
-        assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo("JAAK-KRISTJAN"))
-        assertThat(claims.getJSONObjectClaim("profile_attributes").get("family_name"), equalTo("JÕEORG"))
-        assertThat(claims.getJSONObjectClaim("profile_attributes").get("date_of_birth"), equalTo("1980-01-08"))
-        assertThat(claims.getClaim("amr")[0].toString(), equalTo("idcard"))
-        assertThat(claims.getClaim("acr"), equalTo("high"))
+        when:
+        Response tokenResponse = Steps.authenticateWithWebeID(flow)
+        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.jsonPath().get('id_token')).JWTClaimsSet
+
+        then:
+        assertThat("Correct audience", claims.audience[0], is(flow.oidcClientPublic.clientId))
+        assertThat("Correct subject", claims.subject, is("EE38001085718"))
+        assertThat("Correct authentication method", claims.getStringArrayClaim("amr")[0], is("idcard"))
+        assertThat("Correct LoA", claims.getClaim("acr"), is("high"))
 
         where:
-        paramName    | paramValue
-        "ui_locales" | _
-        "nonce" | _
-        "acr_values" | _
+        paramName      | paramValue
+        "ui_locales"   | _
+        "nonce"        | _
+        "acr_values"   | _
         "redirect_uri" | _
     }
 
-    @Unroll
     @Feature("https://e-gov.github.io/TARA-Doku/TechnicalSpecification#41-authentication-request")
     def "Authentication request with empty mandatory parameters: #paramName"() {
-        expect:
+        given:
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "openid")
+        def value = Utils.setParameter(paramsMap, paramName, _)
 
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "openid")
-        def value = Utils.setParameter(paramsMap, paramName, paramValue)
+        when:
+        Response response = Requests.getRequestWithParams(flow, flow.oidcService.fullAuthenticationRequestUrl, paramsMap, [:])
 
-        Response response = Requests.getRequestWithParams(flow, flow.oidcService.fullAuthenticationRequestUrl, value,  Collections.emptyMap())
-        assertEquals(expectedErrorDescription ,Utils.getParamValueFromResponseHeader(response, "error_description"), "Error description parameter exists")
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(statusCode))
+        assertThat("Correct error description", Utils.getParamValueFromResponseHeader(response, "error_description"), is(errorDescription))
 
         where:
-        paramName    | paramValue | expectedErrorDescription
-        "state" | _ | "The state is missing or does not have enough characters and is therefore considered too weak. Request parameter 'state' must be at least be 8 characters long to ensure sufficient entropy."
-        "response_type" | _ | "The authorization server does not support obtaining a token using this method. `The request is missing the 'response_type' parameter."
-        "client_id" | _ | "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method). The requested OAuth 2.0 Client does not exist."
+        paramName       || statusCode | errorDescription
+        "state"         || 303        | "The state is missing or does not have enough characters and is therefore considered too weak. Request parameter 'state' must be at least be 8 characters long to ensure sufficient entropy."
+        "response_type" || 303        | "The authorization server does not support obtaining a token using this method. `The request is missing the 'response_type' parameter."
+        "client_id"     || 302        | "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method). The requested OAuth 2.0 Client does not exist."
     }
-
 }

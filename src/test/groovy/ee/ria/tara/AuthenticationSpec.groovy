@@ -5,12 +5,15 @@ import com.nimbusds.jwt.JWTClaimsSet
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
-import org.hamcrest.Matchers
-import spock.lang.Unroll
 
-import static org.hamcrest.Matchers.equalTo
-import static org.junit.jupiter.api.Assertions.*
 import static org.hamcrest.MatcherAssert.assertThat
+import static org.hamcrest.Matchers.equalTo
+import static org.hamcrest.Matchers.hasLength
+import static org.hamcrest.Matchers.startsWith
+import static org.hamcrest.Matchers.is
+import static org.hamcrest.Matchers.not
+import static org.hamcrest.Matchers.containsString
+
 
 class AuthenticationSpec extends TaraSpecification {
 
@@ -22,193 +25,147 @@ class AuthenticationSpec extends TaraSpecification {
         flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.oidcService.fullJwksUrl))
     }
 
-    @Unroll
     @Feature("AUTHENTICATION")
-    def "request authentication with mobile-ID"() {
-        expect:
+    def "request authentication with mobile-ID: #certificate certificate chain"() {
+        given:
         Steps.startAuthenticationInTara(flow)
-        Response midAuthResponse = Steps.authenticateWithMid(flow,"60001017716", "69100366")
+        Response midAuthResponse = Steps.authenticateWithMid(flow, idCode, phoneNumber)
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
-        Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
 
-        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
-        assertThat(claims.getAudience().get(0), equalTo(flow.oidcClientPublic.clientId))
-        assertThat(claims.getSubject(), equalTo("EE60001017716"))
-        assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo("ONE"))
+        when:
+        Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
+        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.jsonPath().get("id_token")).JWTClaimsSet
+
+        then:
+        assertThat("Correct audience", claims.audience[0], is(flow.oidcClientPublic.clientId))
+        assertThat("Correct subject", claims.subject, is(subject))
+
+        where:
+        certificate              | idCode        | phoneNumber || subject
+        "TEST of ESTEID-SK 2015" | "60001017716" | "69100366"  || "EE" + idCode
+        "TEST of EID-SK 2016"    | "60001017869" | "68000769"  || "EE" + idCode
     }
 
-    @Unroll
-    @Feature("AUTHENTICATION")
-    def "request authentication with mobile-ID. TEST of EID-SK 2016 chain certificate"() {
-        expect:
-        Steps.startAuthenticationInTara(flow)
-        Response midAuthResponse = Steps.authenticateWithMid(flow,"60001017869", "68000769")
-        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
-        Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
-
-        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
-        assertThat(claims.getAudience().get(0), equalTo(flow.oidcClientPublic.clientId))
-        assertThat(claims.getSubject(), equalTo("EE60001017869"))
-        assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo("EID2016"))
-    }
-
-    @Unroll
     @Feature("AUTHENTICATION")
     def "request authentication with Smart-ID"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
-        Response sidAuthResponse = Steps.authenticateWithSid(flow,"30303039914")
+        Response sidAuthResponse = Steps.authenticateWithSid(flow, "30303039914")
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, sidAuthResponse)
-        Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
 
-        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
-        assertThat(claims.getAudience().get(0), equalTo(flow.oidcClientPublic.clientId))
-        assertThat(claims.getSubject(), equalTo("EE30303039914"))
-        assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo("OK"))
+        when:
+        Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
+        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.jsonPath().get("id_token")).JWTClaimsSet
+
+        then:
+        assertThat("Correct audience", claims.audience[0], is(flow.oidcClientPublic.clientId))
+        assertThat("Correct subject", claims.subject, is("EE30303039914"))
     }
 
-    @Unroll
     @Feature("AUTHENTICATION")
-    def "request authentication with eIDAS"() {
-        expect:
-        Steps.startAuthenticationInTara(flow, "openid eidas")
-        String country = "CA"
-        Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, country, Collections.emptyMap())
-        assertEquals(200, initEidasAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("text/html;charset=UTF-8", initEidasAuthenticationSession.getContentType(), "Correct Content-Type is returned")
-        String buttonLabel = initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@type == 'submit'}.@value")
-        assertEquals("Continue", buttonLabel, "Continue button exists")
+    def "request authentication with eIDAS. LoA: #eidasLoa "() {
+        given:
+        Steps.startAuthenticationInTaraWithAcr(flow, acr)
+        Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, COUNTRY_CA, [:])
 
-        flow.setNextEndpoint(initEidasAuthenticationSession.body().htmlPath().getString("**.find { form -> form.@method == 'post' }.@action"))
-        flow.setRelayState(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'RelayState' }.@value"))
-        flow.setRequestMessage(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'SAMLRequest' }.@value"))
-        Response colleagueResponse = EidasSteps.continueEidasAuthenticationFlow(flow, IDP_USERNAME, IDP_PASSWORD, EIDASLOA_HIGH)
+        flow.setNextEndpoint(initEidasAuthenticationSession.htmlPath().getString("**.find { form -> form.@method == 'post' }.@action"))
+        flow.setRelayState(initEidasAuthenticationSession.htmlPath().getString("**.find { input -> input.@name == 'RelayState' }.@value"))
+        flow.setRequestMessage(initEidasAuthenticationSession.htmlPath().getString("**.find { input -> input.@name == 'SAMLRequest' }.@value"))
+        Response colleagueResponse = EidasSteps.continueEidasAuthenticationFlow(flow, IDP_USERNAME, IDP_PASSWORD, eidasLoa)
         Response authorizationResponse = EidasSteps.getAuthorizationResponseFromEidas(flow, colleagueResponse)
         Response redirectionResponse = EidasSteps.eidasRedirectAuthorizationResponse(flow, authorizationResponse)
         Response acceptResponse = EidasSteps.eidasAcceptAuthorizationResult(flow, redirectionResponse)
-        assertEquals(302, acceptResponse.statusCode(), "Correct HTTP status code is returned")
         Response oidcServiceResponse = Steps.getOAuthCookies(flow, acceptResponse)
         Response redirectResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, redirectResponse)
+
+        when:
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
-        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
-        assertThat(claims.getAudience().get(0), equalTo(flow.oidcClientPublic.clientId))
-        assertThat(claims.getSubject(), equalTo("CA12345"))
-        assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo("javier"))
-        assertThat(claims.getJSONObjectClaim("profile_attributes").get("family_name"), equalTo("Garcia"))
-        assertThat(claims.getJSONObjectClaim("profile_attributes").get("date_of_birth"), equalTo("1965-01-01"))
+        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.jsonPath().get("id_token")).JWTClaimsSet
+
+        then:
+        assertThat("Correct audience", claims.audience[0], is(flow.oidcClientPublic.clientId))
+        assertThat("Correct acr", claims.claims["acr"], is(acr))
+        assertThat("Correct subject", claims.subject, is("CA12345"))
+
+        where:
+        eidasLoa              || acr
+        EIDASLOA_HIGH         || "high"
+        EIDASLOA_NOT_NOTIFIED || "low"
     }
 
-    @Unroll
-    @Feature("AUTHENTICATION")
-    def "request authentication with eIDAS with low LoA and non-notified scheme"() {
-        expect:
-        Steps.startAuthenticationInTaraWithAcr(flow, "low")
-        String country = "CA"
-        Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, country, Collections.emptyMap())
-        assertEquals(200, initEidasAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("text/html;charset=UTF-8", initEidasAuthenticationSession.getContentType(), "Correct Content-Type is returned")
-        String buttonLabel = initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@type == 'submit'}.@value")
-        assertEquals("Continue", buttonLabel, "Continue button exists")
-
-        flow.setNextEndpoint(initEidasAuthenticationSession.body().htmlPath().getString("**.find { form -> form.@method == 'post' }.@action"))
-        flow.setRelayState(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'RelayState' }.@value"))
-        flow.setRequestMessage(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'SAMLRequest' }.@value"))
-        Response colleagueResponse = EidasSteps.continueEidasAuthenticationFlow(flow, IDP_USERNAME, IDP_PASSWORD, EIDASLOA_NOT_NOTIFIED)
-        Response authorizationResponse = EidasSteps.getAuthorizationResponseFromEidas(flow, colleagueResponse)
-        Response redirectionResponse = EidasSteps.eidasRedirectAuthorizationResponse(flow, authorizationResponse)
-        Response acceptResponse = EidasSteps.eidasAcceptAuthorizationResult(flow, redirectionResponse)
-        assertEquals(302, acceptResponse.statusCode(), "Correct HTTP status code is returned")
-        Response oidcServiceResponse = Steps.getOAuthCookies(flow, acceptResponse)
-        Response redirectResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
-        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, redirectResponse)
-        Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
-        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
-        assertThat(claims.getAudience().get(0), equalTo(flow.oidcClientPublic.clientId))
-        assertThat(claims.getClaims().get("acr"), equalTo("low"))
-        assertThat(claims.getSubject(), equalTo("CA12345"))
-        assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo("javier"))
-        assertThat(claims.getJSONObjectClaim("profile_attributes").get("family_name"), equalTo("Garcia"))
-        assertThat(claims.getJSONObjectClaim("profile_attributes").get("date_of_birth"), equalTo("1965-01-01"))
-    }
-
-    @Unroll
     @Feature("AUTHENTICATION")
     def "request authentication with eIDAS with privet sector client"() {
-        expect:
+        given:
         Steps.startAuthenticationInTaraWithClient(flow, "openid eidas", flow.oidcClientPrivate.clientId, flow.oidcClientPrivate.fullResponseUrl)
-        String country = "CA"
-        Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, country, Collections.emptyMap())
-        assertEquals(200, initEidasAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("text/html;charset=UTF-8", initEidasAuthenticationSession.getContentType(), "Correct Content-Type is returned")
-        String buttonLabel = initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@type == 'submit'}.@value")
-        assertEquals("Continue", buttonLabel, "Continue button exists")
+        Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, COUNTRY_CA, [:])
 
-        flow.setNextEndpoint(initEidasAuthenticationSession.body().htmlPath().getString("**.find { form -> form.@method == 'post' }.@action"))
-        flow.setRelayState(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'RelayState' }.@value"))
-        flow.setRequestMessage(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'SAMLRequest' }.@value"))
+        flow.setNextEndpoint(initEidasAuthenticationSession.htmlPath().getString("**.find { form -> form.@method == 'post' }.@action"))
+        flow.setRelayState(initEidasAuthenticationSession.htmlPath().getString("**.find { input -> input.@name == 'RelayState' }.@value"))
+        flow.setRequestMessage(initEidasAuthenticationSession.htmlPath().getString("**.find { input -> input.@name == 'SAMLRequest' }.@value"))
         Response colleagueResponse = EidasSteps.continueEidasAuthenticationFlow(flow, IDP_USERNAME, IDP_PASSWORD, EIDASLOA_HIGH)
         Response authorizationResponse = EidasSteps.getAuthorizationResponseFromEidas(flow, colleagueResponse)
         Response redirectionResponse = EidasSteps.eidasRedirectAuthorizationResponse(flow, authorizationResponse)
         Response acceptResponse = EidasSteps.eidasAcceptAuthorizationResult(flow, redirectionResponse)
-        assertEquals(302, acceptResponse.statusCode(), "Correct HTTP status code is returned")
         Response oidcServiceResponse = Steps.getOAuthCookies(flow, acceptResponse)
         Response redirectResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, redirectResponse)
+
+        when:
         Response tokenResponse = Steps.getIdentityTokenResponseWithClient(flow, authenticationFinishedResponse, flow.oidcClientPrivate.fullResponseUrl, flow.oidcClientPrivate.clientId, flow.oidcClientPrivate.clientSecret)
-        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
-        assertThat(claims.getAudience().get(0), equalTo(flow.oidcClientPrivate.clientId))
-        assertThat(claims.getSubject(), equalTo("CA12345"))
-        assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo("javier"))
-        assertThat(claims.getJSONObjectClaim("profile_attributes").get("family_name"), equalTo("Garcia"))
-        assertThat(claims.getJSONObjectClaim("profile_attributes").get("date_of_birth"), equalTo("1965-01-01"))
+        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.jsonPath().get("id_token")).JWTClaimsSet
+
+        then:
+        assertThat(claims.audience[0], is(flow.oidcClientPrivate.clientId))
+        assertThat(claims.subject, is("CA12345"))
+        assertThat(claims.getJSONObjectClaim("profile_attributes")["given_name"], is("javier"))
+        assertThat(claims.getJSONObjectClaim("profile_attributes")["family_name"], is("Garcia"))
+        assertThat(claims.getJSONObjectClaim("profile_attributes")["date_of_birth"], is("1965-01-01"))
     }
 
-
-    @Unroll
     @Feature("AUTHENTICATION")
     def "request authentication with mobile-ID with Specific Proxy Service as OIDC client"() {
-        expect:
+        given:
         Steps.startAuthenticationInTaraWithSpecificProxyService(flow)
-        Response midAuthResponse = Steps.authenticateWithMid(flow,"60001017716", "69100366")
+        Response midAuthResponse = Steps.authenticateWithMid(flow, "60001017716", "69100366")
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
-        Response tokenResponse = Steps.getIdentityTokenResponseWithClient(flow, authenticationFinishedResponse, flow.specificProxyService.fullResponseUrl, flow.specificProxyService.clientId, flow.specificProxyService.clientSecret)
 
-        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
-        assertThat(claims.getAudience().get(0), equalTo(flow.specificProxyService.clientId))
-        assertThat(claims.getSubject(), equalTo("EE60001017716"))
-        assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo("ONE"))
+        when:
+        Response tokenResponse = Steps.getIdentityTokenResponseWithClient(flow, authenticationFinishedResponse, flow.specificProxyService.fullResponseUrl, flow.specificProxyService.clientId, flow.specificProxyService.clientSecret)
+        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.jsonPath().get('id_token')).JWTClaimsSet
+
+        then:
+        assertThat(claims.audience[0], is(flow.specificProxyService.clientId))
+        assertThat(claims.subject, is("EE60001017716"))
+        assertThat(claims.getJSONObjectClaim("profile_attributes")["given_name"], is("ONE"))
     }
 
-    @Unroll
     @Feature("AUTHENTICATION")
     def "request authentication with Eidas. Low level of assurance."() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow, "openid eidas")
-        String country = "CA"
-        Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, country, Collections.emptyMap())
-        assertEquals(200, initEidasAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("text/html;charset=UTF-8", initEidasAuthenticationSession.getContentType(), "Correct Content-Type is returned")
-        String buttonLabel = initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@type == 'submit'}.@value")
-        assertEquals("Continue", buttonLabel, "Continue button exists")
+        Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, COUNTRY_CA, [:])
 
-        flow.setNextEndpoint(initEidasAuthenticationSession.body().htmlPath().getString("**.find { form -> form.@method == 'post' }.@action"))
-        flow.setRelayState(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'RelayState' }.@value"))
-        flow.setRequestMessage(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'SAMLRequest' }.@value"))
+        flow.setNextEndpoint(initEidasAuthenticationSession.htmlPath().getString("**.find { form -> form.@method == 'post' }.@action"))
+        flow.setRelayState(initEidasAuthenticationSession.htmlPath().getString("**.find { input -> input.@name == 'RelayState' }.@value"))
+        flow.setRequestMessage(initEidasAuthenticationSession.htmlPath().getString("**.find { input -> input.@name == 'SAMLRequest' }.@value"))
         Response colleagueResponse = EidasSteps.continueEidasAuthenticationFlow(flow, IDP_USERNAME, IDP_PASSWORD, EIDASLOA_LOW)
         Response authorizationResponse = EidasSteps.getAuthorizationResponseFromEidas(flow, colleagueResponse)
-        String endpointUrl = authorizationResponse.body().htmlPath().get("**.find {it.@method == 'post'}.@action")
-        String samlResponse = authorizationResponse.body().htmlPath().get("**.find {it.@name == 'SAMLResponse'}.@value")
-        String relayState = authorizationResponse.body().htmlPath().get("**.find {it.@name == 'RelayState'}.@value")
-        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(paramsMap, "SAMLResponse" , samlResponse)
-        Utils.setParameter(paramsMap, "RelayState", relayState)
-        Response redirectionResponse = Requests.postRequestWithParams(flow, endpointUrl, paramsMap, Collections.emptyMap())
-        assertThat(redirectionResponse.body().jsonPath().get("status") as Integer, equalTo(400))
-        assertThat(redirectionResponse.body().jsonPath().get("message").toString(), equalTo("Teie poolt valitud välisriigi autentimisvahend on teenuse poolt nõutust madalama autentimistasemega. Palun valige mõni muu autentimisvahend."))
+        String endpointUrl = authorizationResponse.htmlPath().get("**.find {it.@method == 'post'}.@action")
+        String samlResponse = authorizationResponse.htmlPath().get("**.find {it.@name == 'SAMLResponse'}.@value")
+        String relayState = authorizationResponse.htmlPath().get("**.find {it.@name == 'RelayState'}.@value")
+        Map paramsMap = [
+                "SAMLResponse": samlResponse,
+                "RelayState"  : relayState]
+
+        when:
+        Response redirectionResponse = Requests.postRequestWithParams(flow, endpointUrl, paramsMap, [:])
+
+        then:
+        assertThat("Correct HTTP status code", redirectionResponse.statusCode, is(400))
+        assertThat(redirectionResponse.jsonPath().get("message").toString(), is("Teie poolt valitud välisriigi autentimisvahend on teenuse poolt nõutust madalama autentimistasemega. Palun valige mõni muu autentimisvahend."))
     }
 
-    @Unroll
     @Feature("DISALLOW_IFRAMES")
     @Feature("CSP_ENABLED")
     @Feature("HSTS_ENABLED")
@@ -217,122 +174,110 @@ class AuthenticationSpec extends TaraSpecification {
     @Feature("NOSNIFF")
     @Feature("XSS_DETECTION_FILTER_ENABLED")
     def "request authentication with security checks"() {
-        expect:
+        given:
         Response initLoginSession = Steps.startAuthenticationInTara(flow)
-        assertEquals(200, initLoginSession.statusCode(), "Correct HTTP status code is returned")
         Steps.verifyResponseHeaders(initLoginSession)
-        assertThat(initLoginSession.getDetailedCookie("SESSION").toString(), Matchers.containsString("HttpOnly"))
-        assertThat(initLoginSession.getDetailedCookie("SESSION").toString(), Matchers.containsString("SameSite=Strict"))
+        assertThat(initLoginSession.getDetailedCookie("SESSION").toString(), containsString("HttpOnly"))
+        assertThat(initLoginSession.getDetailedCookie("SESSION").toString(), containsString("SameSite=Strict"))
         Response midInit = Requests.startMidAuthentication(flow, "60001017716", "69100366")
-        assertEquals(200, midInit.statusCode(), "Correct HTTP status code is returned")
         Steps.verifyResponseHeaders(midInit)
         Response midPollResult = Steps.pollMidResponse(flow)
-        assertEquals(200, midPollResult.statusCode(), "Correct HTTP status code is returned")
-        assertThat(midPollResult.body().jsonPath().get("status").toString(), Matchers.not(equalTo("PENDING")))
+        assertThat(midPollResult.jsonPath().get("status").toString(), not(equalTo("PENDING")))
         Steps.verifyResponseHeaders(midPollResult)
         Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
-        assertEquals(302, acceptResponse.statusCode(), "Correct HTTP status code is returned")
         Steps.verifyResponseHeaders(acceptResponse)
         Response oidcServiceResponse = Steps.getOAuthCookies(flow, acceptResponse)
-        assertEquals(302, oidcServiceResponse.statusCode(), "Correct HTTP status code is returned")
 
         Response consentResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
         Steps.verifyResponseHeaders(consentResponse)
 
-        if (consentResponse.getStatusCode() == 200) {
+        if (consentResponse.statusCode == 200) {
             consentResponse = Steps.submitConsent(flow, true)
-            assertEquals(302, consentResponse.statusCode(), "Correct HTTP status code is returned")
             Steps.verifyResponseHeaders(consentResponse)
         }
 
         Response oidcserviceResponse = Steps.followRedirectWithCookies(flow, consentResponse, flow.oidcService.cookies)
-        assertEquals(303, oidcserviceResponse.statusCode(), "Correct HTTP status code is returned")
         String authorizationCode = Utils.getParamValueFromResponseHeader(oidcserviceResponse, "code")
-        Response tokenResponse = Requests.getWebToken(flow, authorizationCode)
 
-        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
-        assertThat(claims.getAudience().get(0), equalTo(flow.oidcClientPublic.clientId))
-        assertThat(claims.getSubject(), equalTo("EE60001017716"))
-        assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo("ONE"))
+        when:
+        Response tokenResponse = Requests.getWebToken(flow, authorizationCode)
+        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.jsonPath().get("id_token")).JWTClaimsSet
+
+        then:
+        assertThat(claims.audience[0], is(flow.oidcClientPublic.clientId))
+        assertThat(claims.subject, is("EE60001017716"))
+        assertThat(claims.getJSONObjectClaim("profile_attributes")["given_name"], is("ONE"))
     }
 
-    @Unroll
     @Feature("AUTH_ACCEPT_LOGIN_ENDPOINT")
     def "request accept authentication"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow)
-        Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", Collections.emptyMap())
-        assertEquals(200, initMidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
-        Response pollResponse = Steps.pollMidResponse(flow)
-        assertEquals(200, pollResponse.statusCode(), "Correct HTTP status code is returned")
-        assertThat(pollResponse.body().jsonPath().get("status").toString(), Matchers.not(equalTo("PENDING")))
+        Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366")
+        Steps.pollMidResponse(flow)
+
+        when:
         Response response = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
-        assertEquals(302, response.statusCode(), "Correct HTTP status code is returned")
-        assertThat(response.getHeader("location"), Matchers.startsWith(flow.openIdServiceConfiguration.getString("authorization_endpoint")))
-        assertEquals(flow.oidcClientPublic.clientId, Utils.getParamValueFromResponseHeader(response, "client_id"), "Location field contains correct client_id value")
+
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(302))
+        assertThat("Correct URL", response.header("location"), startsWith(flow.openIdServiceConfiguration.getString("authorization_endpoint")))
+        assertThat("Location field contains correct client_id value", Utils.getParamValueFromResponseHeader(response, "client_id"), is(flow.oidcClientPublic.clientId))
     }
 
-    //TODO: AUT-630
-    @Unroll
     @Feature("AUTH_ACCEPT_LOGIN_ENDPOINT")
     def "request accept authentication with invalid method get"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow)
-        Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", Collections.emptyMap())
-        assertEquals(200, initMidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
-        Response pollResponse = Steps.pollMidResponse(flow)
-        assertEquals(200, pollResponse.statusCode(), "Correct HTTP status code is returned")
-        assertThat(pollResponse.body().jsonPath().get("status").toString(), Matchers.not(equalTo("PENDING")))
+        Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366")
+        Steps.pollMidResponse(flow)
+
+        when:
         Response response = Requests.getRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
-        assertEquals(500, response.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
-        assertThat(response.body().jsonPath().get("message").toString(), equalTo("Autentimine ebaõnnestus teenuse tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti."))
+
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(500))
+        assertThat('Correct Content-Type', response.contentType, is("application/json;charset=UTF-8"))
+        assertThat("Correct message", response.jsonPath().getString('message'), is(MESSAGE_INTERNAL_ERROR))
     }
 
-    @Unroll
     @Feature("AUTH_ACCEPT_LOGIN_ENDPOINT")
     def "request accept authentication with invalid session ID"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow)
-        Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", Collections.emptyMap())
-        assertEquals(200, initMidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
-        Response pollResponse = Steps.pollMidResponse(flow)
-        assertEquals(200, pollResponse.statusCode(), "Correct HTTP status code is returned")
-        assertThat(pollResponse.body().jsonPath().get("status").toString(), Matchers.not(equalTo("PENDING")))
+        Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366")
+        Steps.pollMidResponse(flow)
         flow.setSessionId("1234567")
+
+        when:
         Response response = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
-        assertEquals(403, response.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
-        assertThat(response.body().jsonPath().get("error").toString(), equalTo("Forbidden"))
-        String message = "Keelatud päring. Päring esitati topelt, seanss aegus või on küpsiste kasutamine Teie brauseris piiratud."
-        assertThat(response.body().jsonPath().get("message").toString(), equalTo(message))
-        assertTrue(response.body().jsonPath().get("incident_nr").toString().size() > 15)
+
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(403))
+        assertThat('Correct Content-Type', response.contentType, is("application/json;charset=UTF-8"))
+        assertThat("Correct error", response.jsonPath().getString("error"), is(ERROR_FORBIDDEN))
+        assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_FORBIDDEN_REQUEST))
+        assertThat("Incident number is present", response.jsonPath().getString("incident_nr"), hasLength(32))
     }
 
-    @Unroll
     @Feature("AUTH_REJECT_LOGIN_ENDPOINT")
     def "request reject authentication"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow)
-        Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", Collections.emptyMap())
-        assertEquals(200, initMidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
-        Response pollResponse = Steps.pollMidResponse(flow)
-        assertEquals(200, pollResponse.statusCode(), "Correct HTTP status code is returned")
-        assertThat(pollResponse.body().jsonPath().get("status").toString(), Matchers.not(equalTo("PENDING")))
-        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        def map1 = Utils.setParameter(paramsMap, "error_code", REJECT_ERROR_CODE)
-        HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
-        def map3 = Utils.setParameter(cookieMap, "SESSION", flow.sessionId)
-        Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullAuthRejectUrl, cookieMap, paramsMap, Collections.emptyMap())
-        assertEquals(302, response.statusCode(), "Correct HTTP status code is returned")
-        assertThat(response.getHeader("location"), Matchers.startsWith(flow.openIdServiceConfiguration.getString("authorization_endpoint")))
-        assertEquals(flow.oidcClientPublic.clientId, Utils.getParamValueFromResponseHeader(response, "client_id"), "Location field contains correct client_id value")
-        Response oidcserviceResponse = Steps.followRedirectWithCookies(flow, response, flow.oidcService.cookies)
-        assertEquals(303, oidcserviceResponse.statusCode(), "Correct HTTP status code is returned")
-        assertThat(oidcserviceResponse.getHeader("location"), Matchers.containsString("user_cancel"))
+        Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366")
+        Steps.pollMidResponse(flow)
+        Map paramsMap = ["error_code": REJECT_ERROR_CODE]
+        Map cookieMap = ["SESSION": flow.sessionId]
+        Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullAuthRejectUrl, cookieMap, paramsMap, [:])
+
+        when:
+        Response oidcServiceResponse = Steps.followRedirectWithCookies(flow, response, flow.oidcService.cookies)
+
+        then:
+        assertThat("Correct HTTP status code", oidcServiceResponse.statusCode, is(303))
+        assertThat("Correct error in URL", oidcServiceResponse.header("location"), containsString(REJECT_ERROR_CODE))
     }
 
-    @Unroll
     @Feature("DISALLOW_IFRAMES")
     @Feature("CSP_ENABLED")
     @Feature("HSTS_ENABLED")
@@ -340,109 +285,106 @@ class AuthenticationSpec extends TaraSpecification {
     @Feature("NOSNIFF")
     @Feature("XSS_DETECTION_FILTER_ENABLED")
     def "Verify reject authentication response headers"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow)
-        Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", Collections.emptyMap())
-        assertEquals(200, initMidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
-        Response pollResponse = Steps.pollMidResponse(flow)
-        assertEquals(200, pollResponse.statusCode(), "Correct HTTP status code is returned")
-        assertThat(pollResponse.body().jsonPath().get("status").toString(), Matchers.not(equalTo("PENDING")))
-        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        def map1 = Utils.setParameter(paramsMap, "error_code", REJECT_ERROR_CODE)
-        HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
-        def map3 = Utils.setParameter(cookieMap, "SESSION", flow.sessionId)
-        Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullAuthRejectUrl, cookieMap, paramsMap, Collections.emptyMap())
-        assertEquals(302, response.statusCode(), "Correct HTTP status code is returned")
-       Steps.verifyResponseHeaders(response)
+        Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366")
+        Steps.pollMidResponse(flow)
+        Map paramsMap = ["error_code": REJECT_ERROR_CODE]
+        Map cookieMap = ["SESSION": flow.sessionId]
+
+        when:
+        Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullAuthRejectUrl, cookieMap, paramsMap, [:])
+
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(302))
+        Steps.verifyResponseHeaders(response)
     }
 
-    @Unroll
     @Feature("AUTH_REJECT_LOGIN_ENDPOINT")
     def "request reject authentication with invalid error_code value"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow)
-        Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", Collections.emptyMap())
-        assertEquals(200, initMidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
-        Response pollResponse = Steps.pollMidResponse(flow)
-        assertEquals(200, pollResponse.statusCode(), "Correct HTTP status code is returned")
-        assertThat(pollResponse.body().jsonPath().get("status").toString(), Matchers.not(equalTo("PENDING")))
-        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        def map1 = Utils.setParameter(paramsMap, "error_code", "ERROR12345")
-        HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
-        def map3 = Utils.setParameter(cookieMap, "SESSION", flow.sessionId)
-        Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullAuthRejectUrl, cookieMap, paramsMap, Collections.emptyMap())
-        assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
-        assertEquals("authReject.errorCode: the only supported value is: 'user_cancel'", response.body().jsonPath().get("message"), "Correct error message is returned")
-        assertTrue(response.body().jsonPath().get("incident_nr").toString().size() > 15)
+        Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366")
+        Steps.pollMidResponse(flow)
+        Map paramsMap = ["error_code": "ERROR12345"]
+        Map cookieMap = ["SESSION": flow.sessionId]
+
+        when:
+        Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullAuthRejectUrl, cookieMap, paramsMap, [:])
+
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(400))
+        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
+        assertThat("Correct error message", response.jsonPath().getString("message"), is("authReject.errorCode: the only supported value is: \'user_cancel\'"))
+        assertThat("Incident number is present", response.jsonPath().getString("incident_nr"), hasLength(32))
     }
 
-    @Unroll
     @Feature("AUTH_REJECT_LOGIN_ENDPOINT")
     def "request reject authentication with invalid session ID"() {
-        expect:
-        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        def map1 = Utils.setParameter(paramsMap, "error_code", REJECT_ERROR_CODE)
-        HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
-        def map3 = Utils.setParameter(cookieMap, "SESSION", "S34567")
-        Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullAuthRejectUrl, cookieMap, paramsMap, Collections.emptyMap())
-        assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
-        assertEquals("Teie seanssi ei leitud! Seanss aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"), "Correct error message is returned")
+        given:
+        Map paramsMap = ["error_code": REJECT_ERROR_CODE]
+        Map cookieMap = ["SESSION": "S34567"]
+
+        when:
+        Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullAuthRejectUrl, cookieMap, paramsMap, [:])
+
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(400))
+        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
+        assertThat("Correct error message", response.jsonPath().getString("message"), is(MESSAGE_SESSION_NOT_FOUND))
     }
 
-    @Unroll
     @Feature("AUTH_REJECT_LOGIN_ENDPOINT")
     def "request reject authentication with missing session ID"() {
-        expect:
-        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        def map1 = Utils.setParameter(paramsMap, "error_code", REJECT_ERROR_CODE)
-        Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullAuthRejectUrl, Collections.emptyMap(), paramsMap, Collections.emptyMap())
-        assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
-        assertEquals("Teie seanssi ei leitud! Seanss aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"), "Correct error message is returned")
-    }
-    
-    //TODO: AUT-630
-    def "request reject authentication with invalid method post"() {
-        expect:
-        Steps.startAuthenticationInTara(flow)
-        Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", Collections.emptyMap())
-        assertEquals(200, initMidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
-        Response pollResponse = Steps.pollMidResponse(flow)
-        assertEquals(200, pollResponse.statusCode(), "Correct HTTP status code is returned")
-        assertThat(pollResponse.body().jsonPath().get("status").toString(), Matchers.not(equalTo("PENDING")))
-        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        def map1 = Utils.setParameter(paramsMap, "error_code", REJECT_ERROR_CODE)
-        def map2 = Utils.setParameter(paramsMap, "_csrf", flow.csrf)
-        HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
-        def map3 = Utils.setParameter(cookieMap, "SESSION", flow.sessionId)
-        Response response = Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullAuthRejectUrl, cookieMap, paramsMap, Collections.emptyMap())
-        assertEquals(500, response.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
-        assertThat(response.body().jsonPath().get("message").toString(), equalTo("Autentimine ebaõnnestus teenuse tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti."))
+        given:
+        Map paramsMap = ["error_code": REJECT_ERROR_CODE]
+
+        when:
+        Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullAuthRejectUrl, [:], paramsMap, [:])
+
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(400))
+        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
+        assertThat("Correct error message", response.jsonPath().getString("message"), is(MESSAGE_SESSION_NOT_FOUND))
     }
 
-    @Unroll
+    //TODO: AUT-630
+    def "request reject authentication with invalid method post"() {
+        given:
+        Steps.startAuthenticationInTara(flow)
+        Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366")
+        Steps.pollMidResponse(flow)
+        Map paramsMap = [
+                "error_code": REJECT_ERROR_CODE,
+                "_csrf"     : flow.csrf]
+        Map cookieMap = ["SESSION": flow.sessionId]
+
+        when:
+        Response response = Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullAuthRejectUrl, cookieMap, paramsMap, [:])
+
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(500))
+        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
+        assertThat("Correct error message", response.jsonPath().getString('message'), is(MESSAGE_INTERNAL_ERROR))
+    }
+
     @Feature("AUTH_REJECT_LOGIN_ENDPOINT")
     def "request reject authentication with multiple error_code values"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow)
-        Response initMidAuthenticationSession = Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366", Collections.emptyMap())
-        assertEquals(200, initMidAuthenticationSession.statusCode(),"Correct HTTP status code is returned")
-        Response pollResponse = Steps.pollMidResponse(flow)
-        assertEquals(200, pollResponse.statusCode(), "Correct HTTP status code is returned")
-        assertThat(pollResponse.body().jsonPath().get("status").toString(), Matchers.not(equalTo("PENDING")))
-        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        def map1 = Utils.setParameter(paramsMap, "error_code", "ERROR12345")
-        HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
-        def map3 = Utils.setParameter(cookieMap, "SESSION", flow.sessionId)
-        HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
-        def map4 = Utils.setParameter(additionalParamsMap, "error_code", REJECT_ERROR_CODE)
+        Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366")
+        Steps.pollMidResponse(flow)
+        Map paramsMap = ["error_code": "ERROR12345"]
+        Map cookieMap = ["SESSION": flow.sessionId]
+        Map additionalParamsMap = ["error_code": REJECT_ERROR_CODE]
+
+        when:
         Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullAuthRejectUrl, cookieMap, paramsMap, additionalParamsMap)
-        assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
-        assertEquals("Multiple request parameters with the same name not allowed", response.body().jsonPath().get("message"), "Correct error message is returned")
-        assertTrue(response.body().jsonPath().get("incident_nr").toString().size() > 15)
+
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(400))
+        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
+        assertThat("Correct error message", response.jsonPath().getString('message'), is(MESSAGE_DUPLICATE_PARAMETERS))
+        assertThat("Incident number is present", response.jsonPath().getString("incident_nr"), hasLength(32))
     }
 }

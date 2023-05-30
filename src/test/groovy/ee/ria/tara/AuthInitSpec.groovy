@@ -6,11 +6,11 @@ import io.restassured.response.Response
 import org.apache.commons.lang3.RandomStringUtils
 import org.hamcrest.Matchers
 import org.spockframework.lang.Wildcard
-import spock.lang.Unroll
 
-import static org.junit.jupiter.api.Assertions.*
 import static org.hamcrest.MatcherAssert.assertThat
-
+import static org.hamcrest.Matchers.containsString
+import static org.hamcrest.Matchers.allOf
+import static org.hamcrest.Matchers.is
 
 class AuthInitSpec extends TaraSpecification {
     Flow flow = new Flow(props)
@@ -19,129 +19,101 @@ class AuthInitSpec extends TaraSpecification {
         flow.cookieFilter = new CookieFilter()
     }
 
-    @Unroll
     @Feature("AUTH_INIT_ENDPOINT")
     def "request initialize authentication"() {
-        expect:
+        given:
         Response initOIDCServiceSession = Steps.startAuthenticationInOidc(flow)
-        assertEquals(302, initOIDCServiceSession.statusCode(), "Correct HTTP status code is returned")
+
+        when:
         Response response = Steps.createLoginSession(flow, initOIDCServiceSession)
-        assertEquals(200, response.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("text/html;charset=UTF-8", response.getContentType(), "Correct content type")
-        String sessionCookie = response.getCookie("SESSION")
-        String sessionHeader = response.getHeader("Set-Cookie")
-        assertEquals("SESSION=${sessionCookie}; Path=/; Secure; HttpOnly; SameSite=Strict".toString(), sessionHeader, "Correct header attribute Set-Cookie")
-        assertEquals("et", response.getHeader("Content-Language"), "Correct header attribute Content-Language")
-        int count = response.body().htmlPath().getInt("**.find { a -> a.text() == 'Tagasi teenusepakkuja juurde' }.size()")
-        assertTrue(count > 0, "Link in estoninan exists")
+
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(200))
+        assertThat("Correct Content-Type", response.contentType, is("text/html;charset=UTF-8"))
+        assertThat("Correct cookie attributes", response.detailedCookie("SESSION").toString(), allOf(containsString("Secure"), containsString("HttpOnly"), containsString("Path=/"), containsString("SameSite=Strict")))
     }
 
-    @Unroll
     @Feature("AUTH_INIT_ENDPOINT")
-    def "request initialize authentication language"() {
-        expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "openid", "et")
+    def "request initialize authentication language: #requestLocale"() {
+        given:
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "openid", requestLocale)
         Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
 
-        assertEquals(302, initOIDCServiceSession.statusCode(), "Correct HTTP status code is returned")
+        when:
         Response response = Steps.createLoginSession(flow, initOIDCServiceSession)
-        assertEquals(200, response.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("text/html;charset=UTF-8", response.getContentType(), "Correct content type")
-        String sessionCookie = response.getCookie("SESSION")
-        String sessionHeader = response.getHeader("Set-Cookie")
-        assertEquals("SESSION=${sessionCookie}; Path=/; Secure; HttpOnly; SameSite=Strict".toString(), sessionHeader, "Correct header attribute Set-Cookie")
-        assertEquals("et", response.getHeader("Content-Language"), "Correct header attribute Content-Language")
+
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(200))
+        assertThat("Correct language", response.header("Content-Language"), is(responseLocale))
+        assertThat("Correct title", response.htmlPath().getString("html.head.title"), is(title))
+
+        where:
+        requestLocale || responseLocale | title
+        "et"          || "et"           | "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
+        "en"          || "en"           | "State authentication service - Secure authentication for e-services"
+        "ru"          || "ru"           | "Государственная услуга аутентификации - Для безопасной аутентификации в э-услугах"
+        "fi"          || "et"           | "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
+        ""            || "et"           | "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
     }
 
-    @Unroll
     @Feature("AUTH_INIT_ENDPOINT")
     def "initialize authentication session with: #label"() {
-        expect:
-        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
+        given:
         Response initOIDCServiceSession = Steps.startAuthenticationInOidc(flow)
         String loginChallenge = Utils.getParamValueFromResponseHeader(initOIDCServiceSession, "login_challenge")
 
+        Map paramsMap = [:]
         if (paramValue1 instanceof Wildcard) {
-            def map1 = Utils.setParameter(paramsMap, paramName1, paramValue1)
+            Utils.setParameter(paramsMap, paramName1, paramValue1)
         } else {
-            def map1 = Utils.setParameter(paramsMap, paramName1, Utils.encodeUrl(paramValue1.toString()))
+            Utils.setParameter(paramsMap, paramName1, Utils.encodeUrl(paramValue1.toString()))
         }
 
         if (paramName2 == "login_challenge" && paramValue2 == "default") {
-            def map2 = Utils.setParameter(paramsMap, "login_challenge", loginChallenge)
+            Utils.setParameter(paramsMap, "login_challenge", loginChallenge)
         } else {
-            def map2 = Utils.setParameter(paramsMap, paramName2, paramValue2)
+            Utils.setParameter(paramsMap, paramName2, paramValue2)
         }
-        Response initResponse = Requests.getRequestWithParams(flow, flow.loginService.fullInitUrl, paramsMap, additionalParamsMap)
-        assertEquals(400, initResponse.statusCode(), "Correct HTTP status code is returned")
-        assertThat(initResponse.body().jsonPath().get("message"), Matchers.startsWith(errorMessage))
+
+        when:
+        Response initResponse = Requests.getRequestWithParams(flow, flow.loginService.fullInitUrl, paramsMap, [:])
+
+        then:
+        assertThat("Correct HTTP status code", initResponse.statusCode, is(400))
+        assertThat("Correct message", initResponse.jsonPath().getString("message"), Matchers.startsWith(errorMessage))
 
         where:
-        paramName1        | paramValue1 | paramName2        | paramValue2 | label                                   || errorMessage
-        "lang"            | "zu"        | "login_challenge" | "default"   | "invalid language code"                 || "authInit.language: supported values are: 'et', 'en', 'ru'"
-        "login_challenge" | "12345"     | _                 | _           | "not existing login_challenge value"    || "Vigane päring. Päringu volituskood ei ole korrektne."
-        _                 | _           | _                 | _           | "login_challenge param is missing"      || "Required request parameter 'login_challenge' for method parameter type String is not present"
-        "login_challenge" | _           | _                 | _           | "empty login_challenge value"           || "authInit.loginChallenge: only characters and numbers allowed"
-        "login_challenge" | "+372& (aa" | _                 | _           | "invalid symbols &( in login_challenge" || "authInit.loginChallenge: only characters and numbers allowed"
-        _                 | _           | "login_challenge" | "+372"      | "invalid symbols + in login_challenge"  || "authInit.loginChallenge: only characters and numbers allowed"
-        "login_challenge" | RandomStringUtils.random(51, true, true) | _ | _ | "too long login_challenge"           || "authInit.loginChallenge: size must be between 0 and 50"
+        paramName1        | paramValue1                              | paramName2        | paramValue2 | label                                   || errorMessage
+        "lang"            | "zu"                                     | "login_challenge" | "default"   | "invalid language code"                 || "authInit.language: supported values are: 'et', 'en', 'ru'"
+        "login_challenge" | "12345"                                  | _                 | _           | "not existing login_challenge value"    || "Vigane päring. Päringu volituskood ei ole korrektne."
+        _                 | _                                        | _                 | _           | "login_challenge param is missing"      || "Required request parameter 'login_challenge' for method parameter type String is not present"
+        "login_challenge" | _                                        | _                 | _           | "empty login_challenge value"           || "authInit.loginChallenge: only characters and numbers allowed"
+        "login_challenge" | "+372& (aa"                              | _                 | _           | "invalid symbols &( in login_challenge" || "authInit.loginChallenge: only characters and numbers allowed"
+        _                 | _                                        | "login_challenge" | "+372"      | "invalid symbols + in login_challenge"  || "authInit.loginChallenge: only characters and numbers allowed"
+        "login_challenge" | RandomStringUtils.random(51, true, true) | _                 | _           | "too long login_challenge"              || "authInit.loginChallenge: size must be between 0 and 50"
     }
 
-    @Unroll
     @Feature("AUTH_INIT_ENDPOINT")
     def "initialize authentication session with multiple parameters: #label"() {
-        expect:
-        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
+        given:
         Response initOIDCServiceSession = Steps.startAuthenticationInOidc(flow)
         String loginChallenge = Utils.getParamValueFromResponseHeader(initOIDCServiceSession, "login_challenge")
-        def map1 = Utils.setParameter(paramsMap, "lang", "et")
-        def map2 = Utils.setParameter(paramsMap, "login_challenge", loginChallenge)
-        def map3 = Utils.setParameter(additionalParamsMap, paramName1, paramValue1)
+        Map paramsMap = [:]
+        Utils.setParameter(paramsMap, "lang", "et")
+        Utils.setParameter(paramsMap, "login_challenge", loginChallenge)
+        Map additionalParamsMap = [:]
+        Utils.setParameter(additionalParamsMap, paramName, paramValue)
+
+        when:
         Response initResponse = Requests.getRequestWithParams(flow, flow.loginService.fullInitUrl, paramsMap, additionalParamsMap)
-        assertEquals(400, initResponse.statusCode(), "Correct HTTP status code is returned")
-        assertThat(initResponse.body().jsonPath().get("message"), Matchers.startsWith(errorMessage))
+
+        then:
+        assertThat("Correct HTTP status code", initResponse.statusCode, is(400))
+        assertThat("Correct message", initResponse.jsonPath().getString("message"), Matchers.startsWith(MESSAGE_DUPLICATE_PARAMETERS))
 
         where:
-        paramName1        | paramValue1 | paramName2 | paramValue2 | label             || errorMessage
-        "lang"            | "zu"        | _          | _           | "language code"   || "Multiple request parameters with the same name not allowed"
-        "login_challenge" | "12345"     | _          | _           | "login_challenge" || "Multiple request parameters with the same name not allowed"
-    }
-
-    @Unroll
-    @Feature("AUTH_INIT_ENDPOINT")
-    def "initialize authentication session ru"() {
-        expect:
-        LinkedHashMap<String, String> localeMap = (LinkedHashMap) Collections.emptyMap()
-        def map1 = Utils.setParameter(localeMap, "lang", "ru")
-        Response initOIDCServiceSession = Steps.startAuthenticationInOidc(flow)
-        Response response = Steps.initLoginSession(flow, initOIDCServiceSession, localeMap)
-        assertEquals(200, response.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("text/html;charset=UTF-8", response.getContentType(), "Correct content type")
-        String sessionCookie = response.getCookie("SESSION")
-        String sessionHeader = response.getHeader("Set-Cookie")
-        assertEquals("SESSION=${sessionCookie}; Path=/; Secure; HttpOnly; SameSite=Strict".toString(), sessionHeader, "Correct header attribute Set-Cookie")
-        assertEquals("ru", response.getHeader("Content-Language"), "Correct header attribute Content-Language")
-        int count = response.body().htmlPath().getInt("**.find { a -> a.text() == 'Вернуться к поставщику услуг' }.size()")
-        assertTrue(count > 0, "Link in Russian exists")
-    }
-
-    @Unroll
-    @Feature("AUTH_INIT_ENDPOINT")
-    def "initialize authentication session en"() {
-        expect:
-        LinkedHashMap<String, String> localeMap = (LinkedHashMap) Collections.emptyMap()
-        def map1 = Utils.setParameter(localeMap, "lang", "en")
-        Response initOIDCServiceSession = Steps.startAuthenticationInOidc(flow)
-        Response response = Steps.initLoginSession(flow, initOIDCServiceSession, localeMap)
-        assertEquals(200, response.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("text/html;charset=UTF-8", response.getContentType(), "Correct content type")
-        String sessionCookie = response.getCookie("SESSION")
-        String sessionHeader = response.getHeader("Set-Cookie")
-        assertEquals("SESSION=${sessionCookie}; Path=/; Secure; HttpOnly; SameSite=Strict".toString(), sessionHeader, "Correct header attribute Set-Cookie")
-        assertEquals("en", response.getHeader("Content-Language"), "Correct header attribute Content-Language")
-        int count = response.body().htmlPath().getInt("**.find { a -> a.text() == 'Return to service provider' }.size()")
-        assertTrue(count > 0, "Link in English exists")
+        paramName         | paramValue | label
+        "lang"            | "zu"       | "language code"
+        "login_challenge" | "12345"    | "login_challenge"
     }
 }

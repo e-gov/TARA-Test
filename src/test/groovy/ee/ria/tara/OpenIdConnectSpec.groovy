@@ -4,13 +4,12 @@ import com.nimbusds.jwt.JWTClaimsSet
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
-import org.hamcrest.Matchers
-import spock.lang.Unroll
 import com.nimbusds.jose.jwk.JWKSet
 
-import static org.hamcrest.Matchers.equalTo
+import static org.hamcrest.Matchers.allOf
+import static org.hamcrest.Matchers.endsWith
+import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.startsWith
-import static org.junit.jupiter.api.Assertions.*
 import static org.hamcrest.MatcherAssert.assertThat
 
 class OpenIdConnectSpec extends TaraSpecification {
@@ -22,140 +21,150 @@ class OpenIdConnectSpec extends TaraSpecification {
         flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.oidcService.fullJwksUrl))
     }
 
-    @Unroll
     @Feature("OPENID_CONNECT")
     def "Metadata and token key ID matches"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow)
-        Response midAuthResponse = Steps.authenticateWithMid(flow,"60001017727" , "69200366")
+        Response midAuthResponse = Steps.authenticateWithMid(flow, "60001017727", "69200366")
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
+
+        when:
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
-        assertEquals(200, tokenResponse.statusCode(), "Correct HTTP status code is returned")
-        String keyID = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getHeader().getKeyID()
-        assertThat(keyID, equalTo(flow.jwkSet.getKeys().get(0).getKeyID()))
+        String keyID = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.jsonPath().get("id_token")).header.getKeyID()
+
+        then:
+        assertThat("Correct HTTP status code", tokenResponse.statusCode, is(200))
+        assertThat("Correct key", keyID, is(flow.jwkSet.keys[0].getKeyID()))
     }
 
-    @Unroll
     @Feature("OPENID_CONNECT")
     def "Request a token twice"() {
-        expect:
+        given:
         Response initOIDCServiceSession = Steps.startAuthenticationInOidc(flow)
-        assertEquals(302, initOIDCServiceSession.statusCode(), "Correct HTTP status code is returned")
-        Response initLoginSession = Steps.createLoginSession(flow, initOIDCServiceSession)
-        assertEquals(200, initLoginSession.statusCode(), "Correct HTTP status code is returned")
-        Response midAuthResponse = Steps.authenticateWithMid(flow,"60001017727" , "69200366")
+        Steps.createLoginSession(flow, initOIDCServiceSession)
+        Response midAuthResponse = Steps.authenticateWithMid(flow, "60001017727", "69200366")
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
         String authorizationCode = Utils.getParamValueFromResponseHeader(authenticationFinishedResponse, "code")
         // 1
         Requests.getWebToken(flow, authorizationCode)
+
+        when:
         // 2
         Response tokenResponse2 = Requests.getWebToken(flow, authorizationCode)
-        assertEquals(400, tokenResponse2.statusCode(), "Correct HTTP status code is returned")
-        assertThat("Correct Content-Type is returned", tokenResponse2.getContentType(), startsWith("application/json"))
-        assertEquals("invalid_grant", tokenResponse2.body().jsonPath().get("error"), "Correct error message is returned")
-        assertThat("Correct error_description is returned", tokenResponse2.body().jsonPath().getString("error_description"), Matchers.endsWith("The authorization code has already been used."))
+
+        then:
+        assertThat("Correct HTTP status code", tokenResponse2.statusCode, is(400))
+        assertThat("Correct Content-Type", tokenResponse2.contentType, is("application/json;charset=UTF-8"))
+        assertThat("Correct error", tokenResponse2.jsonPath().getString("error"), is(ERROR_GRANT))
+        assertThat("Correct error description", tokenResponse2.jsonPath().getString("error_description"), endsWith("The authorization code has already been used."))
     }
 
-    @Unroll
     @Feature("OPENID_CONNECT")
     def "Request with empty scope"() {
-        expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
+        given:
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
         paramsMap.put("scope", "")
         Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
+
+        when:
         Response initLoginSession = Steps.followRedirect(flow, initOIDCServiceSession)
-        assertThat("Correct status code", initLoginSession.getStatusCode(), equalTo(400))
-        assertThat("Correct error", initLoginSession.getBody().jsonPath().get("error") as String, equalTo("Bad Request"))
-        assertThat("Correct message", initLoginSession.getBody().jsonPath().get("message") as String, equalTo("Päringus puudub scope parameeter."))
-        assertThat("Correct path", initLoginSession.getBody().jsonPath().get("path") as String, equalTo("/auth/init"))
+
+        then:
+        assertThat("Correct status code", initLoginSession.statusCode, is(400))
+        assertThat("Correct error", initLoginSession.jsonPath().getString("error"), is(ERROR_BAD_REQUEST))
+        assertThat("Correct message", initLoginSession.jsonPath().getString("message"), is("Päringus puudub scope parameeter."))
+        assertThat("Correct path", initLoginSession.jsonPath().getString("path"), is("/auth/init"))
     }
 
-    @Unroll
     @Feature("OPENID_CONNECT")
     def "Request with invalid authorization code"() {
-        expect:
+        given:
         Response initOIDCServiceSession = Steps.startAuthenticationInOidc(flow)
-        assertEquals(302, initOIDCServiceSession.statusCode(), "Correct HTTP status code is returned")
-        Response initLoginSession = Steps.createLoginSession(flow, initOIDCServiceSession)
-        assertEquals(200, initLoginSession.statusCode(), "Correct HTTP status code is returned")
-        Response midAuthResponse = Steps.authenticateWithMid(flow,"60001017727" , "69200366")
+        Steps.createLoginSession(flow, initOIDCServiceSession)
+        Response midAuthResponse = Steps.authenticateWithMid(flow, "60001017727", "69200366")
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
         String authorizationCode = Utils.getParamValueFromResponseHeader(authenticationFinishedResponse, "code")
 
+        when:
         Response response = Requests.getWebToken(flow, authorizationCode + "e")
-        assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
-        assertThat("Correct Content-Type is returned", response.getContentType(), startsWith("application/json"))
-        assertEquals("invalid_grant", response.body().jsonPath().get("error"), "Correct error message is returned")
+
+        then:
+        assertThat("Correct status code", response.statusCode, is(400))
+        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
+        assertThat("Correct error", response.jsonPath().getString("error"), is(ERROR_GRANT))
     }
 
-    @Unroll
     @Feature("OPENID_CONNECT")
     def "Request with missing parameter #paramName"() {
-        expect:
-        HashMap<String, String> formParamsMap = (HashMap) Collections.emptyMap()
-        def map1 = Utils.setParameter(formParamsMap, "grant_type", "code")
-        def map2 = Utils.setParameter(formParamsMap, "code", "1234567")
-        def map3 = Utils.setParameter(formParamsMap, "redirect_uri", flow.oidcClientPublic.fullResponseUrl)
+        given:
+        Map formParamsMap = [
+                "grant_type"  : "code",
+                "code"        : "1234567",
+                "redirect_uri": flow.oidcClientPublic.fullResponseUrl]
         formParamsMap.remove(paramName)
+
+        when:
         Response response = Requests.getWebTokenResponseBody(flow, formParamsMap)
-        assertEquals(statusCode, response.statusCode(), "Correct HTTP status code is returned")
-        assertThat("Correct Content-Type is returned", response.getContentType(), startsWith("application/json"))
-        assertEquals(error, response.body().jsonPath().get("error"), "Correct error message is returned")
-        String errorDescription = response.body().jsonPath().get("error_description")
-        assertThat("Correct error_description suffix", errorDescription, startsWith(errorSuffix))
-        assertThat("Correct error_description preffix", errorDescription, Matchers.endsWith(errorPreffix))
+
+        then:
+        assertThat("Correct status code", response.statusCode, is(400))
+        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
+        assertThat("Correct error message", response.jsonPath().getString("error"), is(ERROR_REQUEST))
+        assertThat("Correct error description", response.jsonPath().getString("error_description"), allOf(startsWith(errorSuffix), endsWith(errorPrefix)))
 
         where:
-        paramName      || statusCode || error             || errorSuffix || errorPreffix
-        "code"         || 400        || "invalid_request" || "The request is missing a required parameter" || "whitelisted the redirect_uri you specified."
-        "grant_type"   || 400        || "invalid_request" || "The request is missing a required parameter" || "Request parameter 'grant_type' is missing"
-        "redirect_uri" || 400        || "invalid_request" || "The request is missing a required parameter" || "whitelisted the redirect_uri you specified."
+        paramName      || errorSuffix                                   | errorPrefix
+        "code"         || "The request is missing a required parameter" | "whitelisted the redirect_uri you specified."
+        "grant_type"   || "The request is missing a required parameter" | "Request parameter 'grant_type' is missing"
+        "redirect_uri" || "The request is missing a required parameter" | "whitelisted the redirect_uri you specified."
     }
 
 
-    @Unroll
     @Feature("OPENID_CONNECT")
     def "Request with invalid parameter value #paramName"() {
-        expect:
-        HashMap<String, String> formParamsMap = (HashMap) Collections.emptyMap()
-        def map1 = Utils.setParameter(formParamsMap, "grant_type", "code")
-        def map2 = Utils.setParameter(formParamsMap, "code", "1234567")
-        def map3 = Utils.setParameter(formParamsMap, "redirect_uri", flow.oidcClientPublic.fullResponseUrl)
-        def map4 = Utils.setParameter(formParamsMap, paramName, paramValue)
+        given:
+        Map formParamsMap = [
+                "grant_type"  : "code",
+                "code"        : "1234567",
+                "redirect_uri": flow.oidcClientPublic.fullResponseUrl,
+                paramName     : paramValue]
+
+        when:
         Response response = Requests.getWebTokenResponseBody(flow, formParamsMap)
-        assertEquals(statusCode, response.statusCode(), "Correct HTTP status code is returned")
-        assertThat("Correct Content-Type is returned", response.getContentType(), startsWith("application/json"))
-        assertEquals(error, response.body().jsonPath().get("error"), "Correct error message is returned")
-        String errorDescription = response.body().jsonPath().get("error_description")
-        assertThat("Correct error_description suffix", errorDescription, startsWith(errorSuffix))
-        assertThat("Correct error_description preffix", errorDescription, Matchers.endsWith(errorPreffix))
+
+        then:
+        assertThat("Correct status code", response.statusCode, is(400))
+        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
+        assertThat("Correct error message", response.jsonPath().getString("error"), is(ERROR_REQUEST))
+        assertThat("Correct error description", response.jsonPath().getString("error_description"), allOf(startsWith(errorSuffix), endsWith(errorPrefix)))
 
         where:
-        paramName      | paramValue                || statusCode || error             || errorSuffix || errorPreffix
-        "redirect_uri" | "https://www.example.com" || 400        || "invalid_request" || "The request is missing a required parameter" || "whitelisted the redirect_uri you specified."
-        "grant_type"   | "token"                   || 400        || "invalid_request" || "The request is missing a required parameter" || "whitelisted the redirect_uri you specified."
-        "code"         | "45678"                   || 400        || "invalid_request" || "The request is missing a required parameter" || "whitelisted the redirect_uri you specified."
+        paramName      | paramValue                || errorSuffix                                   | errorPrefix
+        "redirect_uri" | "https://www.example.com" || "The request is missing a required parameter" | "whitelisted the redirect_uri you specified."
+        "grant_type"   | "token"                   || "The request is missing a required parameter" | "whitelisted the redirect_uri you specified."
+        "code"         | "45678"                   || "The request is missing a required parameter" | "whitelisted the redirect_uri you specified."
     }
 
-    @Unroll
     @Feature("OPENID_CONNECT")
     def "Request with url encoded state and nonce"() {
-        expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
+        given:
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
         flow.setState("testȺ田\uD83D\uDE0D&additional=1 %20")
         flow.setNonce("testȺ田\uD83D\uDE0D&additional=1 %20")
-        paramsMap.put("state", "testȺ田\uD83D\uDE0D&additional=1 %20")
-        paramsMap.put("nonce", "testȺ田\uD83D\uDE0D&additional=1 %20")
+        paramsMap.put("state", flow.state)
+        paramsMap.put("nonce", flow.nonce)
         Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
-        Response initLoginSession = Steps.createLoginSession(flow, initOIDCServiceSession)
-        assertEquals(200, initLoginSession.statusCode(), "Correct HTTP status code is returned")
-        Response midAuthResponse = Steps.authenticateWithMid(flow,"60001017716", "69100366")
+        Steps.createLoginSession(flow, initOIDCServiceSession)
+        Response midAuthResponse = Steps.authenticateWithMid(flow, "60001017716", "69100366")
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
-        Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
 
-        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
-        assertThat(claims.getClaim("nonce"), equalTo(paramsMap.get("nonce")))
-        assertThat(claims.getClaim("state"), equalTo(paramsMap.get("state")))
+        when:
+        Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
+        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.jsonPath().get("id_token")).JWTClaimsSet
+
+        then:
+        assertThat("Correct nonce", claims.getClaim("nonce"), is(paramsMap.get("nonce")))
+        assertThat("Correct state", claims.getClaim("state"), is(paramsMap.get("state")))
     }
 
 }

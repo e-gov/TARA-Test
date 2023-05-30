@@ -4,25 +4,25 @@ import io.restassured.response.Response
 import org.json.JSONObject
 import org.spockframework.lang.Wildcard
 
-import java.security.*;
+import java.security.*
 import java.security.cert.Certificate
 
 
 class Utils {
-
-    static Map setParameter(Map hashMap, Object param, Object paramValue) {
+    //void
+    static Map setParameter(Map map, Object param, Object paramValue) {
         if (!(param instanceof Wildcard)) {
             if (!(paramValue instanceof Wildcard)) {
-                hashMap.put(param, paramValue)
+                map.put(param, paramValue)
             } else {
-                hashMap.put(param, "")
+                map.put(param, "")
             }
         }
-        return hashMap
+        return map
     }
 
     static String getParamValueFromResponseHeader(Response response, String paramName) {
-        String[] parameters = response.getHeader("location").toURL().getQuery().split("&")
+        String[] parameters = response.header("location").toURL().getQuery().split("&")
         String paramValue = null
         parameters.each {
             if (it.split("=")[0] == paramName) {
@@ -45,20 +45,19 @@ class Utils {
     }
 
     static JSONObject getWebEidAuthTokenParameters(Flow flow, String signature) {
-        JSONObject formParams = new JSONObject()
-        JSONObject authToken = new JSONObject()
-        formParams.put("authToken", authToken)
-        authToken.put("algorithm", "ES384")
-        authToken.put("appVersion", "https://web-eid.eu/web-eid-app/releases/2.0.2+566")
-        authToken.put("format", "web-eid:1.0")
-        authToken.put("signature", signature)
-        authToken.put("unverifiedCertificate", flow.authCertificate)
+        JSONObject formParams = [
+                "authToken": [
+                        "algorithm"            : "ES384",
+                        "appVersion"           : "https://web-eid.eu/web-eid-app/releases/2.0.2+566",
+                        "format"               : "web-eid:1.0",
+                        "signature"            : signature,
+                        "unverifiedCertificate": flow.authCertificate]]
         return formParams
     }
 
     static signAuthenticationValue(Flow flow, String origin, String challenge, String keyStore = "src/test/resources/joeorg_auth_EC.p12", String keyStorePassword = "1234") {
         //Read keystore and keys
-        KeyStore store = KeyStore.getInstance("PKCS12");
+        KeyStore store = KeyStore.getInstance("PKCS12")
         char[] password = keyStorePassword.toCharArray()
         store.load(new FileInputStream(keyStore), password)
         Certificate certificate = store.getCertificate("1")
@@ -74,8 +73,8 @@ class Utils {
 
         //Combine origin and challenge nonce hashes to create authentication value to be signed
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream()
-        outputStream.write(originDigest);
-        outputStream.write(challengeDigest);
+        outputStream.write(originDigest)
+        outputStream.write(challengeDigest)
 
         byte[] authValue = outputStream.toByteArray()
 

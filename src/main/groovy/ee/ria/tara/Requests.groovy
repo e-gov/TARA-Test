@@ -180,10 +180,10 @@ class Requests {
     }
 
     @Step("Get request with cookies and params")
-    static Response getRequestWithCookiesAndParams(Flow flow , String url
-                                                   , Map<String, String> cookies
-                                                   , Map<String, String> queryParams
-                                                   , Map<String, String> additionalQueryParams) {
+    static Response getRequestWithCookiesAndParams(Flow flow, String url
+                                                   , Map cookies
+                                                   , Map queryParams
+                                                   , Map additionalQueryParams) {
         return given()
                 .filter(flow.cookieFilter)
                 .cookies(cookies)
@@ -201,10 +201,10 @@ class Requests {
     }
 
     @Step("Get request with sessionID, cookies and params")
-    static Response getRequestWithSessionIDCookiesAndParams(Flow flow , String url
-                                                   , Map<String, String> cookies
-                                                   , Map<String, String> queryParams
-                                                   , Map<String, String> additionalQueryParams) {
+    static Response getRequestWithSessionIDCookiesAndParams(Flow flow, String url
+                                                            , Map cookies
+                                                            , Map queryParams
+                                                            , Map additionalQueryParams) {
         return given()
                 .filter(flow.cookieFilter)
                 .cookie("SESSION", flow.sessionId)
@@ -223,9 +223,9 @@ class Requests {
     }
 
     @Step("Get request with params")
-    static Response getRequestWithParams(Flow flow , String url
-                                                   , Map<String, String> queryParams
-                                                   , Map<String, String> additionalQueryParams) {
+    static Response getRequestWithParams(Flow flow, String url
+                                         , Map queryParams
+                                         , Map additionalQueryParams) {
         return given()
                 .filter(flow.cookieFilter)
                 .queryParams(queryParams)
@@ -242,10 +242,10 @@ class Requests {
     }
 
     @Step("Get request with headers and params")
-    static Response getRequestWithHeadersAndParams(Flow flow , String url
-                                           ,Map<String, String> headers
-                                           , Map<String, String> queryParams
-                                           , Map<String, String> additionalQueryParams) {
+    static Response getRequestWithHeadersAndParams(Flow flow, String url
+                                                   , Map headers
+                                                   , Map queryParams
+                                                   , Map additionalQueryParams) {
         return given()
                 .filter(flow.cookieFilter)
                 .queryParams(queryParams)
@@ -261,11 +261,12 @@ class Requests {
                 .then()
                 .extract().response()
     }
+
     @Step("Post request with cookies and params")
-    static Response postRequestWithCookiesAndParams(Flow flow , String url
-                                                   , Map<String, String> cookies
-                                                   , Map<String, String> formParams
-                                                   , Map<String, String> additionalFormParams) {
+    static Response postRequestWithCookiesAndParams(Flow flow, String url
+                                                    , Map cookies
+                                                    , Map formParams
+                                                    , Map additionalFormParams) {
         return given()
                 .filter(flow.cookieFilter)
                 .filter(new AllureRestAssured())
@@ -281,9 +282,9 @@ class Requests {
     }
 
     @Step("Post request with params")
-    static Response postRequestWithParams(Flow flow , String url
-                                                    , Map<String, String> formParams
-                                                    , Map<String, String> additionalFormParams) {
+    static Response postRequestWithParams(Flow flow, String url
+                                          , Map formParams
+                                          , Map additionalFormParams) {
         return given()
                 .filter(flow.cookieFilter)
                 .filter(new AllureRestAssured())
@@ -299,10 +300,10 @@ class Requests {
     }
 
     @Step("Post request with headers, cookies and params")
-    static Response postRequestWithHeadersCookiesAndParams(Flow flow , String url
-                                                    , Map<String, String> headers
-                                                    , Map<String, String> cookies
-                                                    , Map<String, String> formParams) {
+    static Response postRequestWithHeadersCookiesAndParams(Flow flow, String url
+                                                           , Map headers
+                                                           , Map cookies
+                                                           , Map formParams) {
         return given()
                 .filter(flow.cookieFilter)
                 .filter(new AllureRestAssured())
@@ -338,7 +339,7 @@ class Requests {
                 .get(url)
                 .then()
                 .statusCode(200)
-                .extract().body().jsonPath()
+                .extract().jsonPath()
     }
 
     @Step("Download openid service JWKS")
@@ -386,7 +387,7 @@ class Requests {
     }
 
     @Step("Get token response body")
-    static Response getWebTokenResponseBody(Flow flow, Map<String, String> formParams) {
+    static Response getWebTokenResponseBody(Flow flow, Map formParams) {
         return given()
                 .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
                 .filter(new AllureRestAssured())
@@ -400,7 +401,7 @@ class Requests {
     }
 
     @Step("Get user info with header parameter")
-    static Response getUserInfoWithHeaderParam(Flow flow, String requestType, Map<String, String> headers) {
+    static Response getUserInfoWithHeaderParam(Flow flow, String requestType, Map headers) {
         return given()
                 .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
                 .filter(new AllureRestAssured())
@@ -413,7 +414,7 @@ class Requests {
     }
 
     @Step("Get user info with query parameter")
-    static Response getUserInfoWithQueryParam(Flow flow, String requestType, Map<String, String> queryParams) {
+    static Response getUserInfoWithQueryParam(Flow flow, String requestType, Map queryParams) {
         return given()
                 .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
                 .filter(new AllureRestAssured())
@@ -460,7 +461,7 @@ class Requests {
     }
 
     @Step("Post request with json for admin api")
-    static Response postRequestAdminApiWithJsonBody(Flow flow, String location, Map<String, String> cookies, String body) {
+    static Response postRequestAdminApiWithJsonBody(Flow flow, String location, Map cookies, String body) {
         return given()
                 .filter(flow.cookieFilter)
                 .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
@@ -478,7 +479,7 @@ class Requests {
     }
 
     @Step("Delete request for admin api")
-    static Response deleteRequest(Flow flow, String location, Map<String, String> cookies) {
+    static Response deleteRequest(Flow flow, String location, Map cookies) {
         return given()
                 .filter(flow.cookieFilter)
                 .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
@@ -493,7 +494,7 @@ class Requests {
     }
 
     @Step("Get request for admin api")
-    static Response getRequest(Flow flow, String location, Map<String, String> cookies) {
+    static Response getRequest(Flow flow, String location, Map cookies) {
         return given()
                 .filter(flow.cookieFilter)
                 .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()

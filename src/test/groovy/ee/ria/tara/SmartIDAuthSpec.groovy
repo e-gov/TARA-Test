@@ -5,13 +5,10 @@ import com.nimbusds.jwt.JWTClaimsSet
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
-import spock.lang.Unroll
 
-import static org.hamcrest.Matchers.equalTo
+import static org.hamcrest.Matchers.greaterThan
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.containsString
-import static org.hamcrest.Matchers.startsWith
-import static org.junit.jupiter.api.Assertions.*
 import static org.hamcrest.MatcherAssert.assertThat
 
 class SmartIDAuthSpec extends TaraSpecification {
@@ -23,70 +20,79 @@ class SmartIDAuthSpec extends TaraSpecification {
         flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.oidcService.fullJwksUrl))
     }
 
-    @Unroll
     @Feature("SID_AUTH_SPECIAL_ACCOUNTS")
     def "Authenticate with Smart-id account: #label"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
         Response sidAuthResponse = Steps.authenticateWithSid(flow, idCode)
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, sidAuthResponse)
-        Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
 
-        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
-        assertThat(claims.getAudience().get(0), equalTo(flow.oidcClientPublic.clientId))
-        assertThat(claims.getSubject(), equalTo("EE" + idCode))
-        assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo(givenName))
-        assertThat(claims.getJSONObjectClaim("profile_attributes").get("family_name"), equalTo(familyName))
-        assertThat(claims.getJSONObjectClaim("profile_attributes").get("date_of_birth"), equalTo(dateOfBirth))
+        when:
+        Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
+        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.jsonPath().get("id_token")).JWTClaimsSet
+
+        then:
+        assertThat("Correct audience", claims.audience[0], is(flow.oidcClientPublic.clientId))
+        assertThat("Correct subject", claims.subject, is("EE" + idCode))
+        assertThat("Correct given name", claims.getJSONObjectClaim("profile_attributes")["given_name"], is(givenName))
+        assertThat("Correct family game", claims.getJSONObjectClaim("profile_attributes")["family_name"], is(familyName))
+        assertThat("Correct date of birth", claims.getJSONObjectClaim("profile_attributes")["date_of_birth"], is(dateOfBirth))
 
         where:
-        idCode        | givenName      | familyName   | dateOfBirth  | label
-        "50701019992" | "MINOR"        | "TESTNUMBER" | "2007-01-01" | "User age is under 18"
-        "30303039903" | "QUALIFIED OK" | "TESTNUMBER" | "1903-03-03" | "No numbers in names"
-        "30303039816" | "MULTIPLE OK"  | "TESTNUMBER" | "1903-03-03" | "User has other active account"
+        idCode        || givenName      | familyName   | dateOfBirth  | label
+        "50701019992" || "MINOR"        | "TESTNUMBER" | "2007-01-01" | "User age is under 18"
+        "30303039903" || "QUALIFIED OK" | "TESTNUMBER" | "1903-03-03" | "No numbers in names"
+        "30303039816" || "MULTIPLE OK"  | "TESTNUMBER" | "1903-03-03" | "User has other active account"
     }
 
-    @Unroll
     @Feature("SID_AUTH_INIT_ENDPOINT")
     def "initialize Smart-ID authentication"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow, "openid")
-        HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
-        Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, "30303039914", additionalParamsMap)
-        assertEquals(200, initSidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("text/html;charset=UTF-8", initSidAuthenticationSession.getContentType(), "Correct Content-Type is returned")
-        String controlCode = initSidAuthenticationSession.body().htmlPath().getString("**.find { p -> p.@class == 'control-code' }.text()")
-        assertEquals(4, controlCode.size(), "Verification code exists")
+
+        when:
+        Response response = Steps.initSidAuthSession(flow, flow.sessionId, "30303039914")
+
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(200))
+        assertThat("Correct Content-Type", response.contentType, is("text/html;charset=UTF-8"))
+        String controlCode = response.htmlPath().getString("**.find { p -> p.@class == 'control-code' }.text()")
+        assertThat("Verification code exists", controlCode.size(), is(4))
     }
 
     //TODO: AUT-630
-    @Unroll
     @Feature("SID_AUTH_INIT_ENDPOINT")
     def "initialize Smart-ID authentication with invalid method get"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
-        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        def map1 = Utils.setParameter(paramsMap, "idCode", "30303039914")
-        HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
-        def map3 = Utils.setParameter(cookieMap, "SESSION", flow.sessionId)
-        HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
-        Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullSidInitUrl, cookieMap, paramsMap, additionalParamsMap)
-        assertEquals(500, response.statusCode(), "Correct HTTP status code is returned")
-        assertThat(response.body().jsonPath().get("message").toString(), equalTo("Autentimine ebaõnnestus teenuse tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti."))
+        Map paramsMap = ["idCode": "30303039914"]
+        Map cookieMap = ["SESSION": flow.sessionId]
+
+        when:
+        Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullSidInitUrl, cookieMap, paramsMap, [:])
+
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(500))
+        assertThat("Correct error", response.jsonPath().getString("error"), is(ERROR_INTERNAL))
+        assertThat("Correct error message", response.jsonPath().getString("message"), is(MESSAGE_INTERNAL_ERROR))
     }
 
-    @Unroll
     @Feature("SID_AUTH_INIT_ENDPOINT")
     @Feature("SID_AUTH_CHECKS_IDCODE")
     def "initialize Smart-ID authentication with invalid params: #label"() {
-        expect:
-        LinkedHashMap<String, String> additionalParamsMap = (LinkedHashMap) Collections.emptyMap()
-        def map1 = Utils.setParameter(additionalParamsMap, additionalParameterName, additionalParameterValue)
+        given:
+        Map additionalParamsMap = [:]
+        Utils.setParameter(additionalParamsMap, additionalParameterName, additionalParameterValue)
         Steps.startAuthenticationInTara(flow, "openid smartid")
-        Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, idCode, additionalParamsMap)
-        assertEquals(400, initSidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("application/json;charset=UTF-8", initSidAuthenticationSession.getContentType(), "Correct Content-Type is returned")
-        assertThat(initSidAuthenticationSession.body().jsonPath().get("message"), containsString(errorMessage))
+
+        when:
+        Response response = Steps.initSidAuthSession(flow, flow.sessionId, idCode, additionalParamsMap)
+
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(400))
+        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
+        assertThat("Correct error", response.jsonPath().getString("error"), is(ERROR_BAD_REQUEST))
+        assertThat("Correct message", response.jsonPath().getString("message"), is(errorMessage))
 
         where:
         idCode         | additionalParameterName | additionalParameterValue               | label                        || errorMessage
@@ -96,21 +102,24 @@ class SmartIDAuthSpec extends TaraSpecification {
         "60001329939"  | _                       | _                                      | "wrong date inside idCode"   || "Isikukood ei ole korrektne."
         "6000"         | _                       | _                                      | "too short idCode"           || "Isikukood ei ole korrektne."
         "38500030556"  | _                       | _                                      | "invalid month in idCode"    || "Isikukood ei ole korrektne."
-        "60001017716"  | "idCode"                | "60001017727"                          | "multiple idCode parameters" || "Multiple request parameters with the same name not allowed"
-        "60001017716"  | "_csrf"                 | "d7860443-a0cc-45db-ad68-3c9300c0b3bb" | "multiple _csrf parameters"  || "Multiple request parameters with the same name not allowed"
+        "60001017716"  | "idCode"                | "60001017727"                          | "multiple idCode parameters" || MESSAGE_DUPLICATE_PARAMETERS
+        "60001017716"  | "_csrf"                 | "d7860443-a0cc-45db-ad68-3c9300c0b3bb" | "multiple _csrf parameters"  || MESSAGE_DUPLICATE_PARAMETERS
     }
 
-    @Unroll
     @Feature("SID_AUTH_INIT_ENDPOINT")
     def "initialize Smart-ID authentication with no smart-id contract: #label"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow, "openid smartid",login_locale)
-        Steps.initSidAuthSession(flow, flow.sessionId, "29101290233", Collections.emptyMap())
+        Steps.initSidAuthSession(flow, flow.sessionId, "29101290233")
+
+        when:
         Response pollResponse = Steps.pollSidResponse(flow, 1000L)
-        assertEquals(400, pollResponse.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("application/json;charset=UTF-8", pollResponse.getContentType(), "Correct Content-Type is returned")
-        assertThat(pollResponse.body().jsonPath().get("message"), containsString(errorMessage))
-        assertTrue(pollResponse.body().jsonPath().get("incident_nr").toString().size() > 15)
+
+        then:
+        assertThat("Correct HTTP status code", pollResponse.statusCode, is(400))
+        assertThat("Correct Content-Type", pollResponse.contentType, is("application/json;charset=UTF-8"))
+        assertThat("Correct message", pollResponse.jsonPath().getString("message"), containsString(errorMessage))
+        assertThat("Incident number is present", pollResponse.jsonPath().getString("incident_nr").size(), greaterThan(15))
 
         where:
         login_locale | label             || errorMessage
@@ -119,19 +128,21 @@ class SmartIDAuthSpec extends TaraSpecification {
         "ru"         | "Russian locale"  || "У пользователя нет учетной записи Smart-ID."
     }
 
-    @Unroll
     @Feature("SID_AUTH_POLL_RESPONSE_COMPLETED_ERRORS")
     def "initialize Smart-ID authentication with scenario: #label et"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow, "openid smartid", "et")
-        Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, idCode, Collections.emptyMap())
-        assertEquals(200, initSidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
+        Steps.initSidAuthSession(flow, flow.sessionId, idCode)
+
+        when:
         Response pollResponse = Steps.pollSidResponse(flow, 3000L)
-        String messageText = "Correct HTTP status code is returned. Response body: " + pollResponse.body().jsonPath().prettify()
-        assertEquals(400, pollResponse.statusCode(), messageText)
-        assertEquals("application/json;charset=UTF-8", pollResponse.getContentType(), "Correct Content-Type is returned")
-        assertThat(pollResponse.body().jsonPath().get("message"), startsWith(errorMessage))
-        assertThat(pollResponse.body().jsonPath().get("reportable") as Boolean, is(false))
+
+        then:
+        assertThat("Correct HTTP status code", pollResponse.statusCode, is(400))
+        assertThat("Correct Content-Type", pollResponse.contentType, is("application/json;charset=UTF-8"))
+        assertThat("Correct error", pollResponse.jsonPath().getString("error"), is(ERROR_BAD_REQUEST))
+        assertThat("Correct message", pollResponse.jsonPath().getString("message"), is(errorMessage))
+        assertThat("Error not reportable", pollResponse.jsonPath().getBoolean("reportable"), is(false))
 
         where:
         idCode        | label                                             || errorMessage
@@ -144,20 +155,21 @@ class SmartIDAuthSpec extends TaraSpecification {
         "30403039972" | "WRONG_VC"                                        || "Kasutaja valis Smart-ID rakenduses vale kontrollkoodi."
     }
 
-    @Unroll
     @Feature("SID_AUTH_POLL_RESPONSE_COMPLETED_ERRORS")
     def "initialize Smart-ID authentication with scenario: #label en"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow, "openid smartid", "en")
-        Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, idCode, Collections.emptyMap())
-        assertEquals(200, initSidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
-        Response pollResponse = Steps.pollSidResponse(flow, 3000L)
-        String messageText = "Correct HTTP status code is returned. Response body: " + pollResponse.body().jsonPath().prettify()
-        assertEquals(400, pollResponse.statusCode(), messageText)
-        assertEquals("application/json;charset=UTF-8", pollResponse.getContentType(), "Correct Content-Type is returned")
-        assertThat(pollResponse.body().jsonPath().get("message"), startsWith(errorMessage))
-        assertThat(pollResponse.body().jsonPath().get("reportable") as Boolean, is(false))
+        Steps.initSidAuthSession(flow, flow.sessionId, idCode)
 
+        when:
+        Response pollResponse = Steps.pollSidResponse(flow, 3000L)
+
+        then:
+        assertThat("Correct HTTP status code", pollResponse.statusCode, is(400))
+        assertThat("Correct Content-Type", pollResponse.contentType, is("application/json;charset=UTF-8"))
+        assertThat("Correct error", pollResponse.jsonPath().getString("error"), is(ERROR_BAD_REQUEST))
+        assertThat("Correct message", pollResponse.jsonPath().getString("message"), is(errorMessage))
+        assertThat("Error not reportable", pollResponse.jsonPath().getBoolean("reportable"), is(false))
 
         where:
         idCode        | label                                             || errorMessage
@@ -170,20 +182,21 @@ class SmartIDAuthSpec extends TaraSpecification {
         "30403039972" | "WRONG_VC"                                        || "User chose the wrong verification code in the Smart-ID app."
     }
 
-    @Unroll
     @Feature("SID_AUTH_POLL_RESPONSE_COMPLETED_ERRORS")
     def "initialize Smart-ID authentication with scenario: #label ru"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow, "openid smartid", "ru")
-        Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, idCode, Collections.emptyMap())
-        assertEquals(200, initSidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
-        Response pollResponse = Steps.pollSidResponse(flow, 3000L)
-        String messageText = "Correct HTTP status code is returned. Response body: " + pollResponse.body().jsonPath().prettify()
-        assertEquals(400, pollResponse.statusCode(), messageText)
-        assertEquals("application/json;charset=UTF-8", pollResponse.getContentType(), "Correct Content-Type is returned")
-        assertThat(pollResponse.body().jsonPath().get("message"), startsWith(errorMessage))
-        assertThat(pollResponse.body().jsonPath().get("reportable") as Boolean, is(false))
+        Steps.initSidAuthSession(flow, flow.sessionId, idCode)
 
+        when:
+        Response pollResponse = Steps.pollSidResponse(flow, 3000L)
+
+        then:
+        assertThat("Correct HTTP status code", pollResponse.statusCode, is(400))
+        assertThat("Correct Content-Type", pollResponse.contentType, is("application/json;charset=UTF-8"))
+        assertThat("Correct error", pollResponse.jsonPath().getString("error"), is(ERROR_BAD_REQUEST))
+        assertThat("Correct message", pollResponse.jsonPath().getString("message"), is(errorMessage))
+        assertThat("Error not reportable", pollResponse.jsonPath().getBoolean("reportable"), is(false))
 
         where:
         idCode        | label                                             || errorMessage
@@ -196,20 +209,21 @@ class SmartIDAuthSpec extends TaraSpecification {
         "30403039972" | "WRONG_VC"                                        || "Пользователь выбрал неправильный код подтверждения в приложении Smart-ID."
     }
 
-    @Unroll
     @Feature("SID_AUTH_POLL_RESPONSE_TIMEOUT_ERROR")
     def "initialize Smart-ID authentication with scenario: TIMEOUT #login_locale"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow, "openid smartid", login_locale)
-        Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, idCode, Collections.emptyMap())
-        assertEquals(200, initSidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
-        Response pollResponse = Steps.pollSidResponse(flow, 10000L)
-        String messageText = "Correct HTTP status code is returned. Response body: " + pollResponse.body().jsonPath().prettify()
-        assertEquals(400, pollResponse.statusCode(), messageText)
-        assertEquals("application/json;charset=UTF-8", pollResponse.getContentType(), "Correct Content-Type is returned")
-        assertThat(pollResponse.body().jsonPath().get("message"), startsWith(errorMessage))
-        assertThat(pollResponse.body().jsonPath().get("reportable") as Boolean, is(false))
+        Steps.initSidAuthSession(flow, flow.sessionId, idCode)
 
+        when:
+        Response pollResponse = Steps.pollSidResponse(flow, 10000L)
+
+        then:
+        assertThat("Correct HTTP status code", pollResponse.statusCode, is(400))
+        assertThat("Correct Content-Type", pollResponse.contentType, is("application/json;charset=UTF-8"))
+        assertThat("Correct error", pollResponse.jsonPath().getString("error"), is(ERROR_BAD_REQUEST))
+        assertThat("Correct message", pollResponse.jsonPath().getString("message"), is(errorMessage))
+        assertThat("Error not reportable", pollResponse.jsonPath().getBoolean("reportable"), is(false))
 
         where:
         idCode        | login_locale    || errorMessage
@@ -218,80 +232,86 @@ class SmartIDAuthSpec extends TaraSpecification {
         "30403039983" | "ru"            || "Пользователь не прошел аутентификацию в приложении Smart-ID в течение требуемого времени. Пожалуйста, попробуйте еще раз."
     }
 
-    @Unroll
     @Feature("SID_AUTH_STATUS_CHECK_ENDPOINT")
     @Feature("SID_AUTH_PENDING")
     def "poll Smart-ID authentication session"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
-        HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
-        Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, "30403039983", additionalParamsMap)
-        assertEquals(200, initSidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
+        Steps.initSidAuthSession(flow, flow.sessionId, "30403039983")
+
+        when:
         Response response = Requests.pollSid(flow)
-        assertEquals(200, response.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
-        assertEquals("PENDING", response.body().jsonPath().get("status"), "Correct Mobile-ID status")
+
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(200))
+        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
+        assertThat("Correct Mobile-ID status", response.jsonPath().getString("status"), is("PENDING"))
     }
 
-    @Unroll
-    @Feature("SID_AUTH_STATUS_CHECK_ENDPOINT")
-    def "poll Smart-ID authentication session with invalid session ID"() {
-        expect:
-        Steps.startAuthenticationInTara(flow, "openid smartid")
-        HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
-        Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, "30403039983", additionalParamsMap)
-        assertEquals(200, initSidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
-        flow.setSessionId("1234567")
-        Response response = Requests.pollSid(flow)
-        assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
-        assertEquals("Teie seanssi ei leitud! Seanss aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"), "Correct error message is returned")
-    }
-
-    @Unroll
     @Feature("SID_AUTH_STATUS_CHECK_ENDPOINT")
     @Feature("SID_AUTH_SUCCESS")
     def "poll Smart-ID authentication with session complete"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
-        HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
-        Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, "30303039914", additionalParamsMap)
-        assertEquals(200, initSidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
+        Steps.initSidAuthSession(flow, flow.sessionId, "30303039914")
+
+        when:
         Response response = Steps.pollSidResponse(flow)
-        assertEquals(200, response.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
-        assertEquals("COMPLETED", response.body().jsonPath().get("status"), "Correct Mobile-ID status")
+
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(200))
+        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
+        assertThat("Correct Mobile-ID status", response.jsonPath().getString("status"), is("COMPLETED"))
+    }
+
+    @Feature("SID_AUTH_STATUS_CHECK_ENDPOINT")
+    def "poll Smart-ID authentication session with invalid session ID"() {
+        given:
+        Steps.startAuthenticationInTara(flow, "openid smartid")
+        Steps.initSidAuthSession(flow, flow.sessionId, "30403039983")
+        flow.setSessionId("1234567")
+
+        when:
+        Response response = Requests.pollSid(flow)
+
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(400))
+        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
+        assertThat("Correct error", response.jsonPath().getString("error"), is(ERROR_BAD_REQUEST))
+        assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_SESSION_NOT_FOUND))
     }
 
     //TODO: AUT-630
-    @Unroll
     @Feature("SID_AUTH_STATUS_CHECK_ENDPOINT")
     def "poll Smart-ID authentication with invalid method post"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
-        HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
-        Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, "30303039914", additionalParamsMap)
-        assertEquals(200, initSidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
+        Steps.initSidAuthSession(flow, flow.sessionId, "30303039914")
+
+        when:
         Response response = Requests.postRequestWithSessionId(flow, flow.loginService.fullSidPollUrl)
-        assertEquals(500, response.statusCode(), "Correct HTTP status code is returned")
-        assertThat(response.body().jsonPath().get("message").toString(), equalTo("Autentimine ebaõnnestus teenuse tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti."))
+
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(500))
+        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
+        assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_INTERNAL_ERROR))
     }
 
-    @Unroll
     @Feature("SID_AUTH_STATUS_CHECK_ENDPOINT")
     @Feature("SID_AUTH_CANCELED")
     def "cancel Smart-ID authentication"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
-        HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
-        Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, "30303039914", additionalParamsMap)
-        assertEquals(200, initSidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
+        Steps.initSidAuthSession(flow, flow.sessionId, "30303039914")
+
+        when:
         Response response = Requests.postRequestWithSessionId(flow, flow.loginService.fullSidCancelUrl)
-        assertEquals(302, response.statusCode(), "Correct HTTP status code is returned")
-        assertThat(response.getHeader("location"), startsWith(flow.loginService.initUrl + "?login_challenge=" + flow.loginChallenge))
+
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(302))
+        assertThat("Correct location header", response.header("location"), is(flow.loginService.initUrl + "?login_challenge=" + flow.loginChallenge))
     }
 
-    @Unroll
     @Feature("DISALLOW_IFRAMES")
     @Feature("CSP_ENABLED")
     @Feature("HSTS_ENABLED")
@@ -299,47 +319,49 @@ class SmartIDAuthSpec extends TaraSpecification {
     @Feature("NOSNIFF")
     @Feature("XSS_DETECTION_FILTER_ENABLED")
     def "Verify cancel Smart-ID authentication response headers"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
-        HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
-        Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, "30303039914", additionalParamsMap)
-        assertEquals(200, initSidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
+        Steps.initSidAuthSession(flow, flow.sessionId, "30303039914")
+
+        when:
         Response response = Requests.postRequestWithSessionId(flow, flow.loginService.fullSidCancelUrl)
-        assertEquals(302, response.statusCode(), "Correct HTTP status code is returned")
+
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(302))
         Steps.verifyResponseHeaders(response)
     }
 
-    @Unroll
     @Feature("SID_AUTH_STATUS_CHECK_ENDPOINT")
     def "cancel Smart-ID authentication with invalid session ID"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
-        HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
-        Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, "30303039914", additionalParamsMap)
-        assertEquals(200, initSidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
-
+        Steps.initSidAuthSession(flow, flow.sessionId, "30303039914")
         flow.setSessionId("1234567")
-        Response response = Requests.postRequestWithSessionId(flow, flow.loginService.fullSidCancelUrl)
-        assertEquals(403, response.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
 
-        assertEquals("Forbidden", response.body().jsonPath().get("error"), "Correct error text is returned")
-        String errorMessage = "Keelatud päring. Päring esitati topelt, seanss aegus või on küpsiste kasutamine Teie brauseris piiratud."
-        assertEquals(errorMessage, response.body().jsonPath().get("message"), "Correct error message is returned")
+        when:
+        Response response = Requests.postRequestWithSessionId(flow, flow.loginService.fullSidCancelUrl)
+
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(403))
+        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
+        assertThat("Correct error", response.jsonPath().getString("error"), is(ERROR_FORBIDDEN))
+        assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_FORBIDDEN_REQUEST))
     }
 
     //TODO: AUT-630
-    @Unroll
     @Feature("SID_AUTH_STATUS_CHECK_ENDPOINT")
     def "cancel Smart-ID authentication with invalid method get"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
-        HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
-        Response initSidAuthenticationSession = Steps.initSidAuthSession(flow, flow.sessionId, "30303039914", additionalParamsMap)
-        assertEquals(200, initSidAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
+        Steps.initSidAuthSession(flow, flow.sessionId, "30303039914")
 
+        when:
         Response response = Requests.getRequestWithSessionId(flow, flow.loginService.fullSidCancelUrl)
-        assertEquals(500, response.statusCode(), "Correct HTTP status code is returned")
-        assertThat(response.body().jsonPath().get("message").toString(), equalTo("Autentimine ebaõnnestus teenuse tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti."))
+
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(500))
+        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
+        assertThat("Correct error", response.jsonPath().getString("error"), is(ERROR_INTERNAL))
+        assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_INTERNAL_ERROR))
     }
 }

@@ -4,29 +4,42 @@ import io.restassured.RestAssured
 import io.restassured.filter.log.RequestLoggingFilter
 import io.restassured.filter.log.ResponseLoggingFilter
 import io.restassured.response.Response
-import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.opensaml.core.config.InitializationService
-import org.opensaml.security.credential.Credential
 import spock.lang.Shared
 import spock.lang.Specification
 
 import java.nio.file.Paths
-import java.security.KeyStore
-import java.security.Security
-import java.security.cert.X509Certificate
 
 class TaraSpecification extends Specification {
     @Shared
     Properties props = new Properties()
-    static String REQUEST_TYPE_POST = "post"
-    static String REQUEST_TYPE_GET = "get"
-    static String REJECT_ERROR_CODE = "user_cancel"
-    static String IDP_USERNAME = "xavi"
-    static String IDP_PASSWORD = "creus"
-    static String EIDASLOA_HIGH = "E"
-    static String EIDASLOA_LOW = "A"
-    static String EIDASLOA_NOT_NOTIFIED = "http://non.eidas.eu/NotNotified/LoA/1"
-    static String COUNTRY = "CA"
+
+    static final REQUEST_TYPE_POST = "post"
+    static final REQUEST_TYPE_GET = "get"
+    static final REJECT_ERROR_CODE = "user_cancel"
+    static final IDP_USERNAME = "xavi"
+    static final IDP_PASSWORD = "creus"
+    static final EIDASLOA_HIGH = "E"
+    static final EIDASLOA_LOW = "A"
+    static final EIDASLOA_NOT_NOTIFIED = "http://non.eidas.eu/NotNotified/LoA/1"
+    static final COUNTRY_CA = "CA"
+
+    static final ERROR_BAD_REQUEST = "Bad Request"
+    static final ERROR_FORBIDDEN = "Forbidden"
+    static final ERROR_UNAUTHORIZED = "request_unauthorized"
+    static final ERROR_INTERNAL = "Internal Server Error"
+    static final ERROR_SCOPE = "invalid_scope"
+    static final ERROR_GRANT = "invalid_grant"
+    static final ERROR_STATE = "invalid_state"
+    static final ERROR_CLIENT = "invalid_client"
+    static final ERROR_REQUEST = "invalid_request"
+    static final ERROR_SERVICE = "service_error"
+
+    static final MESSAGE_SESSION_NOT_FOUND = "Teie seanssi ei leitud! Seanss aegus või on küpsiste kasutamine Teie brauseris piiratud."
+    static final MESSAGE_FORBIDDEN_REQUEST = "Keelatud päring. Päring esitati topelt, seanss aegus või on küpsiste kasutamine Teie brauseris piiratud."
+    static final MESSAGE_INTERNAL_ERROR = "Autentimine ebaõnnestus teenuse tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti."
+    static final MESSAGE_DUPLICATE_PARAMETERS = "Multiple request parameters with the same name not allowed"
+    static final MESSAGE_INCORRECT_REQUEST = "Ebakorrektne päring."
 
     def setupSpec() {
         InitializationService.initialize()

@@ -6,13 +6,10 @@ import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import org.apache.commons.lang3.RandomStringUtils
-import spock.lang.Unroll
 
-import static org.hamcrest.Matchers.equalTo
-import static org.junit.jupiter.api.Assertions.*
 import static org.hamcrest.MatcherAssert.assertThat
-
-
+import static org.hamcrest.Matchers.hasLength
+import static org.hamcrest.Matchers.is
 
 class LegalPersonAuthConfirmSpec extends TaraSpecification {
     Flow flow = new Flow(props)
@@ -23,31 +20,32 @@ class LegalPersonAuthConfirmSpec extends TaraSpecification {
         flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.oidcService.fullJwksUrl))
     }
 
-    @Unroll
     @Feature("LEGAL_PERSON_SELECTION_ENDPOINT")
     @Feature("UI_CONSENT_VIEW")
     @Feature("OIDC_ID_TOKEN")
     def "legal person selection request"() {
-        expect:
+        given:
         Steps.startAuthenticationInTaraWithLegalPerson(flow)
         Steps.authInitAsLegalPerson(flow, "60001019906", "00000766")
         Response legalPersonsResponse = Steps.loadLegalPersonsList(flow)
-        String legalPersonIdentifier = legalPersonsResponse.body().jsonPath().get("legalPersons[0].legalPersonIdentifier").toString()
-        String legalName = legalPersonsResponse.body().jsonPath().get("legalPersons[0].legalName").toString()
+        String legalPersonIdentifier = legalPersonsResponse.jsonPath().getString("legalPersons[0].legalPersonIdentifier")
+        String legalName = legalPersonsResponse.jsonPath().getString("legalPersons[0].legalName")
 
         Response response = Steps.selectLegalPersonAndConfirmIt(flow, legalPersonIdentifier)
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, response)
-        Response tokenResponse = Steps.getIdentityTokenResponseWithClient(flow, authenticationFinishedResponse, flow.oidcClientLegal.fullResponseUrl, flow.oidcClientLegal.clientId, flow.oidcClientLegal.clientSecret)
 
-        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
-        assertThat(claims.getAudience().get(0), equalTo(flow.oidcClientLegal.clientId))
-        assertThat(claims.getSubject(), equalTo("EE60001019906"))
-        assertThat(claims.getJSONObjectClaim("profile_attributes").get("given_name"), equalTo("MARY ÄNN"))
-        assertThat(claims.getJSONObjectClaim("profile_attributes").get("represents_legal_person")["registry_code"], equalTo(legalPersonIdentifier))
-        assertThat(claims.getJSONObjectClaim("profile_attributes").get("represents_legal_person")["name"], equalTo(legalName))
+        when:
+        Response tokenResponse = Steps.getIdentityTokenResponseWithClient(flow, authenticationFinishedResponse, flow.oidcClientLegal.fullResponseUrl, flow.oidcClientLegal.clientId, flow.oidcClientLegal.clientSecret)
+        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.jsonPath().get("id_token")).JWTClaimsSet
+
+        then:
+        assertThat("Correct audience", claims.audience[0], is(flow.oidcClientLegal.clientId))
+        assertThat("Correct subject", claims.subject, is("EE60001019906"))
+        assertThat("Correct given name", claims.getJSONObjectClaim("profile_attributes")["given_name"], is("MARY ÄNN"))
+        assertThat("Correct registry code", claims.getJSONObjectClaim("profile_attributes")["represents_legal_person"]["registry_code"], is(legalPersonIdentifier))
+        assertThat("Correct legal name", claims.getJSONObjectClaim("profile_attributes")["represents_legal_person"]["name"], is(legalName))
     }
 
-    @Unroll
     @Feature("DISALLOW_IFRAMES")
     @Feature("CSP_ENABLED")
     @Feature("HSTS_ENABLED")
@@ -55,96 +53,101 @@ class LegalPersonAuthConfirmSpec extends TaraSpecification {
     @Feature("NOSNIFF")
     @Feature("XSS_DETECTION_FILTER_ENABLED")
     def "Verify legal person response headers"() {
-        expect:
+        given:
         Steps.startAuthenticationInTaraWithLegalPerson(flow)
         Steps.authInitAsLegalPerson(flow, "60001019906", "00000766")
         Response legalPersonsResponse = Steps.loadLegalPersonsList(flow)
-        String legalPersonIdentifier = legalPersonsResponse.body().jsonPath().get("legalPersons[0].legalPersonIdentifier").toString()
+        String legalPersonIdentifier = legalPersonsResponse.jsonPath().get("legalPersons[0].legalPersonIdentifier").toString()
+
+        when:
         Response response = Steps.selectLegalPerson(flow, legalPersonIdentifier)
 
-        assertEquals(302, response.statusCode(), "Correct HTTP status code is returned")
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(302))
         Steps.verifyResponseHeaders(response)
     }
 
     //TODO: AUT-630
-    @Unroll
     @Feature("LEGAL_PERSON_SELECTION_ENDPOINT")
     def "legal person selection request with unsupported method get"() {
-        expect:
-        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        def map1 = Utils.setParameter(paramsMap, "legal_person_identifier", "123456789")
-        Response response = Requests.getRequestWithParams(flow, flow.loginService.fullAuthLegalConfirmUrl, paramsMap, Collections.emptyMap())
+        given:
+        Map paramsMap = ["legal_person_identifier": "123456789"]
 
-        assertEquals(500, response.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
-        assertThat(response.body().jsonPath().get("message").toString(), equalTo("Autentimine ebaõnnestus teenuse tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti."))
+        when:
+        Response response = Requests.getRequestWithParams(flow, flow.loginService.fullAuthLegalConfirmUrl, paramsMap, [:])
+
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(500))
+        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
+        assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_INTERNAL_ERROR))
     }
 
-    @Unroll
     @Feature("LEGAL_PERSON_SELECTION_ENDPOINT")
     def "legal person selection request with no session and invalid parameter value"() {
-        expect:
+        given:
         Steps.startAuthenticationInTaraWithLegalPerson(flow)
         Steps.authInitAsLegalPerson(flow, "60001019906", "00000766")
         Steps.loadLegalPersonsList(flow)
 
-        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        def map1 = Utils.setParameter(paramsMap, "legal_person_identifier", "123456789")
-        def map3 = Utils.setParameter(paramsMap, "_csrf", flow.csrf)
-        Response response = Requests.postRequestWithParams(flow, flow.loginService.fullAuthLegalConfirmUrl, paramsMap, Collections.emptyMap())
-        assertEquals(403, response.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
-        assertThat(response.body().jsonPath().get("error").toString(), equalTo("Forbidden"))
-        assertThat(response.body().jsonPath().get("message").toString(), equalTo("Keelatud päring. Päring esitati topelt, seanss aegus või on küpsiste kasutamine Teie brauseris piiratud."))
+        Map paramsMap = ["legal_person_identifier": "123456789",
+                         "_csrf"                  : flow.csrf]
+
+        when:
+        Response response = Requests.postRequestWithParams(flow, flow.loginService.fullAuthLegalConfirmUrl, paramsMap, [:])
+
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(403))
+        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
+        assertThat("Correct error", response.jsonPath().getString("error"), is(ERROR_FORBIDDEN))
+        assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_FORBIDDEN_REQUEST))
     }
 
-    @Unroll
     @Feature("LEGAL_PERSON_SELECTION_ENDPOINT")
     def "legal person selection request with invalid parameter value: #label"() {
-        expect:
+        given:
         Steps.startAuthenticationInTaraWithLegalPerson(flow)
         Steps.authInitAsLegalPerson(flow, "60001019906", "00000766")
         Steps.loadLegalPersonsList(flow)
 
-        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        def map1 = Utils.setParameter(paramsMap, "legal_person_identifier", legalPersonIdentifier)
-        def map3 = Utils.setParameter(paramsMap, "_csrf", flow.csrf)
-        HashMap<String, String> cookiesMap = (HashMap) Collections.emptyMap()
-        def map2 = Utils.setParameter(cookiesMap, "SESSION", flow.sessionId)
-        Response response = Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullAuthLegalConfirmUrl, cookiesMap, paramsMap, Collections.emptyMap())
+        Map cookiesMap = ["SESSION": flow.sessionId]
+        Map paramsMap = ["legal_person_identifier": legalPersonIdentifier,
+                         "_csrf"                  : flow.csrf]
 
-        assertEquals(statusCode, response.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
-        assertThat(response.body().jsonPath().get("message").toString(), equalTo(errorMessage))
+        when:
+        Response response = Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullAuthLegalConfirmUrl, cookiesMap, paramsMap, [:])
+
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(400))
+        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
+        assertThat("Correct message", response.jsonPath().getString("message"), is(errorMessage))
 
         where:
-        legalPersonIdentifier                    | label                                            || statusCode || errorMessage
-        "123456789"                              | "invalid legal person identifier"                || 400        || "Antud identifikaatoriga juriidilist isikut ei leitud."
-        RandomStringUtils.random(51, true, true) | "legal person identifier is too long"            || 400        || "confirmLegalPerson.legalPersonIdentifier: size must be between 0 and 50"
-        "678@123"                                | "unsupported symbols in legal person identifier" || 400        || "confirmLegalPerson.legalPersonIdentifier: invalid legal person identifier"
-        RandomStringUtils.random(50, true, true) | "legal person identifier max length"             || 400        || "Antud identifikaatoriga juriidilist isikut ei leitud."
+        legalPersonIdentifier                    | label                                            || errorMessage
+        "123456789"                              | "invalid legal person identifier"                || "Antud identifikaatoriga juriidilist isikut ei leitud."
+        RandomStringUtils.random(51, true, true) | "legal person identifier is too long"            || "confirmLegalPerson.legalPersonIdentifier: size must be between 0 and 50"
+        "678@123"                                | "unsupported symbols in legal person identifier" || "confirmLegalPerson.legalPersonIdentifier: invalid legal person identifier"
+        RandomStringUtils.random(50, true, true) | "legal person identifier max length"             || "Antud identifikaatoriga juriidilist isikut ei leitud."
     }
 
-    @Unroll
     @Feature("LEGAL_PERSON_SELECTION_ENDPOINT")
     def "legal person selection request with multiple legal_person_identifier values"() {
-        expect:
+        given:
         Steps.startAuthenticationInTaraWithLegalPerson(flow)
         Steps.authInitAsLegalPerson(flow, "60001019906", "00000766")
         Steps.loadLegalPersonsList(flow)
 
-        HashMap<String, String> cookiesMap = (HashMap)Collections.emptyMap()
-        def map2 = Utils.setParameter(cookiesMap, "SESSION", flow.sessionId)
-        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        def map1 = Utils.setParameter(paramsMap, "legal_person_identifier", "12597552")
-        def map3 = Utils.setParameter(paramsMap, "_csrf", flow.csrf)
-        HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
-        def map4 = Utils.setParameter(additionalParamsMap, "legal_person_identifier", "10910878")
-        Response response = Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullAuthLegalConfirmUrl, cookiesMap, paramsMap, additionalParamsMap)
-        assertEquals(400, response.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
-        assertThat(response.body().jsonPath().get("message").toString(), equalTo("Multiple request parameters with the same name not allowed"))
-        assertTrue(response.body().jsonPath().get("incident_nr").toString().size() > 15)
-    }
+        Map cookiesMap = ["SESSION": flow.sessionId]
+        Map paramsMap = ["legal_person_identifier": "12597552",
+                         "_csrf"                  : flow.csrf]
+        Map additionalParamsMap = ["legal_person_identifier": "10910878"]
 
+        when:
+        Response response = Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullAuthLegalConfirmUrl, cookiesMap, paramsMap, additionalParamsMap)
+
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(400))
+        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
+        assertThat("Correct message", response.jsonPath().getString('message'), is(MESSAGE_DUPLICATE_PARAMETERS))
+        assertThat("Incident number is present", response.jsonPath().getString("incident_nr"), hasLength(32))
+    }
 }

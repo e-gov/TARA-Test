@@ -5,12 +5,11 @@ import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import org.apache.commons.lang3.RandomStringUtils
-import spock.lang.Unroll
-import org.hamcrest.Matchers
 
-import static org.hamcrest.Matchers.equalTo
-import static org.junit.jupiter.api.Assertions.*
 import static org.hamcrest.MatcherAssert.assertThat
+import static org.hamcrest.Matchers.greaterThan
+import static org.hamcrest.Matchers.hasLength
+import static org.hamcrest.Matchers.is
 
 class EidasAuthSpec extends TaraSpecification {
     Flow flow = new Flow(props)
@@ -21,221 +20,220 @@ class EidasAuthSpec extends TaraSpecification {
         flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.oidcService.fullJwksUrl))
     }
 
-    @Unroll
     @Feature("EIDAS_AUTH_INIT_ENDPOINT")
-    def "initialize Eidas authentication"() {
-        expect:
+    def "initialize eIDAS authentication"() {
+        given:
         Steps.startAuthenticationInTara(flow, "openid eidas")
-        Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, COUNTRY, Collections.emptyMap())
-        assertEquals(200, initEidasAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("text/html;charset=UTF-8", initEidasAuthenticationSession.getContentType(), "Correct Content-Type is returned")
-        String buttonLabel = initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@type == 'submit'}.@value")
-        assertEquals("Continue", buttonLabel, "Continue button exists")
+
+        when:
+        Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, COUNTRY_CA, [:])
+
+        then:
+        assertThat("Correct HTTP status code", initEidasAuthenticationSession.statusCode, is(200))
+        assertThat("Correct Content-Type", initEidasAuthenticationSession.contentType, is("text/html;charset=UTF-8"))
+        String buttonLabel = initEidasAuthenticationSession.htmlPath().getString('**.find { input -> input.@type == \'submit\'}.@value')
+        assertThat("Continue button exists", buttonLabel, is("Continue"))
     }
 
-    @Unroll
     @Feature("EIDAS_AUTH_INIT_ENDPOINT")
     @Feature("EIDAS_AUTH_INIT_REQUEST_CHECKS")
-    def "initialize Eidas authentication with #label"() {
-        expect:
+    def "initialize eIDAS authentication with #label"() {
+        given:
         Steps.startAuthenticationInTara(flow, "openid eidas")
-        HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
-        def map = Utils.setParameter(additionalParamsMap, paramName, paramValue)
-        Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, country, additionalParamsMap)
-        assertEquals(statusCode, initEidasAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("application/json;charset=UTF-8", initEidasAuthenticationSession.getContentType(), "Correct Content-Type is returned")
-        assertThat(initEidasAuthenticationSession.body().jsonPath().getString("message"), Matchers.startsWith(errorMessage))
-        assertThat(initEidasAuthenticationSession.body().jsonPath().getString("message"), Matchers.containsString(messageCountry))
-        assertTrue(initEidasAuthenticationSession.body().jsonPath().get("incident_nr").toString().size() > 15)
+
+        when:
+        Response response = EidasSteps.initEidasAuthSession(flow, flow.sessionId, country, [:])
+
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(400))
+        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
+        assertThat(response.jsonPath().getString('message'), is(errorMessage))
+        assertThat("Incident number is present", response.jsonPath().getString("incident_nr"), hasLength(32))
 
         where:
-        country | paramName | paramValue | statusCode | label                                     | errorMessage                                                                          | messageCountry
-        _       | _         | _          | 400        | "missing country parameter"               | "Required request parameter 'country' for method parameter type String is not present"| "country"
-        "bg"    | _         | _          | 400        | "country code is not in list"             | "Antud riigikood ei ole lubatud. Lubatud riigikoodid on: "                            | "CA"
-        "BG"    | _         | _          | 400        | "capitalized country code is not in list" | "Antud riigikood ei ole lubatud. Lubatud riigikoodid on: "                            | "CA"
-        "ca"    | _         | _          | 400        | "country code must be capitalized"        | "Antud riigikood ei ole lubatud. Lubatud riigikoodid on: "                            | "CA"
-        "F"     | _         | _          | 400        | "country code must be capitalized"        | "Antud riigikood ei ole lubatud. Lubatud riigikoodid on: "                            | "CA"
-        "a1"    | _         | _          | 400        | "country code is not in list"             | "Antud riigikood ei ole lubatud. Lubatud riigikoodid on: "                            | "CA"
+        country | label                                     || errorMessage
+        _       | "missing country parameter"               || "Required request parameter 'country' for method parameter type String is not present"
+        "bg"    | "country code is not in list"             || "Antud riigikood ei ole lubatud. Lubatud riigikoodid on: CA, DE"
+        "BG"    | "capitalized country code is not in list" || "Antud riigikood ei ole lubatud. Lubatud riigikoodid on: CA, DE"
+        "ca"    | "country code must be capitalized"        || "Antud riigikood ei ole lubatud. Lubatud riigikoodid on: CA, DE"
+        "F"     | "country code must be capitalized"        || "Antud riigikood ei ole lubatud. Lubatud riigikoodid on: CA, DE"
+        "a1"    | "country code is not in list"             || "Antud riigikood ei ole lubatud. Lubatud riigikoodid on: CA, DE"
     }
 
-    @Unroll
     @Feature("EIDAS_AUTH_INIT_ENDPOINT")
-    def "initialize Eidas authentication without session ID"() {
-        expect:
-        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        def map = Utils.setParameter(paramsMap, "country", COUNTRY)
-        Response response = Requests.postRequestWithParams(flow, flow.loginService.fullEidasInitUrl, paramsMap, Collections.emptyMap())
-        assertEquals(403, response.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
-        assertEquals("Keelatud päring. Päring esitati topelt, seanss aegus või on küpsiste kasutamine Teie brauseris piiratud.", response.body().jsonPath().get("message"), "Correct error message is returned")
+    def "initialize eIDAS authentication without session ID"() {
+        given:
+        Map paramsMap = ["country": COUNTRY_CA]
+
+        when:
+        Response response = Requests.postRequestWithParams(flow, flow.loginService.fullEidasInitUrl, paramsMap, [:])
+
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(403))
+        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
+        assertThat("Correct error message", response.jsonPath().getString("message"), is(MESSAGE_FORBIDDEN_REQUEST))
     }
 
     //TODO: AUT-630
-    @Unroll
     @Feature("EIDAS_AUTH_INIT_ENDPOINT")
-    def "initialize Eidas authentication with invalid method get"() {
-        expect:
+    def "initialize eIDAS authentication with invalid method get"() {
+        given:
         Steps.startAuthenticationInTara(flow, "openid eidas")
-        HashMap<String, String> cookiesMap = (HashMap) Collections.emptyMap()
-        def map = Utils.setParameter(cookiesMap, "SESSION", flow.sessionId)
-        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        def map2 = Utils.setParameter(paramsMap, "country", COUNTRY)
-        def map3 = Utils.setParameter(paramsMap, "_csrf", flow.csrf)
-        Response response = Requests.getRequestWithCookiesAndParams(flow,
-                flow.loginService.fullEidasInitUrl,
-                cookiesMap,
-                paramsMap,
-                Collections.emptyMap())
-        assertEquals(500, response.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("application/json;charset=UTF-8", response.getContentType(), "Correct Content-Type is returned")
-        assertThat(response.body().jsonPath().get("message").toString(), equalTo("Autentimine ebaõnnestus teenuse tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti."))
+        Map cookiesMap = ["SESSION": flow.sessionId]
+        Map paramsMap = [
+                "country": COUNTRY_CA,
+                "_csrf"  : flow.csrf]
+
+        when:
+        Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullEidasInitUrl, cookiesMap, paramsMap, [:])
+
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(500))
+        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
+        assertThat("Correct error message", response.jsonPath().getString("message"), is(MESSAGE_INTERNAL_ERROR))
     }
 
-    @Unroll
     @Feature("EIDAS_AUTH_INIT_ENDPOINT")
-    def "initialize Eidas authentication with multiple parameters"() {
-        expect:
+    def "initialize eIDAS authentication with multiple parameters"() {
+        given:
         Steps.startAuthenticationInTara(flow, "openid eidas")
-        HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
-        def map = Utils.setParameter(additionalParamsMap, "country", COUNTRY)
-        Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, COUNTRY, additionalParamsMap)
-        assertEquals(400, initEidasAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("application/json;charset=UTF-8", initEidasAuthenticationSession.getContentType(), "Correct Content-Type is returned")
-        String errorMessage = "Multiple request parameters with the same name not allowed"
-        assertThat(initEidasAuthenticationSession.body().jsonPath().get("message"), Matchers.containsString(errorMessage))
+        Map additionalParamsMap = ["country": COUNTRY_CA]
+
+        when:
+        Response response = EidasSteps.initEidasAuthSession(flow, flow.sessionId, COUNTRY_CA, additionalParamsMap)
+
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(400))
+        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
+        assertThat("Correct error message", response.jsonPath().getString("message"), is(MESSAGE_DUPLICATE_PARAMETERS))
     }
 
-    @Unroll
     @Feature("AUTH_INIT_WITH_EIDASONLY_AND_COUNTRY")
-    def "initialize Eidas authentication with scope: #scope and description #label"() {
-        expect:
+    def "initialize eIDAS authentication with scope: #scope and redirect into CA eIDAS network"() {
+        when:
         Response response = Steps.startAuthenticationInTara(flow, scope, "et", false)
-        assertEquals(statusCode, response.statusCode(), "Correct HTTP status code is returned")
-        String formUrl = response.body().htmlPath().getString("**.find { form -> form.@method == 'post' }.@action")
-        assertThat("Correct domestic connector service url form", formUrl, equalTo(flow.loginService.eidasInitUrl.toString()))
-        String eidasCountry = response.body().htmlPath().getString("**.find { it.@name == 'country' }.@value")
-        assertThat("Correct Eidas country is selected", eidasCountry, equalTo(expectedCountry))
+
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(200))
+        String formUrl = response.htmlPath().getString("**.find { form -> form.@method == 'post' }.@action")
+        assertThat("Correct domestic connector service url form", formUrl, is(flow.loginService.eidasInitUrl))
+        String eidasCountry = response.htmlPath().getString("**.find { it.@name == 'country' }.@value")
+        assertThat("Correct Eidas country is selected", eidasCountry, is(expectedCountry))
 
         where:
-        scope                                                        || statusCode || expectedCountry || label
-        "openid eidas:country:ca eidasonly"                          || 200        || "CA" || "direct redirection into ca Eidas network"
-        "openid eidasonly eidas:country:ca"                          || 200        || "CA" || "direct redirection into ca Eidas network"
-        "openid smartid eidasonly eidas:country:ca"                  || 200        || "CA" || "direct redirection into ca Eidas network"
-        // TARA2-121 TARA2-223 "openid smartid eidasonly eidas:country:ca eidas:country:de" || 200        || "CA" || "direct redirection into ca Eidas network"
-        //    "openid smartid eidasonly eidas:country:DE eidas:country:ca" || 200        || "CA" || "direct redirection into ca Eidas network"
-        //     "openid smartid eidasonly eidas:country:de eidas:country:ca" || 200        || "DE" || "direct redirection into ca Eidas network"
+        scope                                                        || expectedCountry
+        "openid eidas:country:ca eidasonly"                          || COUNTRY_CA
+        "openid eidasonly eidas:country:ca"                          || COUNTRY_CA
+        "openid smartid eidasonly eidas:country:ca"                  || COUNTRY_CA
+        "openid smartid eidasonly eidas:country:ca eidas:country:de" || COUNTRY_CA
+        "openid smartid eidasonly eidas:country:DE eidas:country:ca" || COUNTRY_CA
+        "openid smartid eidasonly eidas:country:de eidas:country:ca" || "DE"
     }
 
-    @Unroll
     @Feature("AUTH_INIT_WITH_EIDASONLY_AND_COUNTRY")
-    def "initialize Eidas authentication with eidas scope: #label"() {
-        expect:
+    def "initialize eIDAS authentication with eIDAS scope: #label"() {
+        when:
         Response response = Steps.startAuthenticationInTara(flow, scope, "et", false)
-        assertEquals(statusCode, response.statusCode(), "Correct HTTP status code is returned")
-        assertTrue(response.htmlPath().getInt("**.findAll { it.'@data-tab' == '"+ authType +"' }.size()") > 0)
+
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(200))
+        assertThat(response.htmlPath().getInt("**.findAll { it.'@data-tab' == '" + authType + "' }.size()"), is(greaterThan(0)))
 
         where:
-        scope                                                        || statusCode || authType || label
-        "openid smartid eidas:country:ca"                            || 200        || "smart-id" || "Smart-ID in TARA selection"
-        // TARA2-121  TARA2-223 "openid eidasonly eidas:country:"                            || 200        || "eu-citizen" || "Eidas in TARA selection"
-        //      "openid eidasonly eidas:country:gb"                          || 200        || "eu-citizen" || "Eidas in TARA selection"
+        scope                               || statusCode || authType     || label
+        "openid smartid eidas:country:ca"   || 200        || "smart-id"   || "Smart-ID in TARA selection"
+        "openid eidasonly eidas:country:gb" || 200        || "eu-citizen" || "Eidas in TARA selection"
     }
 
-    @Unroll
     @Feature("EIDAS_AUTH_CALLBACK_REQUEST_CHECKS")
-    def "Eidas callback request. Use relayState twice"() {
-        expect:
+    def "eIDAS callback request. Use relayState twice"() {
+        given:
         Steps.startAuthenticationInTara(flow, "openid eidas")
-        Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, COUNTRY, Collections.emptyMap())
-        assertEquals(200, initEidasAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("text/html;charset=UTF-8", initEidasAuthenticationSession.getContentType(), "Correct Content-Type is returned")
-        String buttonLabel = initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@type == 'submit'}.@value")
-        assertEquals("Continue", buttonLabel, "Continue button exists")
+        Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, COUNTRY_CA, [:])
 
-        flow.setNextEndpoint(initEidasAuthenticationSession.body().htmlPath().getString("**.find { form -> form.@method == 'post' }.@action"))
-        flow.setRelayState(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'RelayState' }.@value"))
-        flow.setRequestMessage(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'SAMLRequest' }.@value"))
+        flow.setNextEndpoint(initEidasAuthenticationSession.htmlPath().getString("**.find { form -> form.@method == 'post' }.@action"))
+        flow.setRelayState(initEidasAuthenticationSession.htmlPath().getString("**.find { input -> input.@name == 'RelayState' }.@value"))
+        flow.setRequestMessage(initEidasAuthenticationSession.htmlPath().getString("**.find { input -> input.@name == 'SAMLRequest' }.@value"))
         Response colleagueResponse = EidasSteps.continueEidasAuthenticationFlow(flow, IDP_USERNAME, IDP_PASSWORD, EIDASLOA_HIGH)
         Response authorizationResponse = EidasSteps.getAuthorizationResponseFromEidas(flow, colleagueResponse)
         // 1
         EidasSteps.eidasRedirectAuthorizationResponse(flow, authorizationResponse)
+
+        when:
         // 2
         Response redirectionResponse2 = EidasSteps.eidasRedirectAuthorizationResponse(flow, authorizationResponse, false)
-        assertEquals(400, redirectionResponse2.statusCode(), "Correct HTTP status code is returned")
-        assertThat("Correct Content-Type is returned", redirectionResponse2.getContentType(), Matchers.startsWith("application/json"))
-        assertEquals("Bad Request", redirectionResponse2.body().jsonPath().get("error"), "Correct error is returned")
-        assertThat("Correct error message is returned", redirectionResponse2.body().jsonPath().getString("message"), Matchers.endsWith("Ebakorrektne päring."))
-        assertTrue(redirectionResponse2.body().jsonPath().get("incident_nr").toString().size() > 15)
+
+        then:
+        assertThat("Correct HTTP status code", redirectionResponse2.statusCode, is(400))
+        assertThat("Correct Content-Type", redirectionResponse2.contentType, is("application/json;charset=UTF-8"))
+        assertThat("Correct error", redirectionResponse2.jsonPath().getString("error"), is(ERROR_BAD_REQUEST))
+        assertThat('Correct message', redirectionResponse2.jsonPath().getString("message"), is(MESSAGE_INCORRECT_REQUEST))
     }
 
-    @Unroll
     @Feature("EIDAS_AUTH_CALLBACK_ENDPOINT")
-    def "Authentication with Eidas. Callback with multiple param values #label"() {
-        expect:
+    def "Authentication with eIDAS. Callback with multiple param values #label"() {
+        given:
         Steps.startAuthenticationInTara(flow, "openid eidas")
-        Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, COUNTRY, Collections.emptyMap())
-        assertEquals(200, initEidasAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("text/html;charset=UTF-8", initEidasAuthenticationSession.getContentType(), "Correct Content-Type is returned")
-        String buttonLabel = initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@type == 'submit'}.@value")
-        assertEquals("Continue", buttonLabel, "Continue button exists")
+        Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, COUNTRY_CA, [:])
 
-        flow.setNextEndpoint(initEidasAuthenticationSession.body().htmlPath().getString("**.find { form -> form.@method == 'post' }.@action"))
-        flow.setRelayState(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'RelayState' }.@value"))
-        flow.setRequestMessage(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'SAMLRequest' }.@value"))
+        flow.setNextEndpoint(initEidasAuthenticationSession.htmlPath().getString("**.find { form -> form.@method == 'post' }.@action"))
+        flow.setRelayState(initEidasAuthenticationSession.htmlPath().getString("**.find { input -> input.@name == 'RelayState' }.@value"))
+        flow.setRequestMessage(initEidasAuthenticationSession.htmlPath().getString("**.find { input -> input.@name == 'SAMLRequest' }.@value"))
         Response colleagueResponse = EidasSteps.continueEidasAuthenticationFlow(flow, IDP_USERNAME, IDP_PASSWORD, EIDASLOA_HIGH)
         Response response = EidasSteps.getAuthorizationResponseFromEidas(flow, colleagueResponse)
-        String endpointUrl = response.body().htmlPath().get("**.find {it.@method == 'post'}.@action")
-        String samlResponse = response.body().htmlPath().get("**.find {it.@name == 'SAMLResponse'}.@value")
-        String relayState = response.body().htmlPath().get("**.find {it.@name == 'RelayState'}.@value")
+        String endpointUrl = response.htmlPath().get("**.find {it.@method == 'post'}.@action")
+        String samlResponse = response.htmlPath().get("**.find {it.@name == 'SAMLResponse'}.@value")
+        String relayState = response.htmlPath().get("**.find {it.@name == 'RelayState'}.@value")
 
-        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(paramsMap, "SAMLResponse" , samlResponse)
-        Utils.setParameter(paramsMap, "RelayState", relayState)
-        HashMap<String, String> additionalParamsMap = (HashMap) Collections.emptyMap()
-        def map = Utils.setParameter(additionalParamsMap, paramName, paramValue)
+        Map paramsMap = ["SAMLResponse": samlResponse,
+                         "RelayState"  : relayState]
+        Map additionalParamsMap = [:]
+        Utils.setParameter(additionalParamsMap, paramName, paramValue)
+
+        when:
         Response redirectionResponse = Requests.postRequestWithParams(flow, endpointUrl, paramsMap, additionalParamsMap)
-        assertEquals(400, redirectionResponse.statusCode(), "Correct HTTP status code is returned")
-        assertThat("Correct Content-Type is returned", redirectionResponse.getContentType(), Matchers.startsWith("application/json"))
-        assertEquals("Bad Request", redirectionResponse.body().jsonPath().get("error"), "Correct error is returned")
-        assertThat("Correct error message is returned", redirectionResponse.body().jsonPath().getString("message"), Matchers.startsWith(errorMessage))
-        assertTrue(redirectionResponse.body().jsonPath().get("incident_nr").toString().size() > 15)
-        assertEquals(flow.loginService.eidasCallbackUrl, redirectionResponse.body().jsonPath().get("path"), "Correct path is returned")
+
+        then:
+        assertThat("Correct HTTP status code", redirectionResponse.statusCode, is(400))
+        assertThat("Correct Content-Type", redirectionResponse.contentType, is("application/json;charset=UTF-8"))
+        assertThat("Correct error", redirectionResponse.jsonPath().getString("error"), is(ERROR_BAD_REQUEST))
+        assertThat("Correct message", redirectionResponse.jsonPath().getString("message"), is(MESSAGE_DUPLICATE_PARAMETERS))
+        assertThat("Correct path", redirectionResponse.jsonPath().getString('path'), is(flow.loginService.eidasCallbackUrl))
 
         where:
-        paramName      | paramValue                                                                          || label                || errorMessage
-        "RelayState"   | "1XyyAocKwZp8Zp8qd9lhVKiJPF1AywyfpXTLqYGLFE73CKcEgSKOrfVq9UMfX9HAfWwBJMI9O7Bm22BZ1" || "relayState twice"   || "Multiple request parameters with the same name not allowed"
-        "SAMLResponse" | "1XyyAocKwZp8Zp8qd9lhVKiJPF1AywyfpXTLqYGLFE73CKcEgSKOrfVq9UMfX9HAfWwBJMI9O7Bm22BZ1" || "SAMLResponse twice" || "Multiple request parameters with the same name not allowed"
+        paramName      | paramValue                                                                          || label
+        "RelayState"   | "1XyyAocKwZp8Zp8qd9lhVKiJPF1AywyfpXTLqYGLFE73CKcEgSKOrfVq9UMfX9HAfWwBJMI9O7Bm22BZ1" || "relayState twice"
+        "SAMLResponse" | "1XyyAocKwZp8Zp8qd9lhVKiJPF1AywyfpXTLqYGLFE73CKcEgSKOrfVq9UMfX9HAfWwBJMI9O7Bm22BZ1" || "SAMLResponse twice"
     }
 
-    @Unroll
     @Feature("EIDAS_AUTH_CALLBACK_ENDPOINT")
-    def "Authentication with Eidas. Callback with missing params #label"() {
-        expect:
+    def "Authentication with eIDAS. Callback with missing params #label"() {
+        given:
         Steps.startAuthenticationInTara(flow, "openid eidas")
-        Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, COUNTRY, Collections.emptyMap())
-        assertEquals(200, initEidasAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("text/html;charset=UTF-8", initEidasAuthenticationSession.getContentType(), "Correct Content-Type is returned")
-        String buttonLabel = initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@type == 'submit'}.@value")
-        assertEquals("Continue", buttonLabel, "Continue button exists")
+        Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, COUNTRY_CA, [:])
 
-        flow.setNextEndpoint(initEidasAuthenticationSession.body().htmlPath().getString("**.find { form -> form.@method == 'post' }.@action"))
-        flow.setRelayState(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'RelayState' }.@value"))
-        flow.setRequestMessage(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'SAMLRequest' }.@value"))
+        flow.setNextEndpoint(initEidasAuthenticationSession.htmlPath().getString("**.find { form -> form.@method == 'post' }.@action"))
+        flow.setRelayState(initEidasAuthenticationSession.htmlPath().getString("**.find { input -> input.@name == 'RelayState' }.@value"))
+        flow.setRequestMessage(initEidasAuthenticationSession.htmlPath().getString("**.find { input -> input.@name == 'SAMLRequest' }.@value"))
         Response colleagueResponse = EidasSteps.continueEidasAuthenticationFlow(flow, IDP_USERNAME, IDP_PASSWORD, EIDASLOA_HIGH)
         Response response = EidasSteps.getAuthorizationResponseFromEidas(flow, colleagueResponse)
-        String endpointUrl = response.body().htmlPath().get("**.find {it.@method == 'post'}.@action")
-        String samlResponse = response.body().htmlPath().get("**.find {it.@name == 'SAMLResponse'}.@value")
-        String relayState = response.body().htmlPath().get("**.find {it.@name == 'RelayState'}.@value")
+        String endpointUrl = response.htmlPath().get("**.find {it.@method == 'post'}.@action")
+        String samlResponse = response.htmlPath().get("**.find {it.@name == 'SAMLResponse'}.@value")
+        String relayState = response.htmlPath().get("**.find {it.@name == 'RelayState'}.@value")
 
-        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        def map1 = Utils.setParameter(paramsMap, paramName1 , samlResponse)
-        def map2 = Utils.setParameter(paramsMap, paramName2, relayState)
-        Response redirectionResponse = Requests.postRequestWithParams(flow, endpointUrl, paramsMap, Collections.emptyMap())
-        assertEquals(400, redirectionResponse.statusCode(), "Correct HTTP status code is returned")
-        assertThat("Correct Content-Type is returned", redirectionResponse.getContentType(), Matchers.startsWith("application/json"))
-        assertEquals("Bad Request", redirectionResponse.body().jsonPath().get("error"), "Correct error is returned")
-        assertThat("Correct error message is returned", redirectionResponse.body().jsonPath().getString("message"), Matchers.startsWith(errorMessage))
-        assertTrue(redirectionResponse.body().jsonPath().get("incident_nr").toString().size() > 15)
+        Map paramsMap = [:]
+        Utils.setParameter(paramsMap, paramName1, samlResponse)
+        Utils.setParameter(paramsMap, paramName2, relayState)
+
+        when:
+        Response redirectionResponse = Requests.postRequestWithParams(flow, endpointUrl, paramsMap, [:])
+
+        then:
+        assertThat("Correct HTTP status code", redirectionResponse.statusCode, is(400))
+        assertThat("Correct Content-Type", redirectionResponse.contentType, is("application/json;charset=UTF-8"))
+        assertThat("Correct error", redirectionResponse.jsonPath().getString("error"), is(ERROR_BAD_REQUEST))
+        assertThat("Correct message", redirectionResponse.jsonPath().getString("message"), is(errorMessage))
+        assertThat("Correct path", redirectionResponse.jsonPath().getString('path'), is(flow.loginService.eidasCallbackUrl))
 
         where:
         paramName1     | paramName2   || label          || errorMessage
@@ -244,75 +242,72 @@ class EidasAuthSpec extends TaraSpecification {
     }
 
     @Feature("EIDAS_AUTH_CALLBACK_ENDPOINT")
-    def "Authentication with Eidas. Invalid password"() {
-        expect:
+    def "Authentication with eIDAS. Invalid password"() {
+        given:
         Steps.startAuthenticationInTara(flow, "openid eidas")
-        String country = "CA"
-        Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, country, Collections.emptyMap())
-        assertEquals(200, initEidasAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("text/html;charset=UTF-8", initEidasAuthenticationSession.getContentType(), "Correct Content-Type is returned")
-        String buttonLabel = initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@type == 'submit'}.@value")
-        assertEquals("Continue", buttonLabel, "Continue button exists")
+        Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, COUNTRY_CA, [:])
 
-        flow.setNextEndpoint(initEidasAuthenticationSession.body().htmlPath().getString("**.find { form -> form.@method == 'post' }.@action"))
-        flow.setRelayState(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'RelayState' }.@value"))
-        flow.setRequestMessage(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'SAMLRequest' }.@value"))
+        flow.setNextEndpoint(initEidasAuthenticationSession.htmlPath().getString("**.find { form -> form.@method == 'post' }.@action"))
+        flow.setRelayState(initEidasAuthenticationSession.htmlPath().getString("**.find { input -> input.@name == 'RelayState' }.@value"))
+        flow.setRequestMessage(initEidasAuthenticationSession.htmlPath().getString("**.find { input -> input.@name == 'SAMLRequest' }.@value"))
         Response authorizationResponse = EidasSteps.continueEidasFlow(flow, IDP_USERNAME, "myPassword", EIDASLOA_HIGH)
-        String endpointUrl = authorizationResponse.body().htmlPath().getString("**.find { it.@id == 'redirectForm' }.@action")
-        String token = authorizationResponse.body().htmlPath().getString("**.find { it.@id == 'token' }.@value")
+        String endpointUrl = authorizationResponse.htmlPath().getString("**.find { it.@id == 'redirectForm' }.@action")
+        String token = authorizationResponse.htmlPath().getString("**.find { it.@id == 'token' }.@value")
         Response eidasProxyResponse2 = EidasSteps.eidasProxyServiceRequest(flow, endpointUrl, token)
         Response colleagueResponse = EidasSteps.eidasColleagueResponse(flow, eidasProxyResponse2)
         Response authorizationResponse2 = EidasSteps.getAuthorizationResponseFromEidas(flow, colleagueResponse)
+
+        when:
         Response redirectionResponse = EidasSteps.eidasRedirectAuthorizationResponse(flow, authorizationResponse2, false)
-        assertEquals(400, redirectionResponse.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("application/json;charset=UTF-8", redirectionResponse.getContentType(), "Correct Content-Type is returned")
-        assertThat(redirectionResponse.body().jsonPath().get("message").toString(), equalTo("eIDAS autentimine ebaõnnestus."))
+
+        then:
+        assertThat("Correct HTTP status code", redirectionResponse.statusCode, is(400))
+        assertThat("Correct Content-Type", redirectionResponse.contentType, is("application/json;charset=UTF-8"))
+        assertThat("Correct message", redirectionResponse.jsonPath().getString("message"), is("eIDAS autentimine ebaõnnestus."))
     }
 
-
-    @Unroll
     @Feature("EIDAS_AUTH_CALLBACK_ENDPOINT")
-    def "Authentication with Eidas. Callback with invalid #label"() {
-        expect:
+    def "Authentication with eIDAS. Callback with invalid #label"() {
+        given:
         Steps.startAuthenticationInTara(flow, "openid eidas")
-        Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, COUNTRY, Collections.emptyMap())
-        assertEquals(200, initEidasAuthenticationSession.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("text/html;charset=UTF-8", initEidasAuthenticationSession.getContentType(), "Correct Content-Type is returned")
-        String buttonLabel = initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@type == 'submit'}.@value")
-        assertEquals("Continue", buttonLabel, "Continue button exists")
+        Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, COUNTRY_CA, [:])
 
-        flow.setNextEndpoint(initEidasAuthenticationSession.body().htmlPath().getString("**.find { form -> form.@method == 'post' }.@action"))
-        flow.setRelayState(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'RelayState' }.@value"))
-        flow.setRequestMessage(initEidasAuthenticationSession.body().htmlPath().getString("**.find { input -> input.@name == 'SAMLRequest' }.@value"))
+        flow.setNextEndpoint(initEidasAuthenticationSession.htmlPath().getString("**.find { form -> form.@method == 'post' }.@action"))
+        flow.setRelayState(initEidasAuthenticationSession.htmlPath().getString("**.find { input -> input.@name == 'RelayState' }.@value"))
+        flow.setRequestMessage(initEidasAuthenticationSession.htmlPath().getString("**.find { input -> input.@name == 'SAMLRequest' }.@value"))
         Response colleagueResponse = EidasSteps.continueEidasAuthenticationFlow(flow, IDP_USERNAME, IDP_PASSWORD, EIDASLOA_HIGH)
         Response response = EidasSteps.getAuthorizationResponseFromEidas(flow, colleagueResponse)
-        String endpointUrl = response.body().htmlPath().get("**.find {it.@method == 'post'}.@action")
-        String samlResponse = response.body().htmlPath().get("**.find {it.@name == 'SAMLResponse'}.@value")
-        String relayState = response.body().htmlPath().get("**.find {it.@name == 'RelayState'}.@value")
+        String endpointUrl = response.htmlPath().get("**.find {it.@method == 'post'}.@action")
+        String samlResponse = response.htmlPath().get("**.find {it.@name == 'SAMLResponse'}.@value")
+        String relayState = response.htmlPath().get("**.find {it.@name == 'RelayState'}.@value")
 
-        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
+        Map paramsMap = [:]
         if (samlResponseValue == "default") {
-            def map1 = Utils.setParameter(paramsMap, "SAMLResponse", samlResponse)
+            Utils.setParameter(paramsMap, "SAMLResponse", samlResponse)
         } else {
-            def map1 = Utils.setParameter(paramsMap, "SAMLResponse", samlResponseValue)
+            Utils.setParameter(paramsMap, "SAMLResponse", samlResponseValue)
         }
+
         if (relayStateValue == "default") {
-            def map2 = Utils.setParameter(paramsMap, "RelayState", relayState)
+            Utils.setParameter(paramsMap, "RelayState", relayState)
         } else {
-            def map2 = Utils.setParameter(paramsMap, "RelayState", relayStateValue)
+            Utils.setParameter(paramsMap, "RelayState", relayStateValue)
         }
-        Response redirectionResponse = Requests.postRequestWithParams(flow, endpointUrl, paramsMap, Collections.emptyMap())
-        assertEquals(statusCode, redirectionResponse.statusCode(), "Correct HTTP status code is returned")
-        assertThat("Correct Content-Type is returned", redirectionResponse.getContentType(), Matchers.startsWith("application/json"))
-        assertEquals(error, redirectionResponse.body().jsonPath().get("error"), "Correct error is returned")
-        assertThat("Correct error message is returned", redirectionResponse.body().jsonPath().getString("message"), Matchers.startsWith(errorMessage))
-        assertTrue(redirectionResponse.body().jsonPath().get("incident_nr").toString().size() > 15)
+
+        when:
+        Response redirectionResponse = Requests.postRequestWithParams(flow, endpointUrl, paramsMap, [:])
+
+        then:
+        assertThat("Correct HTTP status code", redirectionResponse.statusCode, is(statusCode))
+        assertThat("Correct Content-Type", redirectionResponse.contentType, is("application/json;charset=UTF-8"))
+        assertThat("Correct error", redirectionResponse.jsonPath().getString("error"), is(error))
+        assertThat("Correct message", redirectionResponse.jsonPath().getString("message"), is(errorMessage))
 
         where:
-        samlResponseValue                           | relayStateValue || statusCode || error         || label                      || errorMessage
-        "AB-"                                       | "default"       || 502        || "Bad Gateway" || "SAMLResponse short value" || "eIDAS teenuses esinevad tehnilised tõrked. Palun proovige mõne aja pärast uuesti."
-        RandomStringUtils.random(11000, true, true) | "default"       || 502        || "Bad Gateway" || "SAMLResponse long value"  || "eIDAS teenuses esinevad tehnilised tõrked. Palun proovige mõne aja pärast uuesti."
-        "default"                                   | "DC@"           || 400        || "Bad Request" || "RelayState short value"   || "Ebakorrektne päring."
+        samlResponseValue                           | relayStateValue || statusCode | error             | label                      | errorMessage
+        "AB-"                                       | "default"       || 502        | "Bad Gateway"     | "SAMLResponse short value" | "eIDAS teenuses esinevad tehnilised tõrked. Palun proovige mõne aja pärast uuesti."
+        RandomStringUtils.random(11000, true, true) | "default"       || 502        | "Bad Gateway"     | "SAMLResponse long value"  | "eIDAS teenuses esinevad tehnilised tõrked. Palun proovige mõne aja pärast uuesti."
+        "default"                                   | "DC@"           || 400        | ERROR_BAD_REQUEST | "RelayState short value"   | MESSAGE_INCORRECT_REQUEST
 
     }
 }

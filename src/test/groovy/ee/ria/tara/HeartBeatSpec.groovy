@@ -3,12 +3,14 @@ package ee.ria.tara
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
-import spock.lang.Unroll
-import org.hamcrest.Matchers
 
 import java.time.Duration
 
-import static org.junit.jupiter.api.Assertions.*
+import static org.hamcrest.MatcherAssert.assertThat
+import static org.hamcrest.Matchers.greaterThan
+import static org.hamcrest.Matchers.hasEntry
+import static org.hamcrest.Matchers.notNullValue
+import static org.hamcrest.Matchers.is
 
 class HeartBeatSpec extends TaraSpecification {
     Flow flow = new Flow(props)
@@ -17,46 +19,36 @@ class HeartBeatSpec extends TaraSpecification {
         flow.cookieFilter = new CookieFilter()
     }
 
-
-    @Unroll
     @Feature("HEALTH_MONITORING_ENDPOINT")
     @Feature("HEALTH_MONITORING_ENDPOINT_DEPENDENCIES")
     @Feature("HEALTH_MONITORING_STATUS")
     def "Verify heartbeat response elements"() {
-        expect:
+        when:
         Response heartBeat = Requests.getHeartbeat(flow)
-        heartBeat.then()
-                .body("status", Matchers.oneOf("UP", "DOWN"))
-                .body("name", Matchers.equalTo("tara-login-server"))
-                .body("version", Matchers.notNullValue())
-                .body("commitId", Matchers.notNullValue())
-                .body("commitBranch", Matchers.notNullValue())
-                .body("buildTime", Matchers.notNullValue())
-                .body("startTime", Matchers.notNullValue())
-                .body("currentTime", Matchers.notNullValue())
-                .body("upTime", Matchers.notNullValue())
-                .body("dependencies[0].name", Matchers.is("ignite"))
-                .body("dependencies[0].status", Matchers.oneOf("UP", "DOWN", "UNKNOWN"))
-                .body("dependencies[1].name", Matchers.is("oidcServer"))
-                .body("dependencies[1].status", Matchers.oneOf("UP", "DOWN", "UNKNOWN"))
-                .body("dependencies[2].name", Matchers.is("truststore"))
-                .body("dependencies[2].status",  Matchers.oneOf("UP", "DOWN", "UNKNOWN"))
+
+        then:
+        heartBeat.then().body(
+                "status", is("UP"),
+                "name", is("tara-login-server"),
+                "version", notNullValue(),
+                "commitId", notNullValue(),
+                "commitBranch", notNullValue(),
+                "buildTime", notNullValue(),
+                "startTime", notNullValue(),
+                "currentTime", notNullValue(),
+                "upTime", notNullValue(),
+                "dependencies[0]", hasEntry("name", "ignite"),
+                "dependencies[0]", hasEntry("status", "UP"),
+                "dependencies[1]", hasEntry("name", "oidcServer"),
+                "dependencies[1]", hasEntry("status", "UP"),
+                "dependencies[2]", hasEntry("name", "truststore"),
+                "dependencies[2]", hasEntry("status", "UP"))
                 .contentType("application/json")
-        String duration = heartBeat.body().jsonPath().get("upTime")
+        String duration = heartBeat.jsonPath().get("upTime")
         Duration upTime = Duration.parse(duration)
-        assertTrue(upTime.getSeconds() > 5, "Correct upTime value exists")
-        String serviceStatus = heartBeat.body().jsonPath().get("status")
-        switch (serviceStatus) {
-            case "UP" :
-                assertEquals(200, heartBeat.statusCode(), "Correct heartbeat HTTP status code is returned")
-                break
-            case "DOWN" :
-                assertEquals(503, heartBeat.statusCode(), "Correct heartbeat HTTP status code is returned if some component is down")
-                break
-        }
+        assertThat("Correct upTime value exists", upTime.seconds, greaterThan(5.toLong()))
     }
 
-    @Unroll
     @Feature("DISALLOW_IFRAMES")
     @Feature("CSP_ENABLED")
     @Feature("HSTS_ENABLED")
@@ -64,8 +56,10 @@ class HeartBeatSpec extends TaraSpecification {
     @Feature("NOSNIFF")
     @Feature("XSS_DETECTION_FILTER_ENABLED")
     def "Verify heartbeat response headers"() {
-        expect:
+        when:
         Response heartBeat = Requests.getHeartbeat(flow)
+
+        then:
         Steps.verifyResponseHeaders(heartBeat)
     }
 }

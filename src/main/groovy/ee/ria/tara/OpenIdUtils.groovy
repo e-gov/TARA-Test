@@ -7,7 +7,6 @@ import com.nimbusds.jose.jwk.*
 import com.nimbusds.jwt.SignedJWT
 import org.apache.commons.codec.digest.DigestUtils
 import org.apache.commons.lang3.RandomStringUtils
-import io.restassured.response.Response
 
 class OpenIdUtils {
     static Boolean isTokenSignatureValid(JWKSet jwkSet, SignedJWT signedJWT) throws JOSEException {
@@ -21,83 +20,74 @@ class OpenIdUtils {
         return signedJWT.verify(verifier)
     }
 
-    static Map<String, String> getAuthorizationParameters(Flow flow, String scope = "openid", String uiLocales = "et") {
-        Map<String, String> queryParams = new HashMap<>()
+    static Map getAuthorizationParameters(Flow flow, String scope = "openid", String uiLocales = "et") {
         flow.setState(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
         flow.setNonce(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
-        queryParams.put("ui_locales", uiLocales)
-        queryParams.put("response_type", "code")
-        queryParams.put("scope", scope)
-        queryParams.put("client_id",flow.getOidcClientPublic().getClientId())
-        queryParams.put("redirect_uri", flow.getOidcClientPublic().getFullResponseUrl().toString())
-        queryParams.put("state", flow.state)
-        queryParams.put("nonce", flow.nonce)
+        Map queryParams = [
+                "ui_locales"   : uiLocales,
+                "response_type": "code",
+                "scope"        : scope,
+                "client_id"    : flow.oidcClientPublic.clientId,
+                "redirect_uri" : flow.oidcClientPublic.fullResponseUrl.toString(),
+                "state"        : flow.state,
+                "nonce"        : flow.nonce]
         return queryParams
     }
 
-    static Map<String, String> getAuthorizationParametersWithClient(Flow flow, String scope = "openid", String clientID, String redirectUri) {
-        Map<String, String> queryParams = new HashMap<>()
+    static Map getAuthorizationParametersWithClient(Flow flow, String scope = "openid", String clientId, String redirectUri) {
         flow.setState(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
         flow.setNonce(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
-        queryParams.put("ui_locales", "et")
-        queryParams.put("response_type", "code")
-        queryParams.put("scope", scope)
-        queryParams.put("client_id", clientID)
-        queryParams.put("redirect_uri", redirectUri)
-        queryParams.put("state", flow.state)
-        queryParams.put("nonce", flow.nonce)
+        Map queryParams = [
+                "ui_locales"   : "et",
+                "response_type": "code",
+                "scope"        : scope,
+                "client_id"    : clientId,
+                "redirec_uri"  : redirectUri,
+                "state"        : flow.state,
+                "nonce"        : flow.nonce]
         return queryParams
     }
 
-    static Map<String, String> getAuthorizationParametersForLegalPersonClient(Flow flow, String scope = "openid legalperson", String uiLocales = "et") {
-        Map<String, String> queryParams = new HashMap<>()
+    static Map getAuthorizationParametersForLegalPersonClient(Flow flow, String scope = "openid legalperson", String uiLocales = "et") {
         flow.setState(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
         flow.setNonce(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
-        queryParams.put("ui_locales", uiLocales)
-        queryParams.put("response_type", "code")
-        queryParams.put("scope", scope)
-        queryParams.put("client_id",flow.getOidcClientLegal().getClientId())
-        queryParams.put("redirect_uri", flow.getOidcClientLegal().getFullResponseUrl().toString())
-        queryParams.put("state", flow.state)
-        queryParams.put("nonce", flow.nonce)
+        Map queryParams = [
+                "ui_locales"   : uiLocales,
+                "response_type": "code",
+                "scope"        : scope,
+                "client_id"    : flow.oidcClientLegal.clientId,
+                "redirec_uri"  : flow.oidcClientLegal.fullResponseUrl.toString(),
+                "state"        : flow.state,
+                "nonce"        : flow.nonce]
         return queryParams
     }
 
-    static Map<String, String> getAuthorizationParametersForSpecificProxyService(Flow flow, String scope = "openid", String uiLocales = "et") {
-        Map<String, String> queryParams = new HashMap<>()
+    static Map getAuthorizationParametersForSpecificProxyService(Flow flow, String scope = "openid", String uiLocales = "et") {
         flow.setState(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
         flow.setNonce(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
-        queryParams.put("ui_locales", uiLocales)
-        queryParams.put("response_type", "code")
-        queryParams.put("scope", scope)
-        queryParams.put("client_id",flow.getSpecificProxyService().getClientId())
-        queryParams.put("redirect_uri", flow.getSpecificProxyService().getFullResponseUrl().toString())
-        queryParams.put("state", flow.state)
-        queryParams.put("nonce", flow.nonce)
+        Map queryParams = [
+                "ui_locales"   : uiLocales,
+                "response_type": "code",
+                "scope"        : scope,
+                "client_id"    : flow.specificProxyService.clientId,
+                "redirect_uri" : flow.specificProxyService.fullResponseUrl.toString(),
+                "state"        : flow.state,
+                "nonce"        : flow.nonce]
         return queryParams
     }
 
-    static Map<String, String> getAuthorizationParametersWithAcrValues(Flow flow, String acr_values = "substantial") {
-        Map<String, String> queryParams = new HashMap<>()
+    static Map getAuthorizationParametersWithAcrValues(Flow flow, String acr_values = "substantial") {
         flow.setState(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
         flow.setNonce(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
-        queryParams.put("acr_values", acr_values)
-        queryParams.put("ui_locales", "et")
-        queryParams.put("response_type", "code")
-        queryParams.put("scope", "openid")
-        queryParams.put("client_id",flow.getOidcClientPublic().getClientId())
-        queryParams.put("redirect_uri", flow.getOidcClientPublic().getFullResponseUrl().toString())
-        queryParams.put("state", flow.state)
-        queryParams.put("nonce", flow.nonce)
+        Map queryParams = [
+                "acr_values": acr_values,
+                "ui_locales"   : "et",
+                "response_type": "code",
+                "scope"        : "openid",
+                "client_id"    : flow.oidcClientPublic.clientId,
+                "redirect_uri" : flow.oidcClientPublic.fullResponseUrl.toString(),
+                "state"        : flow.state,
+                "nonce"        : flow.nonce]
         return queryParams
-    }
-
-    static Map<String, String> getErrorFromAuthorizationHeader(Response errorResponse) {
-        String[] errorList = errorResponse.getHeader("WWW-Authenticate").toString().split(",")
-        Map<String, String> myMap = new HashMap<String, String>()
-        for (String str : errorList) {
-            myMap.put(str.split("=")[0], str.split("=")[1])
-        }
-        return myMap
     }
 }

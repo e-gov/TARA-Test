@@ -6,7 +6,6 @@ import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import org.json.JSONObject
-import spock.lang.Unroll
 
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.equalTo
@@ -22,76 +21,88 @@ class WebeIDAuthSpec extends TaraSpecification {
         flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.oidcService.fullJwksUrl))
     }
 
-    @Unroll
     def "Authenticate with ID-Card. TEST of ESTEID2018 chain certificate"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow)
-        Response tokenResponse = Steps.authenticateWithWebeID(flow)
-        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.getBody().jsonPath().get("id_token")).getJWTClaimsSet()
 
-        assertThat(claims.getAudience().get(0), equalTo(flow.oidcClientPublic.clientId))
-        assertThat(claims.getSubject(), equalTo("EE38001085718"))
-        assertThat(claims.getClaim("amr"), equalTo(["idcard"]))
+        when:
+        Response tokenResponse = Steps.authenticateWithWebeID(flow)
+        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.jsonPath().get("id_token")).JWTClaimsSet
+
+        then:
+        assertThat("Correct audience", claims.audience[0], equalTo(flow.oidcClientPublic.clientId))
+        assertThat("Correct subject", claims.subject, equalTo("EE38001085718"))
+        assertThat("Correct authentication method", claims.getClaim("amr"), equalTo(["idcard"]))
     }
 
-    @Unroll
     def "Init Web eID authentication"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow)
+
+        when:
         Response initWebEid = Requests.postRequestWithSessionId(flow, flow.loginService.fullWebEidInitUrl)
 
-        assertThat("Correct HTTP status code is returned", initWebEid.statusCode(), is(200))
-        assertThat("Correct Content-Type is returned", initWebEid.getHeader("Content-Type"), is("application/json;charset=UTF-8"))
-        assertThat("Challenge nonce for Web eID is returned", initWebEid.jsonPath().get("nonce"), is(notNullValue()))
+        then:
+        assertThat("Correct HTTP status code", initWebEid.statusCode, is(200))
+        assertThat("Correct Content-Type", initWebEid.contentType, is("application/json;charset=UTF-8"))
+        assertThat("Challenge nonce for Web eID", initWebEid.jsonPath().get("nonce"), is(notNullValue()))
     }
 
-    @Unroll
     def "Init Web eID authentication twice"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow)
         Requests.postRequestWithSessionId(flow, flow.loginService.fullWebEidInitUrl)
+
+        when:
         Response initWebEid = Requests.postRequestWithSessionId(flow, flow.loginService.fullWebEidInitUrl)
 
-        assertThat("Correct HTTP status code is returned", initWebEid.statusCode(), is(200))
-        assertThat("Correct Content-Type is returned", initWebEid.getHeader("Content-Type"), is("application/json;charset=UTF-8"))
-        assertThat("Challenge nonce for Web eID is returned", initWebEid.jsonPath().get("nonce"), is(notNullValue()))
+        then:
+        assertThat("Correct HTTP status code", initWebEid.statusCode, is(200))
+        assertThat("Correct Content-Type", initWebEid.contentType, is("application/json;charset=UTF-8"))
+        assertThat("Challenge nonce for Web eID", initWebEid.jsonPath().get("nonce"), is(notNullValue()))
     }
 
 
-    @Unroll
     def "Init Web eID authentication with incorrect SESSION cookie"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow)
         flow.setSessionId("00000000-0000-0000-0000-00000000")
+
+        when:
         Response initWebEid = Requests.postRequestWithSessionId(flow, flow.loginService.fullWebEidInitUrl)
 
-        assertThat("Correct HTTP status code is returned", initWebEid.statusCode(), is(403))
-        assertThat("Correct status is returned", initWebEid.jsonPath().get("error").toString(), is("Forbidden"))
-        assertThat("Correct message is returned", initWebEid.jsonPath().get("message").toString(), is("Keelatud päring. Päring esitati topelt, seanss aegus või on küpsiste kasutamine Teie brauseris piiratud."))
+        then:
+        assertThat("Correct HTTP status code", initWebEid.statusCode, is(403))
+        assertThat("Correct status", initWebEid.jsonPath().getString("error"), is(ERROR_FORBIDDEN))
+        assertThat("Correct message", initWebEid.jsonPath().getString("message"), is(MESSAGE_FORBIDDEN_REQUEST))
     }
 
-    @Unroll
     def "Init Web eID authentication with incorrect _csrf code"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow)
         flow.setCsrf("00000000-0000-0000-0000-00000000")
+
+        when:
         Response initWebEid = Requests.postRequestWithSessionId(flow, flow.loginService.fullWebEidInitUrl)
 
-        assertThat("Correct HTTP status code is returned", initWebEid.statusCode(), is(403))
-        assertThat("Correct status is returned", initWebEid.jsonPath().get("error").toString(), is("Forbidden"))
-        assertThat("Correct message is returned", initWebEid.jsonPath().get("message").toString(), is("Keelatud päring. Päring esitati topelt, seanss aegus või on küpsiste kasutamine Teie brauseris piiratud."))
+        then:
+        assertThat("Correct HTTP status code", initWebEid.statusCode, is(403))
+        assertThat("Correct status", initWebEid.jsonPath().getString("error"), is(ERROR_FORBIDDEN))
+        assertThat("Correct message", initWebEid.jsonPath().getString("message"), is(MESSAGE_FORBIDDEN_REQUEST))
     }
 
     //TODO: AUT-630
-    @Unroll
     def "Init Web eID authentication with unsupported request type: #requestType"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow)
+
+        when:
         Response initWebEid = Requests.requestWithSessionId(flow, requestType, flow.loginService.fullWebEidInitUrl)
 
-        assertThat("Correct HTTP status code is returned", initWebEid.statusCode(), is(500))
-        assertThat("Correct status is returned", initWebEid.jsonPath().get("error").toString(), is("Internal Server Error"))
-        assertThat("Correct message is returned", initWebEid.jsonPath().get("message").toString(), is("Autentimine ebaõnnestus teenuse tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti."))
+        then:
+        assertThat("Correct HTTP status code", initWebEid.statusCode, is(500))
+        assertThat("Correct status", initWebEid.jsonPath().getString("error"), is(ERROR_INTERNAL))
+        assertThat("Correct message", initWebEid.jsonPath().getString("message"), is(MESSAGE_INTERNAL_ERROR))
 
         where:
         _ | requestType
@@ -101,7 +112,6 @@ class WebeIDAuthSpec extends TaraSpecification {
         _ | "delete"
     }
 
-    @Unroll
     @Feature("DISALLOW_IFRAMES")
     @Feature("CSP_ENABLED")
     @Feature("HSTS_ENABLED")
@@ -109,233 +119,234 @@ class WebeIDAuthSpec extends TaraSpecification {
     @Feature("NOSNIFF")
     @Feature("XSS_DETECTION_FILTER_ENABLED")
     def "Init Web eID authentication, verify headers"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow)
+
+        when:
         Response initWebEid = Requests.postRequestWithSessionId(flow, flow.loginService.fullWebEidInitUrl)
+
+        then:
         Steps.verifyResponseHeaders(initWebEid)
     }
 
-    @Unroll
     def "Submit login request for Web eID authentication with valid authentication token"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow)
         Response initWebEid = Requests.postRequestWithSessionId(flow, flow.loginService.fullWebEidInitUrl)
-
         String signAuthValue = Utils.signAuthenticationValue(flow, flow.loginService.baseUrl, initWebEid.jsonPath().get("nonce"))
         JSONObject authToken = Utils.getWebEidAuthTokenParameters(flow, signAuthValue)
 
+        when:
         Response loginWebEid = Requests.postRequestWithJsonBody(flow, flow.loginService.fullWebEidLoginUrl, authToken)
 
-        assertThat("Correct HTTP status code is returned", loginWebEid.statusCode(), is(200))
-        assertThat("Correct Content-Type is returned", loginWebEid.getHeader("Content-Type"), is("application/json;charset=UTF-8"))
-        assertThat("Correct status is returned", loginWebEid.jsonPath().get("status").toString(), is("COMPLETED"))
+        then:
+        assertThat("Correct HTTP status code", loginWebEid.statusCode, is(200))
+        assertThat("Correct Content-Type", loginWebEid.contentType, is("application/json;charset=UTF-8"))
+        assertThat("Correct status", loginWebEid.jsonPath().getString("status"), is("COMPLETED"))
     }
 
-    @Unroll
     def "Submit login request for Web eID authentication with same valid authentication token twice"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow)
         Response initWebEid = Requests.postRequestWithSessionId(flow, flow.loginService.fullWebEidInitUrl)
-
         String signAuthValue = Utils.signAuthenticationValue(flow, flow.loginService.baseUrl, initWebEid.jsonPath().get("nonce"))
         JSONObject authToken = Utils.getWebEidAuthTokenParameters(flow, signAuthValue)
-
         Requests.postRequestWithJsonBody(flow, flow.loginService.fullWebEidLoginUrl, authToken)
+
+        when:
         Response loginWebEid = Requests.postRequestWithJsonBody(flow, flow.loginService.fullWebEidLoginUrl, authToken)
 
-
-        assertThat("Correct HTTP status code is returned", loginWebEid.statusCode(), is(400))
-        assertThat("Correct status is returned", loginWebEid.jsonPath().get("error").toString(), is("Bad Request"))
-        assertThat("Correct message is returned", loginWebEid.jsonPath().get("message").toString(), is("Ebakorrektne päring. Vale seansi staatus."))
+        then:
+        assertThat("Correct HTTP status code", loginWebEid.statusCode, is(400))
+        assertThat("Correct status", loginWebEid.jsonPath().getString("error"), is(ERROR_BAD_REQUEST))
+        assertThat("Correct message", loginWebEid.jsonPath().getString("message"), is("Ebakorrektne päring. Vale seansi staatus."))
     }
 
-    @Unroll
     def "Submit login request for Web eID authentication with invalid SESSION cookie"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow)
         Response initWebEid = Requests.postRequestWithSessionId(flow, flow.loginService.fullWebEidInitUrl)
-
         String signAuthValue = Utils.signAuthenticationValue(flow, flow.loginService.baseUrl, initWebEid.jsonPath().get("nonce"))
         JSONObject authToken = Utils.getWebEidAuthTokenParameters(flow, signAuthValue)
-
         flow.setSessionId("00000000-0000-0000-0000-00000000")
+
+        when:
         Response loginWebEid = Requests.postRequestWithJsonBody(flow, flow.loginService.fullWebEidLoginUrl, authToken)
 
-        assertThat("Correct HTTP status code is returned", loginWebEid.statusCode(), is(403))
-        assertThat("Correct status is returned", loginWebEid.jsonPath().get("error").toString(), is("Forbidden"))
-        assertThat("Correct message is returned", loginWebEid.jsonPath().get("message").toString(), is("Keelatud päring. Päring esitati topelt, seanss aegus või on küpsiste kasutamine Teie brauseris piiratud."))
+        then:
+        assertThat("Correct HTTP status code", loginWebEid.statusCode, is(403))
+        assertThat("Correct status", loginWebEid.jsonPath().getString("error"), is(ERROR_FORBIDDEN))
+        assertThat("Correct message", loginWebEid.jsonPath().getString("message"), is(MESSAGE_FORBIDDEN_REQUEST))
     }
 
-    @Unroll
     def "Submit login request for Web eID authentication with invalid _csrf code"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow)
         Response initWebEid = Requests.postRequestWithSessionId(flow, flow.loginService.fullWebEidInitUrl)
-
         String signAuthValue = Utils.signAuthenticationValue(flow, flow.loginService.baseUrl, initWebEid.jsonPath().get("nonce"))
         JSONObject authToken = Utils.getWebEidAuthTokenParameters(flow, signAuthValue)
-
         flow.setCsrf("00000000-0000-0000-0000-00000000")
+
+        when:
         Response loginWebEid = Requests.postRequestWithJsonBody(flow, flow.loginService.fullWebEidLoginUrl, authToken)
 
-        assertThat("Correct HTTP status code is returned", loginWebEid.statusCode(), is(403))
-        assertThat("Correct status is returned", loginWebEid.jsonPath().get("error").toString(), is("Forbidden"))
-        assertThat("Correct message is returned", loginWebEid.jsonPath().get("message").toString(), is("Keelatud päring. Päring esitati topelt, seanss aegus või on küpsiste kasutamine Teie brauseris piiratud."))
+        then:
+        assertThat("Correct HTTP status code", loginWebEid.statusCode, is(403))
+        assertThat("Correct status", loginWebEid.jsonPath().getString("error"), is(ERROR_FORBIDDEN))
+        assertThat("Correct message", loginWebEid.jsonPath().getString("message"), is(MESSAGE_FORBIDDEN_REQUEST))
     }
 
-    @Unroll
     def "Submit login request for Web eID authentication without init request"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow)
-
         String signAuthValue = Utils.signAuthenticationValue(flow, flow.loginService.baseUrl, "V2ViRWlkQXV0aEluaXRMb2dpbk5vbmNlVsOkbGphbcO1ZWxkdWQ=")
         JSONObject authToken = Utils.getWebEidAuthTokenParameters(flow, signAuthValue)
 
+        when:
         Response loginWebEid = Requests.postRequestWithJsonBody(flow, flow.loginService.fullWebEidLoginUrl, authToken)
 
-        assertThat("Correct HTTP status code is returned", loginWebEid.statusCode(), is(400))
-        assertThat("Correct status is returned", loginWebEid.jsonPath().get("error").toString(), is("Bad Request"))
-        assertThat("Correct message is returned", loginWebEid.jsonPath().get("message").toString(), is("Ebakorrektne päring."))
+        then:
+        assertThat("Correct HTTP status code", loginWebEid.statusCode, is(400))
+        assertThat("Correct status", loginWebEid.jsonPath().getString("error"), is(ERROR_BAD_REQUEST))
+        assertThat("Correct message", loginWebEid.jsonPath().getString("message"), is(MESSAGE_INCORRECT_REQUEST))
     }
 
-    @Unroll
     def "Submit login request for Web eID authentication with empty authentication token"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow)
+        JSONObject authToken = ["authToken": [:]]
 
-        JSONObject authToken = new JSONObject()
-        JSONObject empty = new JSONObject()
-        authToken.put("authToken", empty)
-
+        when:
         Response loginWebEid = Requests.postRequestWithJsonBody(flow, flow.loginService.fullWebEidLoginUrl, authToken)
 
-        assertThat("Correct HTTP status code is returned", loginWebEid.statusCode(), is(400))
-        assertThat("Correct status is returned", loginWebEid.jsonPath().get("error").toString(), is("Bad Request"))
-        assertThat("Correct message is returned", loginWebEid.jsonPath().get("message").toString(), is("Ebakorrektne päring."))
+        then:
+        assertThat("Correct HTTP status code", loginWebEid.statusCode, is(400))
+        assertThat("Correct status", loginWebEid.jsonPath().getString("error"), is(ERROR_BAD_REQUEST))
+        assertThat("Correct message", loginWebEid.jsonPath().getString("message"), is(MESSAGE_INCORRECT_REQUEST))
     }
 
-    @Unroll
     def "Submit login request for Web eID authentication with invalid authentication token: #reason"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow)
         Response initWebEid = Requests.postRequestWithSessionId(flow, flow.loginService.fullWebEidInitUrl)
-
         String signAuthValue = Utils.signAuthenticationValue(flow, flow.loginService.baseUrl, initWebEid.jsonPath().get("nonce"))
         JSONObject authToken = Utils.getWebEidAuthTokenParameters(flow, signAuthValue)
         authToken.getJSONObject("authToken").put(key, value)
 
+        when:
         Response loginWebEid = Requests.postRequestWithJsonBody(flow, flow.loginService.fullWebEidLoginUrl, authToken)
 
-        assertThat("Correct HTTP status code is returned", loginWebEid.statusCode(), is(statusCode))
-        assertThat("Correct status is returned", loginWebEid.jsonPath().get("error").toString(), is(error))
-        assertThat("Correct message is returned", loginWebEid.jsonPath().get("message").toString(), is(message))
+        then:
+        assertThat("Correct HTTP status code", loginWebEid.statusCode, is(statusCode))
+        assertThat("Correct status", loginWebEid.jsonPath().getString("error"), is(error))
+        assertThat("Correct message", loginWebEid.jsonPath().getString("message"), is(message))
 
         where:
         reason                        | key                     | value         | statusCode | error                   | message
-        "incorrect format value"      | "format"                | "web-eid:666" | 400        | "Bad Request"           | "Ebakorrektne päring."
-        "empty format value"          | "format"                | ""            | 400        | "Bad Request"           | "Ebakorrektne päring."
-        "incorrect certificate value" | "unverifiedCertificate" | "certificate" | 400        | "Bad Request"           | "Ebakorrektne päring."
-        "empty certificate value"     | "unverifiedCertificate" | ""            | 400        | "Bad Request"           | "Ebakorrektne päring."
-        "incorrect signature value"   | "signature"             | "signature"   | 500        | "Internal Server Error" | "Autentimine ebaõnnestus teenuse tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti."
-        "empty signature value"       | "signature"             | ""            | 400        | "Bad Request"           | "Ebakorrektne päring."
-        "incorrect algorithm value"   | "algorithm"             | "RSA384"      | 400        | "Bad Request"           | "Ebakorrektne päring."
-        "empty algorithm value"       | "algorithm"             | ""            | 400        | "Bad Request"           | "Ebakorrektne päring."
+        "incorrect format value"      | "format"                | "web-eid:666" | 400        | ERROR_BAD_REQUEST | MESSAGE_INCORRECT_REQUEST
+        "empty format value"          | "format"                | ""            | 400        | ERROR_BAD_REQUEST | MESSAGE_INCORRECT_REQUEST
+        "incorrect certificate value" | "unverifiedCertificate" | "certificate" | 400        | ERROR_BAD_REQUEST | MESSAGE_INCORRECT_REQUEST
+        "empty certificate value"     | "unverifiedCertificate" | ""            | 400        | ERROR_BAD_REQUEST | MESSAGE_INCORRECT_REQUEST
+        "incorrect signature value"   | "signature"             | "signature"   | 500        | ERROR_INTERNAL | MESSAGE_INTERNAL_ERROR
+        "empty signature value"       | "signature"             | ""            | 400        | ERROR_BAD_REQUEST | MESSAGE_INCORRECT_REQUEST
+        "incorrect algorithm value"   | "algorithm"             | "RSA384"      | 400        | ERROR_BAD_REQUEST | MESSAGE_INCORRECT_REQUEST
+        "empty algorithm value"       | "algorithm"             | ""            | 400        | ERROR_BAD_REQUEST | MESSAGE_INCORRECT_REQUEST
     }
 
-    @Unroll
     def "Submit login request for Web eID authentication with invalid authentication token: authToken missing #key"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow)
         Response initWebEid = Requests.postRequestWithSessionId(flow, flow.loginService.fullWebEidInitUrl)
-
         String signAuthValue = Utils.signAuthenticationValue(flow, flow.loginService.baseUrl, initWebEid.jsonPath().get("nonce"))
         JSONObject authToken = Utils.getWebEidAuthTokenParameters(flow, signAuthValue)
-
         authToken.getJSONObject("authToken").remove(key)
 
+        when:
         Response loginWebEid = Requests.postRequestWithJsonBody(flow, flow.loginService.fullWebEidLoginUrl, authToken)
 
-        assertThat("Correct HTTP status code is returned", loginWebEid.statusCode(), is(statusCode))
-        assertThat("Correct error is returned", loginWebEid.jsonPath().get("error").toString(), is(error))
-        assertThat("Correct message is returned", loginWebEid.jsonPath().get("message").toString(), is(message))
+        then:
+        assertThat("Correct HTTP status code", loginWebEid.statusCode, is(statusCode))
+        assertThat("Correct error", loginWebEid.jsonPath().getString("error"), is(error))
+        assertThat("Correct message", loginWebEid.jsonPath().getString("message"), is(message))
         assertThat("Error is reportable", loginWebEid.jsonPath().get("reportable") as Boolean, is(false))
 
         where:
         key                     | statusCode | error         | message
-        "format"                | 400        | "Bad Request" | "Ebakorrektne päring."
-        "unverifiedCertificate" | 400        | "Bad Request" | "Ebakorrektne päring."
-        "signature"             | 400        | "Bad Request" | "Ebakorrektne päring."
-        "algorithm"             | 400        | "Bad Request" | "Ebakorrektne päring."
+        "format"                | 400        | ERROR_BAD_REQUEST | MESSAGE_INCORRECT_REQUEST
+        "unverifiedCertificate" | 400        | ERROR_BAD_REQUEST | MESSAGE_INCORRECT_REQUEST
+        "signature"             | 400        | ERROR_BAD_REQUEST | MESSAGE_INCORRECT_REQUEST
+        "algorithm"             | 400        | ERROR_BAD_REQUEST | MESSAGE_INCORRECT_REQUEST
     }
 
     @Feature("REJECT_EXPIRED_CERTS")
-    @Unroll
     def "Submit login request for Web eID authentication with expired certificate"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow)
         Response initWebEid = Requests.postRequestWithSessionId(flow, flow.loginService.fullWebEidInitUrl)
-
         String signAuthValue = Utils.signAuthenticationValue(flow, flow.loginService.baseUrl, initWebEid.jsonPath().get("nonce"))
         JSONObject authToken = Utils.getWebEidAuthTokenParameters(flow, signAuthValue)
         authToken.getJSONObject("authToken").put("unverifiedCertificate", Utils.getCertificateAsString("src/test/resources/expired-cert_base64.txt"))
 
+        when:
         Response loginWebEid = Requests.postRequestWithJsonBody(flow, flow.loginService.fullWebEidLoginUrl, authToken)
 
-        assertThat("Correct HTTP status code is returned", loginWebEid.statusCode(), is(400))
-        assertThat("Correct error is returned", loginWebEid.jsonPath().get("error").toString(), is("Bad Request"))
-        assertThat("Correct message is returned", loginWebEid.jsonPath().get("message").toString(), is("ID-kaardi sertifikaadid ei kehti."))
-        assertThat("Error not reportable", loginWebEid.jsonPath().get("reportable") as Boolean, is(false))
+        then:
+        assertThat("Correct HTTP status code", loginWebEid.statusCode, is(400))
+        assertThat("Correct error", loginWebEid.jsonPath().getString("error"), is(ERROR_BAD_REQUEST))
+        assertThat("Correct message", loginWebEid.jsonPath().getString("message"), is("ID-kaardi sertifikaadid ei kehti."))
+        assertThat("Error not reportable", loginWebEid.jsonPath().getBoolean("reportable"), is(false))
     }
 
     @Feature("REJECT_REVOKED_CERTS")
-    @Unroll
     def "Submit login request for Web eID authentication with revoked certificate"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow)
         Response initWebEid = Requests.postRequestWithSessionId(flow, flow.loginService.fullWebEidInitUrl)
-
         String signAuthValue = Utils.signAuthenticationValue(flow, flow.loginService.baseUrl, initWebEid.jsonPath().get("nonce"), "src/test/resources/revoked_auth_EC.p12")
         JSONObject authToken = Utils.getWebEidAuthTokenParameters(flow, signAuthValue)
 
+        when:
         Response loginWebEid = Requests.postRequestWithJsonBody(flow, flow.loginService.fullWebEidLoginUrl, authToken)
 
-        assertThat("Correct HTTP status code is returned", loginWebEid.statusCode(), is(400))
-        assertThat("Correct error is returned", loginWebEid.jsonPath().get("error").toString(), is("Bad Request"))
-        assertThat("Correct message is returned", loginWebEid.jsonPath().get("message").toString(), is("ID-kaardi sertifikaadid on peatatud või tühistatud. Palun pöörduge Politsei- ja Piirivalveameti teenindusse."))
-        assertThat("Error not reportable", loginWebEid.jsonPath().get("reportable") as Boolean, is(false))
+        then:
+        assertThat("Correct HTTP status code", loginWebEid.statusCode, is(400))
+        assertThat("Correct error", loginWebEid.jsonPath().getString("error"), is(ERROR_BAD_REQUEST))
+        assertThat("Correct message", loginWebEid.jsonPath().getString("message"), is("ID-kaardi sertifikaadid on peatatud või tühistatud. Palun pöörduge Politsei- ja Piirivalveameti teenindusse."))
+        assertThat("Error not reportable", loginWebEid.jsonPath().getBoolean("reportable"), is(false))
 
     }
 
     @Feature("REJECT_UNKNOWN_CERTS")
-    @Unroll
     def "Submit login request for Web eID authentication with unknown certificate"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow)
         Response initWebEid = Requests.postRequestWithSessionId(flow, flow.loginService.fullWebEidInitUrl)
-
         String signAuthValue = Utils.signAuthenticationValue(flow, flow.loginService.baseUrl, initWebEid.jsonPath().get("nonce"), "src/test/resources/unknown_auth_EC.p12")
         JSONObject authToken = Utils.getWebEidAuthTokenParameters(flow, signAuthValue)
 
+        when:
         Response loginWebEid = Requests.postRequestWithJsonBody(flow, flow.loginService.fullWebEidLoginUrl, authToken)
 
-        assertThat("Correct HTTP status code is returned", loginWebEid.statusCode(), is(400))
-        assertThat("Correct error is returned", loginWebEid.jsonPath().get("error").toString(), is("Bad Request"))
-        assertThat("Correct message is returned", loginWebEid.jsonPath().get("message").toString(), is("ID-kaardi sertifikaadid on peatatud või tühistatud. Palun pöörduge Politsei- ja Piirivalveameti teenindusse."))
-        assertThat("Error not reportable", loginWebEid.jsonPath().get("reportable") as Boolean, is(false))
+        then:
+        assertThat("Correct HTTP status code", loginWebEid.statusCode, is(400))
+        assertThat("Correct error", loginWebEid.jsonPath().getString("error"), is(ERROR_BAD_REQUEST))
+        assertThat("Correct message", loginWebEid.jsonPath().getString("message"), is("ID-kaardi sertifikaadid on peatatud või tühistatud. Palun pöörduge Politsei- ja Piirivalveameti teenindusse."))
+        assertThat("Error not reportable", loginWebEid.jsonPath().getBoolean("reportable"), is(false))
 
     }
 
-    @Unroll
     def "Submit login request for Web eID authentication with unsupported request type: #requestType"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow)
         Requests.postRequestWithSessionId(flow, flow.loginService.fullWebEidInitUrl)
 
+        when:
         Response loginWebEid = Requests.requestWithSessionId(flow, requestType, flow.loginService.fullWebEidLoginUrl)
 
-        assertThat("Correct HTTP status code is returned", loginWebEid.statusCode(), is(500))
-        assertThat("Correct status is returned", loginWebEid.jsonPath().get("error").toString(), is("Internal Server Error"))
-        assertThat("Correct message is returned", loginWebEid.jsonPath().get("message").toString(), is("Autentimine ebaõnnestus teenuse tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti."))
+        then:
+        assertThat("Correct HTTP status code", loginWebEid.statusCode, is(500))
+        assertThat("Correct status", loginWebEid.jsonPath().getString("error"), is(ERROR_INTERNAL))
+        assertThat("Correct message", loginWebEid.jsonPath().getString("message"), is(MESSAGE_INTERNAL_ERROR))
 
         where:
         _ | requestType
@@ -345,7 +356,6 @@ class WebeIDAuthSpec extends TaraSpecification {
         _ | "delete"
     }
 
-    @Unroll
     @Feature("DISALLOW_IFRAMES")
     @Feature("CSP_ENABLED")
     @Feature("HSTS_ENABLED")
@@ -353,12 +363,16 @@ class WebeIDAuthSpec extends TaraSpecification {
     @Feature("NOSNIFF")
     @Feature("XSS_DETECTION_FILTER_ENABLED")
     def "Submit login request for Web eID authentication, verify headers"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow)
         Response initWebEid = Requests.postRequestWithSessionId(flow, flow.loginService.fullWebEidInitUrl)
         String signAuthValue = Utils.signAuthenticationValue(flow, flow.loginService.baseUrl, initWebEid.jsonPath().get("nonce"))
         JSONObject authToken = Utils.getWebEidAuthTokenParameters(flow, signAuthValue)
+
+        when:
         Response loginWebEid = Requests.postRequestWithJsonBody(flow, flow.loginService.fullWebEidLoginUrl, authToken)
+
+        then:
         Steps.verifyResponseHeaders(loginWebEid)
     }
 }

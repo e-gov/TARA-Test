@@ -4,49 +4,57 @@ import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.path.json.JsonPath
 import io.restassured.response.Response
-import spock.lang.Unroll
 
-import static org.junit.jupiter.api.Assertions.*
+import static org.hamcrest.MatcherAssert.assertThat
+import static org.hamcrest.Matchers.allOf
+import static org.hamcrest.Matchers.equalToIgnoringCase
+import static org.hamcrest.Matchers.greaterThan
+import static org.hamcrest.Matchers.hasItem
+import static org.hamcrest.Matchers.hasSize
+import static org.hamcrest.Matchers.is
 
 class OidcMetadataSpec extends TaraSpecification {
+
     Flow flow = new Flow(props)
+
     def setup() {
         flow.cookieFilter = new CookieFilter()
     }
 
-    @Unroll
     @Feature("OIDC_DISCOVERY_ENDPOINT")
     def "Verify discovery path #path"() {
-        expect:
+        when:
         Response response = Requests.getRequest(flow.oidcService.baseUrl + path)
-        assertEquals(200, response.statusCode(), "Correct HTTP status code is returned")
-        assertEquals((flow.oidcService.baseUrl.toString()), response.getBody().jsonPath().get("issuer"), "Correct issuer")
+
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(200))
+        assertThat("Correct issuer", response.jsonPath().getString("issuer"), equalToIgnoringCase(flow.oidcService.baseUrl))
 
         where:
-        path || statusCode
-        "/.well-known/openid-configuration" || 200
-        "/.well-known" || 200
-        "/oidc/.well-known/openid-configuration" || 200
-        "/oidc/.well-known" || 200
+        path                                     | _
+        "/.well-known/openid-configuration"      | _
+        "/.well-known"                           | _
+        "/oidc/.well-known/openid-configuration" | _
+        "/oidc/.well-known"                      | _
     }
 
-    @Unroll
     @Feature("OIDC_DISCOVERY_CONTENT")
     def "Verify discovery content"() {
-        expect:
-        JsonPath jsonResponse = Requests.getOpenidConfiguration(flow.oidcService.fullConfigurationUrl)
-        assertEquals((flow.oidcService.baseUrl.toString()), jsonResponse.get("issuer"), "Correct issuer")
-        List<String> scopesSupported = jsonResponse.getList("scopes_supported")
-        def scopeList = ["openid", "idcard", "mid", "smartid", "email", "phone"] //, "eidas", "eidasonly"]
+        when:
+        JsonPath response = Requests.getOpenidConfiguration(flow.oidcService.fullConfigurationUrl)
+
+        then:
+        assertThat("Correct issuer", response.getString("issuer"), equalToIgnoringCase(flow.oidcService.baseUrl))
+        List<String> scopesSupported = response.getList("scopes_supported")
+        def scopeList = ["openid", "idcard", "mid", "smartid", "email", "phone", "eidas", "eidasonly"]
         scopeList.each {
-            assertTrue(scopesSupported.contains(it), "Scope supported. Contains $it")
+            assertThat("Scope supported. Contains $it", scopesSupported.contains(it))
         }
+        assertThat("Supported response types", response.getList("response_types_supported"), allOf(hasSize(1), hasItem("code")))
+        assertThat("Supported subject types", response.getList("subject_types_supported"), allOf(hasSize(1), hasItem("public")))
+        assertThat("Supported claim types", response.getList("claim_types_supported"), allOf(hasSize(1), hasItem("normal")))
 
-        assertEquals("code", jsonResponse.getList("response_types_supported")[0], "Supported response types")
-        assertEquals("public", jsonResponse.getList("subject_types_supported")[0], "Supported subject types")
-        assertEquals("normal", jsonResponse.getList("claim_types_supported")[0], "Supported claim types")
-
-        List<String> claimsSupported = jsonResponse.getList("claims_supported")
+        List<String> claimsSupported = response.getList("claims_supported")
         def claimsList = ["sub", "given_name", "family_name", "date_of_birth"]
         claimsList.add("represents_legal_person.name")
         claimsList.add("represents_legal_person.registry_code")
@@ -55,64 +63,74 @@ class OidcMetadataSpec extends TaraSpecification {
         claimsList.add("phonenumber")
         claimsList.add("phonenumber_verified")
         claimsList.each {
-            assertTrue(claimsSupported.contains(it), "Claim supported. Contains $it")
+            assertThat("Claim supported. Contains $it", claimsSupported.contains(it))
         }
-        assertEquals("authorization_code", jsonResponse.getList("grant_types_supported")[0], "Supported grant types")
-        assertEquals("RS256", jsonResponse.getList("id_token_signing_alg_values_supported")[0], "Supported alg values")
-        List<String> localesSupported = jsonResponse.getList("ui_locales_supported")
+        assertThat("Supported grant types", response.getList("grant_types_supported"), allOf(hasSize(1), hasItem("authorization_code")))
+        assertThat("Supported alg values", response.getList("id_token_signing_alg_values_supported"), allOf(hasSize(1), hasItem("RS256")))
+        List<String> localesSupported = response.getList("ui_locales_supported")
         def localesList = ["et", "en", "ru"]
         localesList.each {
-            assertTrue(localesSupported.contains(it), "Locale $it supported")
+            assertThat("Locale $it supported", localesSupported.contains(it))
         }
-        // TARA2-151 , TARA2-219
-        assertEquals((flow.oidcService.baseUrl + "/oidc/token").toString(), jsonResponse.getString("token_endpoint"), "Correct token endpoint")
-        assertEquals((flow.oidcService.baseUrl + "/oidc/profile").toString(), jsonResponse.getString("userinfo_endpoint"), "Correct userinfo endpoint")
-        assertEquals((flow.oidcService.baseUrl + "/oidc/authorize").toString(), jsonResponse.getString("authorization_endpoint"), "Correct authorization endpoint")
-        assertEquals((flow.oidcService.baseUrl + "/oidc/jwks").toString(), jsonResponse.getString("jwks_uri"), "Correct jwks uri")
+        assertThat("Correct token endpoint", response.getString("token_endpoint"), equalToIgnoringCase(flow.oidcService.baseUrl + "/oidc/token"))
+        assertThat("Correct userinfo endpoint", response.getString("userinfo_endpoint"), equalToIgnoringCase(flow.oidcService.baseUrl + "/oidc/profile"))
+        assertThat("Correct authorization endpoint", response.getString("authorization_endpoint"), equalToIgnoringCase(flow.oidcService.fullAuthorizationUrl))
+        assertThat("Correct jwks uri", response.getString("jwks_uri"), equalToIgnoringCase(flow.oidcService.baseUrl + "/oidc/jwks"))
     }
 
-    @Unroll
     @Feature("OIDC_ENDPOINTS")
     def "Verify authorization endpoint"() {
-        expect:
+        given:
         JsonPath jsonResponse = Requests.getOpenidConfiguration(flow.oidcService.fullConfigurationUrl)
-        Response authorizationResponse = Requests.getRequest(jsonResponse.getString("authorization_endpoint"))
-        assertEquals(302, authorizationResponse.statusCode(), "Correct HTTP status code is returned")
-        String errorDescription = Utils.getParamValueFromResponseHeader(authorizationResponse, "error")
-        assertEquals("invalid_client", errorDescription, "Correct value for authorization endpoint")
+
+        when:
+        Response authorizationResponse = Requests.getRequest(jsonResponse.getString('authorization_endpoint'))
+
+        then:
+        assertThat("Correct HTTP status code", authorizationResponse.statusCode, is(302))
+        assertThat("Correct value for authorization endpoint", Utils.getParamValueFromResponseHeader(authorizationResponse, "error"), is(ERROR_CLIENT))
     }
 
-    @Unroll
     @Feature("OIDC_ENDPOINTS")
     def "Verify token endpoint"() {
-        expect:
+        given:
         flow.setOpenIdServiceConfiguration(Requests.getOpenidConfiguration(flow.oidcService.fullConfigurationUrl))
+
+        when:
         Response tokenResponse = Requests.getWebToken(flow, "123456")
-        assertEquals(400, tokenResponse.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("application/json;charset=UTF-8", tokenResponse.getContentType(), "Correct Content-Type is returned")
-        assertEquals("invalid_grant", tokenResponse.body().jsonPath().get("error"), "Correct error message is returned")
+
+        then:
+        assertThat("Correct HTTP status code", tokenResponse.statusCode, is(400))
+        assertThat("Correct Content-Type", tokenResponse.contentType, is("application/json;charset=UTF-8"))
+        assertThat("Correct error message", tokenResponse.jsonPath().getString("error"), is(ERROR_GRANT))
     }
 
-    @Unroll
     @Feature("OIDC_ENDPOINTS")
     def "Verify user info endpoint"() {
-        expect:
+        given:
         flow.setOpenIdServiceConfiguration(Requests.getOpenidConfiguration(flow.oidcService.fullConfigurationUrl))
-        Response userInfoResponse = Steps.getUserInfoResponseWithHeaderParam(flow, REQUEST_TYPE_GET, "456789")
-        assertEquals(401, userInfoResponse.statusCode(), "Correct HTTP status code is returned")
-        Map<String, String> errorMap = OpenIdUtils.getErrorFromAuthorizationHeader(userInfoResponse)
-        assertEquals("\"request_unauthorized\"", errorMap.get("Bearer error"), "Correct error text is returned")
-        assertEquals("\"The request could not be authorized. Check that you provided valid credentials in the right format.\"", errorMap.get("error_description"), "Correct error description is returned")
+
+        when:
+        Response response = Steps.getUserInfoResponseWithHeaderParam(flow, REQUEST_TYPE_GET, "456789")
+
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(401))
+        assertThat("Correct error text", response.jsonPath().getString("error"), is(ERROR_UNAUTHORIZED))
+        assertThat("Correct error description", response.jsonPath().getString("error_description"), is("The request could not be authorized. Check that you provided valid credentials in the right format."))
     }
 
-    @Unroll
     @Feature("OIDC_ENDPOINTS")
     def "Verify keystore endpoint"() {
-        expect:
+        given:
         JsonPath jsonResponse = Requests.getOpenidConfiguration(flow.oidcService.fullConfigurationUrl)
-        Response response = Requests.getRequest(jsonResponse.getString("jwks_uri"))
-        assertTrue(response.getBody().jsonPath().getString("keys.n").size() > 300, "Correct n size")
-        assertTrue(response.getBody().jsonPath().getString("keys.e").size() > 3, "Correct e size")
-    }
 
+        when:
+        Response response = Requests.getRequest(jsonResponse.getString("jwks_uri"))
+
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(200))
+        assertThat("Correct Content-Type", response.contentType, is("application/json; charset=utf-8"))
+        assertThat("Correct n size", response.jsonPath().getString("keys.n").size(), greaterThan(300))
+        assertThat("Correct e size", response.jsonPath().getString("keys.e").size(),  greaterThan(3))
+    }
 }

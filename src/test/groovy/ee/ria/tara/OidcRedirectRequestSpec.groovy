@@ -4,11 +4,11 @@ import com.nimbusds.jose.jwk.JWKSet
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
-import org.hamcrest.Matchers
-import spock.lang.Unroll
 
-import static org.junit.jupiter.api.Assertions.*
 import static org.hamcrest.MatcherAssert.assertThat
+import static org.hamcrest.Matchers.is
+import static org.hamcrest.Matchers.greaterThan
+import static org.hamcrest.Matchers.startsWith
 
 class OidcRedirectRequestSpec extends TaraSpecification {
     Flow flow = new Flow(props)
@@ -19,73 +19,85 @@ class OidcRedirectRequestSpec extends TaraSpecification {
         flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.oidcService.fullJwksUrl))
     }
 
-    @Unroll
     @Feature("OIDC_AUTHENTICATION_SUCCESSFUL")
     @Feature("OIDC_AUTHENTICATION_FINISHED")
     def "Verify redirection url parameters"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow)
         Response midAuthResponse = Steps.authenticateWithMid(flow,"60001017716", "69100366")
+
+        when:
         Response response = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
-        assertEquals(303, response.statusCode(), "Correct HTTP status code is returned")
-        assertTrue(Utils.getParamValueFromResponseHeader(response, "code").size() > 60, "Code parameter exists")
-        assertEquals(flow.state, Utils.getParamValueFromResponseHeader(response, "state"), "Correct state parameter")
+
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(303))
+        assertThat("Code parameter exists", Utils.getParamValueFromResponseHeader(response, "code").size(), greaterThan(60))
+        assertThat("Correct state parameter", Utils.getParamValueFromResponseHeader(response, "state"), is(flow.state))
     }
 
-    @Unroll
     @Feature("OIDC_AUTHENTICATION_FAILED")
     def "Verify redirection url with invalid scope"() {
-        expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "my_scope", "et")
+        given:
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "my_scope", "et")
+
+        when:
         Response response = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
 
-        assertEquals(303, response.statusCode(), "Correct HTTP status code is returned")
-        assertEquals(flow.state, Utils.getParamValueFromResponseHeader(response, "state"), "Correct state parameter")
-        assertEquals("invalid_scope", Utils.getParamValueFromResponseHeader(response, "error"), "Error parameter exists")
-        assertThat("Error description parameter exists", Utils.getParamValueFromResponseHeader(response, "error_description") , Matchers.startsWith("The requested scope is invalid"))
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(303))
+        assertThat("Correct state parameter", Utils.getParamValueFromResponseHeader(response, "state"), is(flow.state))
+        assertThat("Correct error", Utils.getParamValueFromResponseHeader(response, "error"), is(ERROR_SCOPE))
+        assertThat("Correct error description", Utils.getParamValueFromResponseHeader(response, "error_description"), startsWith("The requested scope is invalid"))
     }
 
-    @Unroll
     @Feature("OIDC_AUTHENTICATION_FAILED")
     def "Verify redirection url with invalid state"() {
-        expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
+        given:
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
         paramsMap.put("state", "ab")
+
+        when:
         Response response = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
-        assertEquals(303, response.statusCode(), "Correct HTTP status code is returned")
-        assertEquals("ab", Utils.getParamValueFromResponseHeader(response, "state"), "Correct state parameter")
-        assertEquals("invalid_state", Utils.getParamValueFromResponseHeader(response, "error"), "Error parameter exists")
-        assertThat("Error description parameter exists", Utils.getParamValueFromResponseHeader(response, "error_description") , Matchers.startsWith("The state is missing"))
+
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(303))
+        assertThat("Correct state parameter", Utils.getParamValueFromResponseHeader(response, "state"), is("ab"))
+        assertThat("Correct error", Utils.getParamValueFromResponseHeader(response, "error"), is(ERROR_STATE))
+        assertThat("Correct error description", Utils.getParamValueFromResponseHeader(response, "error_description"), startsWith("The state is missing"))
     }
 
-    @Unroll
     @Feature("OIDC_AUTHENTICATION_FAILED")
     def "Verify redirection url with unsupported response type"() {
-        expect:
-        Map<String, String> paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
+        given:
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
         paramsMap.put("response_type", "token")
+
+        when:
         Response response = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
-        assertEquals(303, response.statusCode(), "Correct HTTP status code is returned")
-        assertEquals(flow.state, Utils.getParamValueFromResponseHeader(response, "state"), "Correct state parameter")
-        assertEquals("unsupported_response_type", Utils.getParamValueFromResponseHeader(response, "error"), "Error parameter exists")
-        assertThat("Error description parameter exists", Utils.getParamValueFromResponseHeader(response, "error_description") , Matchers.startsWith("The authorization server does not support"))
+
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(303))
+        assertThat("Correct state parameter", Utils.getParamValueFromResponseHeader(response, "state"), is(flow.state))
+        assertThat("Correct error", Utils.getParamValueFromResponseHeader(response, "error"), is("unsupported_response_type"))
+        assertThat("Correct error description", Utils.getParamValueFromResponseHeader(response, "error_description"), startsWith("The authorization server does not support"))
     }
 
-    @Unroll
     @Feature("OIDC_AUTHENTICATION_FAILED")
     def "Verify redirection url with user cancel"() {
-        expect:
+        given:
         Steps.startAuthenticationInTara(flow)
-        HashMap<String, String> paramsMap = (HashMap) Collections.emptyMap()
-        def map1 = Utils.setParameter(paramsMap, "error_code", REJECT_ERROR_CODE)
-        HashMap<String, String> cookieMap = (HashMap) Collections.emptyMap()
-        def map3 = Utils.setParameter(cookieMap, "SESSION", flow.sessionId)
-        Response rejectResponse = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullAuthRejectUrl, cookieMap, paramsMap, Collections.emptyMap())
+        Map paramsMap = ["error_code": REJECT_ERROR_CODE]
+        Map cookieMap = ["SESSION": flow.sessionId]
+        Response rejectResponse = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullAuthRejectUrl, cookieMap, paramsMap, [:])
+
+        when:
         Response response = Steps.followRedirectWithCookies(flow, rejectResponse, flow.oidcService.cookies)
-        assertEquals(303, response.statusCode(), "Correct HTTP status code is returned")
-        assertEquals(flow.state, Utils.getParamValueFromResponseHeader(response, "state"), "Correct state parameter")
-        assertEquals("user_cancel", Utils.getParamValueFromResponseHeader(response, "error"), "Error parameter exists")
-        assertThat("Error description parameter exists", Utils.getParamValueFromResponseHeader(response, "error_description") , Matchers.startsWith("User canceled the authentication process"))
+
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(303))
+        assertThat("Correct state parameter", Utils.getParamValueFromResponseHeader(response, "state"), is(flow.state))
+        assertThat("Correct error", Utils.getParamValueFromResponseHeader(response, "error"), is(REJECT_ERROR_CODE))
+        assertThat("Correct error description", Utils.getParamValueFromResponseHeader(response, "error_description") , startsWith("User canceled the authentication process"))
     }
 
 }

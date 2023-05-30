@@ -155,7 +155,7 @@ class OidcService {
     String authorizationUrl
     String jwksUrl
     String configurationUrl
-    HashMap <String, String> cookies
+    Map cookies
 
     @Lazy fullAuthenticationRequestUrl = "${protocol}://${host}${authenticationRequestUrl}"
     @Lazy fullAuthorizationUrl = "${protocol}://${host}${authorizationUrl}"
@@ -170,7 +170,7 @@ class OidcService {
         this.authorizationUrl = properties."oidcservice.authorizationUrl"
         this.jwksUrl = properties."oidcservice.jwksUrl"
         this.configurationUrl = properties."oidcservice.configurationUrl"
-        this.cookies = new HashMap<String, String>()
+        this.cookies = new HashMap()
     }
 }
 
@@ -182,7 +182,7 @@ class OidcService {
         String responseUrl
         String clientId
         String clientSecret
-        HashMap <String, String> cookies
+        Map cookies
 
         @Lazy fullResponseUrl = "${protocol}://${host}${portCheck()}${responseUrl}"
 
@@ -193,7 +193,7 @@ class OidcService {
             this.responseUrl = properties."oidcclientpublic.responseUrl"
             this.clientId = properties."oidcclientpublic.clientId"
             this.clientSecret = properties."oidcclientpublic.secret"
-            this.cookies = new HashMap<String, String>()
+            this.cookies = new HashMap()
         }
         private String portCheck() {
             if (port != null && port.isInteger()) {
@@ -212,7 +212,7 @@ class OidcClientPrivate {
     String responseUrl
     String clientId
     String clientSecret
-    HashMap <String, String> cookies
+    Map cookies
 
     @Lazy fullResponseUrl = "${protocol}://${host}${portCheck()}${responseUrl}"
 
@@ -223,7 +223,7 @@ class OidcClientPrivate {
         this.responseUrl = properties."oidcclientprivate.responseUrl"
         this.clientId = properties."oidcclientprivate.clientId"
         this.clientSecret = properties."oidcclientprivate.secret"
-        this.cookies = new HashMap<String, String>()
+        this.cookies = new HashMap()
     }
     private String portCheck() {
         if (port != null && port.isInteger()) {
@@ -242,7 +242,7 @@ class OidcClientLegal {
     String responseUrl
     String clientId
     String clientSecret
-    HashMap <String, String> cookies
+    Map cookies
 
     @Lazy fullResponseUrl = "${protocol}://${host}${portCheck()}${responseUrl}"
 
@@ -253,7 +253,7 @@ class OidcClientLegal {
         this.responseUrl = properties."oidcclientlegal.responseUrl"
         this.clientId = properties."oidcclientlegal.clientId"
         this.clientSecret = properties."oidcclientlegal.secret"
-        this.cookies = new HashMap<String, String>()
+        this.cookies = new HashMap()
     }
     private String portCheck() {
         if (port != null && port.isInteger()) {
@@ -272,7 +272,7 @@ class SpecificProxyService {
     String responseUrl
     String clientId
     String clientSecret
-    HashMap <String, String> cookies
+    Map cookies
 
     @Lazy fullResponseUrl = "${protocol}://${host}${portCheck()}${responseUrl}"
 
@@ -283,7 +283,7 @@ class SpecificProxyService {
         this.responseUrl = properties."specificproxyservice.responseUrl"
         this.clientId = properties."specificproxyservice.clientId"
         this.clientSecret = properties."specificproxyservice.secret"
-        this.cookies = new HashMap<String, String>()
+        this.cookies = new HashMap()
     }
     private String portCheck() {
         if (port != null && port.isInteger()) {
@@ -369,4 +369,3 @@ class TaraAdminService {
         }
     }
 }
-

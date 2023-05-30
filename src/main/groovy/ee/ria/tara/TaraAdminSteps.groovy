@@ -6,19 +6,21 @@ import groovy.json.JsonBuilder
 import io.qameta.allure.Step
 import io.restassured.response.Response
 
-import static org.junit.jupiter.api.Assertions.assertEquals
+import static org.hamcrest.MatcherAssert.assertThat
+import static org.hamcrest.Matchers.is
 
+// TODO: AUT-1186
 class TaraAdminSteps {
     static String pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
 
     @Step("Authenticate as Tara Admin")
     static void taraAdminLogin(Flow flow, String username, String password) {
-        Map<String, Object> jsonAsMap = new HashMap<>()
-        Utils.setParameter(jsonAsMap, "username", username)
-        Utils.setParameter(jsonAsMap, "password", password)
-        Response loginResponse = Requests.jsonRequest(flow, flow.taraAdminService.fullBaseUrl + "/login", jsonAsMap)
-        assertEquals("Correct HTTP status code is returned", 200, loginResponse.statusCode())
-        assertEquals("No error alerts", null, loginResponse.getBody().jsonPath().get("error"))
+        Map map = [
+                "username": username,
+                "password": password]
+        Response loginResponse = Requests.jsonRequest(flow, flow.taraAdminService.fullBaseUrl + "/login", map)
+        assertThat("Correct HTTP status code", loginResponse.statusCode, is(200))
+        assertThat("No error alerts", loginResponse.jsonPath().get("error"), is(null))
         flow.taraAdminService.xsrfToken = loginResponse.getCookie("XSRF-TOKEN")
         flow.taraAdminService.jsessionId = loginResponse.getCookie("JSESSIONID")
     }
@@ -52,34 +54,34 @@ class TaraAdminSteps {
         }
         //  println builder.toPrettyString()
 
-        HashMap<String, String> cookiesMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(cookiesMap, "XSRF-TOKEN", flow.taraAdminService.xsrfToken)
-        Utils.setParameter(cookiesMap, "JSESSIONID", flow.taraAdminService.jsessionId)
+        Map cookiesMap = [
+                "XSRF-TOKEN": flow.taraAdminService.xsrfToken,
+                "JSESSIONID": flow.taraAdminService.jsessionId]
         Response response = Requests.postRequestAdminApiWithJsonBody(flow, flow.taraAdminService.fullBaseUrl + "/institutions", cookiesMap, builder.toString())
         if (checkStatusCode) {
-            assertEquals("Correct HTTP status code is returned", 200, response.statusCode())
+            assertThat("Correct HTTP status code", response.statusCode, is(200))
         }
         return response
     }
 
     @Step("Who am I")
     static Response whoAmI(Flow flow, boolean checkStatusCode = true) {
-        HashMap<String, String> cookiesMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(cookiesMap, "XSRF-TOKEN", flow.taraAdminService.xsrfToken)
-        Utils.setParameter(cookiesMap, "JSESSIONID", flow.taraAdminService.jsessionId)
+        Map cookiesMap = [
+                "XSRF-TOKEN": flow.taraAdminService.xsrfToken,
+                "JSESSIONID": flow.taraAdminService.jsessionId]
         Response response = Requests.followRedirectWithCookie(flow, flow.taraAdminService.fullBaseUrl + "/whoami", cookiesMap)
-        assertEquals("Correct HTTP status code is returned", 200, response.statusCode())
+        assertThat("Correct HTTP status code", response.statusCode, is(200))
         return response
     }
 
     @Step("Delete institution")
     static Response deleteInstitution(Flow flow, String registryCode, boolean checkStatusCode = true) {
-        HashMap<String, String> cookiesMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(cookiesMap, "XSRF-TOKEN", flow.taraAdminService.xsrfToken)
-        Utils.setParameter(cookiesMap, "JSESSIONID", flow.taraAdminService.jsessionId)
+        Map cookiesMap = [
+                "XSRF-TOKEN": flow.taraAdminService.xsrfToken,
+                "JSESSIONID": flow.taraAdminService.jsessionId]
         Response response = Requests.deleteRequest(flow, flow.taraAdminService.fullBaseUrl + "/institutions/${registryCode}", cookiesMap)
         if (checkStatusCode) {
-            assertEquals("Correct HTTP status code is returned", 200, response.statusCode())
+            assertThat("Correct HTTP status code", response.statusCode, is(200))
         }
         return response
     }
@@ -146,29 +148,29 @@ class TaraAdminSteps {
 
         // println builder.toPrettyString()
 
-        HashMap<String, String> cookiesMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(cookiesMap, "XSRF-TOKEN", flow.taraAdminService.xsrfToken)
-        Utils.setParameter(cookiesMap, "JSESSIONID", flow.taraAdminService.jsessionId)
+        Map cookiesMap = [
+                "XSRF-TOKEN": flow.taraAdminService.xsrfToken,
+                "JSESSIONID": flow.taraAdminService.jsessionId]
         Response response = Requests.postRequestAdminApiWithJsonBody(flow, flow.taraAdminService.fullBaseUrl + "/institutions/${registryCode}/clients", cookiesMap, builder.toString())
         if (checkStatusCode) {
-            assertEquals("Correct HTTP status code is returned", 200, response.statusCode())
+            assertThat("Correct HTTP status code", response.statusCode, is(200))
         }
         return response
     }
 
     @Step("Get all clients")
     static Response getAllClients(Flow flow, String registryCode) {
-        HashMap<String, String> cookiesMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(cookiesMap, "XSRF-TOKEN", flow.taraAdminService.xsrfToken)
-        Utils.setParameter(cookiesMap, "JSESSIONID", flow.taraAdminService.jsessionId)
+        Map cookiesMap = [
+                "XSRF-TOKEN": flow.taraAdminService.xsrfToken,
+                "JSESSIONID": flow.taraAdminService.jsessionId]
         Requests.getRequest(flow, flow.taraAdminService.fullBaseUrl + "/institutions/${registryCode}/clients", cookiesMap)
     }
 
     @Step("Delete client")
     static Response deleteClient(Flow flow, String registryCode, String clientId, boolean checkStatusCode = true) {
-        HashMap<String, String> cookiesMap = (HashMap) Collections.emptyMap()
-        Utils.setParameter(cookiesMap, "XSRF-TOKEN", flow.taraAdminService.xsrfToken)
-        Utils.setParameter(cookiesMap, "JSESSIONID", flow.taraAdminService.jsessionId)
+        Map cookiesMap = [
+                "XSRF-TOKEN": flow.taraAdminService.xsrfToken,
+                "JSESSIONID": flow.taraAdminService.jsessionId]
         Requests.deleteRequest(flow, flow.taraAdminService.fullBaseUrl + "/institutions/${registryCode}/clients/${clientId}", cookiesMap)
     }
 }
