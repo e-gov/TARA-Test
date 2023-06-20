@@ -13,7 +13,7 @@
         <!-- Dependency versions -->
         <groovy.version>3.0.13</groovy.version>
         <spock.version>2.2-groovy-3.0</spock.version>
-        <allure.version>2.15.0</allure.version>
+        <allure.version>2.22.2</allure.version>
         <opensaml.version>4.0.1</opensaml.version>
         <rest-assured.version>4.5.1</rest-assured.version>
         <commons-validator.version>1.7</commons-validator.version>
@@ -82,9 +82,8 @@
         <!-- Allure -->
         <dependency>
             <groupId>io.qameta.allure</groupId>
-            <artifactId>allure-junit5</artifactId>
+            <artifactId>allure-spock2</artifactId>
             <version>${allure.version}</version>
-
             <exclusions>
                 <exclusion>
                     <groupId>junit</groupId>
