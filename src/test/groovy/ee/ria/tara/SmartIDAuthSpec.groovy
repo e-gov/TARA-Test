@@ -6,6 +6,7 @@ import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 
+import static io.restassured.RestAssured.given
 import static org.hamcrest.Matchers.greaterThan
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.containsString
@@ -51,7 +52,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         Steps.startAuthenticationInTara(flow, "openid")
 
         when:
-        Response response = Steps.initSidAuthSession(flow, flow.sessionId, "30303039914")
+        Response response = Steps.initSidAuthSession(flow, "30303039914")
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(200))
@@ -60,33 +61,79 @@ class SmartIDAuthSpec extends TaraSpecification {
         assertThat("Verification code exists", controlCode.size(), is(4))
     }
 
-    //TODO: AUT-630
     @Feature("SID_AUTH_INIT_ENDPOINT")
-    def "initialize Smart-ID authentication with invalid method get"() {
+    def "initialize Smart-ID authentication with invalid session cookie: #reason"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
-        Map paramsMap = ["idCode": "30303039914"]
-        Map cookieMap = ["SESSION": flow.sessionId]
 
-        when:
-        Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullSidInitUrl, cookieMap, paramsMap, [:])
+        when: "initialize Smart-ID authentication with invalid session cookie"
+        Response response = given()
+                .relaxedHTTPSValidation()
+                .params([idCode: "30303039914",
+                         _csrf : flow.csrf])
+                .cookies(cookie)
+                .when()
+                .post(flow.loginService.fullSidInitUrl)
+                .then()
+                .extract().response()
 
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(403))
+        assertThat("Correct error", response.jsonPath().getString("error"), is(ERROR_FORBIDDEN))
+        assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_FORBIDDEN_REQUEST))
+
+        where:
+        cookie               | reason
+        [:]                  | "no cookie"
+        [SESSION: null]      | "empty cookie"
+        [SESSION: "1234567"] | "incorrect cookie value"
+    }
+
+    //TODO: AUT-630
+    @Feature("SID_AUTH_INIT_ENDPOINT")
+    def "initialize Smart-ID authentication with invalid method: #requestType"() {
+        given:
+        Steps.startAuthenticationInTara(flow, "openid smartid")
+
+        when: "initialize Smart-ID authentication with invalid method"
+        Response response = given()
+                .relaxedHTTPSValidation()
+                .params([idCode: "30303039914",
+                         _csrf : flow.csrf])
+                .cookies(["SESSION": flow.sessionId])
+                .when()
+                .request(requestType, flow.loginService.fullSidInitUrl)
+                .then()
+                .extract().response()
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(500))
         assertThat("Correct error", response.jsonPath().getString("error"), is(ERROR_INTERNAL))
         assertThat("Correct error message", response.jsonPath().getString("message"), is(MESSAGE_INTERNAL_ERROR))
+
+        where:
+        requestType | _
+        "GET"       | _
+        "PUT"       | _
+        "PATCH"     | _
+        "DELETE"    | _
     }
 
     @Feature("SID_AUTH_INIT_ENDPOINT")
     @Feature("SID_AUTH_CHECKS_IDCODE")
     def "initialize Smart-ID authentication with invalid params: #label"() {
         given:
-        Map additionalParamsMap = [:]
-        Utils.setParameter(additionalParamsMap, additionalParameterName, additionalParameterValue)
         Steps.startAuthenticationInTara(flow, "openid smartid")
 
         when:
-        Response response = Steps.initSidAuthSession(flow, flow.sessionId, idCode, additionalParamsMap)
+        Response response = given()
+                .relaxedHTTPSValidation()
+                .params(_csrf: flow.csrf)
+                .params(params)
+                .cookies(SESSION: flow.sessionId)
+                .when()
+                .post(flow.loginService.fullSidInitUrl)
+                .then()
+                .extract().response()
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(400))
@@ -95,22 +142,22 @@ class SmartIDAuthSpec extends TaraSpecification {
         assertThat("Correct message", response.jsonPath().getString("message"), is(errorMessage))
 
         where:
-        idCode         | additionalParameterName | additionalParameterValue               | label                        || errorMessage
-        "60001019938"  | _                       | _                                      | "invalid idCode checksum"    || "Isikukood ei ole korrektne."
-        _              | _                       | _                                      | "missing idCode"             || "Isikukood ei ole korrektne."
-        "600010199399" | _                       | _                                      | "too long idCode"            || "Isikukood ei ole korrektne."
-        "60001329939"  | _                       | _                                      | "wrong date inside idCode"   || "Isikukood ei ole korrektne."
-        "6000"         | _                       | _                                      | "too short idCode"           || "Isikukood ei ole korrektne."
-        "38500030556"  | _                       | _                                      | "invalid month in idCode"    || "Isikukood ei ole korrektne."
-        "60001017716"  | "idCode"                | "60001017727"                          | "multiple idCode parameters" || MESSAGE_DUPLICATE_PARAMETERS
-        "60001017716"  | "_csrf"                 | "d7860443-a0cc-45db-ad68-3c9300c0b3bb" | "multiple _csrf parameters"  || MESSAGE_DUPLICATE_PARAMETERS
+        params                                                                 | label                        || errorMessage
+        [idCode: "60001019938"]                                                | "invalid idCode checksum"    || "Isikukood ei ole korrektne."
+        [:]                                                                    | "missing idCode"             || "Isikukood ei ole korrektne."
+        [idCode: "600010199399"]                                               | "too long idCode"            || "Isikukood ei ole korrektne."
+        [idCode: "60001329939"]                                                | "wrong date inside idCode"   || "Isikukood ei ole korrektne."
+        [idCode: "6000"]                                                       | "too short idCode"           || "Isikukood ei ole korrektne."
+        [idCode: "38500030556"]                                                | "invalid month in idCode"    || "Isikukood ei ole korrektne."
+        [idCode: ["60001017716", "60001017727"]]                               | "multiple idCode parameters" || MESSAGE_DUPLICATE_PARAMETERS
+        [idCode: "60001017716", _csrf: "d7860443-a0cc-45db-ad68-3c9300c0b3bb"] | "multiple _csrf parameters"  || MESSAGE_DUPLICATE_PARAMETERS
     }
 
     @Feature("SID_AUTH_INIT_ENDPOINT")
     def "initialize Smart-ID authentication with no smart-id contract: #label"() {
         given:
-        Steps.startAuthenticationInTara(flow, "openid smartid",login_locale)
-        Steps.initSidAuthSession(flow, flow.sessionId, "29101290233")
+        Steps.startAuthenticationInTara(flow, "openid smartid", login_locale)
+        Steps.initSidAuthSession(flow, "29101290233")
 
         when:
         Response pollResponse = Steps.pollSidResponse(flow, 1000L)
@@ -132,7 +179,7 @@ class SmartIDAuthSpec extends TaraSpecification {
     def "initialize Smart-ID authentication with scenario: #label et"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid", "et")
-        Steps.initSidAuthSession(flow, flow.sessionId, idCode)
+        Steps.initSidAuthSession(flow, idCode)
 
         when:
         Response pollResponse = Steps.pollSidResponse(flow, 3000L)
@@ -159,7 +206,7 @@ class SmartIDAuthSpec extends TaraSpecification {
     def "initialize Smart-ID authentication with scenario: #label en"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid", "en")
-        Steps.initSidAuthSession(flow, flow.sessionId, idCode)
+        Steps.initSidAuthSession(flow, idCode)
 
         when:
         Response pollResponse = Steps.pollSidResponse(flow, 3000L)
@@ -186,7 +233,7 @@ class SmartIDAuthSpec extends TaraSpecification {
     def "initialize Smart-ID authentication with scenario: #label ru"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid", "ru")
-        Steps.initSidAuthSession(flow, flow.sessionId, idCode)
+        Steps.initSidAuthSession(flow, idCode)
 
         when:
         Response pollResponse = Steps.pollSidResponse(flow, 3000L)
@@ -213,7 +260,7 @@ class SmartIDAuthSpec extends TaraSpecification {
     def "initialize Smart-ID authentication with scenario: TIMEOUT #login_locale"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid", login_locale)
-        Steps.initSidAuthSession(flow, flow.sessionId, idCode)
+        Steps.initSidAuthSession(flow, "30403039983")
 
         when:
         Response pollResponse = Steps.pollSidResponse(flow, 10000L)
@@ -226,10 +273,10 @@ class SmartIDAuthSpec extends TaraSpecification {
         assertThat("Error not reportable", pollResponse.jsonPath().getBoolean("reportable"), is(false))
 
         where:
-        idCode        | login_locale    || errorMessage
-        "30403039983" | "et"            || "Kasutaja ei autentinud<span translate=\"no\" lang=\"en\"> Smart-ID </span>rakenduses oodatud aja jooksul. Palun proovige uuesti."
-        "30403039983" | "en"            || "User did not authenticate in the<span translate=\"no\" lang=\"en\"> Smart-ID </span>app within the required time. Please try again."
-        "30403039983" | "ru"            || "Пользователь не прошел аутентификацию в приложении<span translate=\"no\" lang=\"en\"> Smart-ID </span>в течение требуемого времени. Пожалуйста, попробуйте еще раз."
+        login_locale || errorMessage
+        "et"         || "Kasutaja ei autentinud<span translate=\"no\" lang=\"en\"> Smart-ID </span>rakenduses oodatud aja jooksul. Palun proovige uuesti."
+        "en"         || "User did not authenticate in the<span translate=\"no\" lang=\"en\"> Smart-ID </span>app within the required time. Please try again."
+        "ru"         || "Пользователь не прошел аутентификацию в приложении<span translate=\"no\" lang=\"en\"> Smart-ID </span>в течение требуемого времени. Пожалуйста, попробуйте еще раз."
     }
 
     @Feature("SID_AUTH_STATUS_CHECK_ENDPOINT")
@@ -237,7 +284,7 @@ class SmartIDAuthSpec extends TaraSpecification {
     def "poll Smart-ID authentication session"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
-        Steps.initSidAuthSession(flow, flow.sessionId, "30403039983")
+        Steps.initSidAuthSession(flow, "30403039983")
 
         when:
         Response response = Requests.pollSid(flow)
@@ -253,7 +300,7 @@ class SmartIDAuthSpec extends TaraSpecification {
     def "poll Smart-ID authentication with session complete"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
-        Steps.initSidAuthSession(flow, flow.sessionId, "30303039914")
+        Steps.initSidAuthSession(flow, "30303039914")
 
         when:
         Response response = Steps.pollSidResponse(flow)
@@ -265,36 +312,60 @@ class SmartIDAuthSpec extends TaraSpecification {
     }
 
     @Feature("SID_AUTH_STATUS_CHECK_ENDPOINT")
-    def "poll Smart-ID authentication session with invalid session ID"() {
+    def "poll Smart-ID authentication session with invalid session cookie: #reason"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
-        Steps.initSidAuthSession(flow, flow.sessionId, "30403039983")
-        flow.setSessionId("1234567")
+        Steps.initSidAuthSession(flow, "30403039983")
 
-        when:
-        Response response = Requests.pollSid(flow)
-
+        when: "request polling with invalid session cookie"
+        Response response = given()
+                .relaxedHTTPSValidation()
+                .cookies(cookie)
+                .when()
+                .get(flow.loginService.fullSidPollUrl)
+                .then()
+                .extract().response()
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(400))
         assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
         assertThat("Correct error", response.jsonPath().getString("error"), is(ERROR_BAD_REQUEST))
         assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_SESSION_NOT_FOUND))
+
+        where:
+        cookie               | reason
+        [:]                  | "no cookie"
+        [SESSION: null]      | "empty cookie"
+        [SESSION: "1234567"] | "incorrect cookie value"
     }
 
     //TODO: AUT-630
     @Feature("SID_AUTH_STATUS_CHECK_ENDPOINT")
-    def "poll Smart-ID authentication with invalid method post"() {
+    def "poll Smart-ID authentication with invalid method: #requestType"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
-        Steps.initSidAuthSession(flow, flow.sessionId, "30303039914")
+        Steps.initSidAuthSession(flow, "30303039914")
 
-        when:
-        Response response = Requests.postRequestWithSessionId(flow, flow.loginService.fullSidPollUrl)
+        when: "request Smart-ID polling with invalid request type"
+        Response response = given()
+                .relaxedHTTPSValidation()
+                .cookies(SESSION: flow.sessionId)
+                .params([_csrf: flow.csrf])
+                .when()
+                .request(requestType, flow.loginService.fullSidPollUrl)
+                .then()
+                .extract().response()
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(500))
         assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
         assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_INTERNAL_ERROR))
+
+        where:
+        requestType | _
+        "POST"      | _
+        "PUT"       | _
+        "PATCH"     | _
+        "DELETE"    | _
     }
 
     @Feature("SID_AUTH_STATUS_CHECK_ENDPOINT")
@@ -302,10 +373,10 @@ class SmartIDAuthSpec extends TaraSpecification {
     def "cancel Smart-ID authentication"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
-        Steps.initSidAuthSession(flow, flow.sessionId, "30303039914")
+        Steps.initSidAuthSession(flow, "30303039914")
 
         when:
-        Response response = Requests.postRequestWithSessionId(flow, flow.loginService.fullSidCancelUrl)
+        Response response = Requests.postRequestWithParams(flow, flow.loginService.fullSidCancelUrl)
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(302))
@@ -321,10 +392,10 @@ class SmartIDAuthSpec extends TaraSpecification {
     def "Verify cancel Smart-ID authentication response headers"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
-        Steps.initSidAuthSession(flow, flow.sessionId, "30303039914")
+        Steps.initSidAuthSession(flow, "30303039914")
 
         when:
-        Response response = Requests.postRequestWithSessionId(flow, flow.loginService.fullSidCancelUrl)
+        Response response = Requests.postRequestWithParams(flow, flow.loginService.fullSidCancelUrl)
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(302))
@@ -332,20 +403,31 @@ class SmartIDAuthSpec extends TaraSpecification {
     }
 
     @Feature("SID_AUTH_STATUS_CHECK_ENDPOINT")
-    def "cancel Smart-ID authentication with invalid session ID"() {
+    def "cancel Smart-ID authentication with invalid session cookie: #reason"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
-        Steps.initSidAuthSession(flow, flow.sessionId, "30303039914")
-        flow.setSessionId("1234567")
+        Steps.initSidAuthSession(flow, "30303039914")
 
-        when:
-        Response response = Requests.postRequestWithSessionId(flow, flow.loginService.fullSidCancelUrl)
+        when: "Cancel Smart-ID authentication with invalid session cookie"
+        Response response = given()
+                .relaxedHTTPSValidation()
+                .cookies(cookie)
+                .when()
+                .post(flow.loginService.fullSidCancelUrl)
+                .then()
+                .extract().response()
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(403))
         assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
         assertThat("Correct error", response.jsonPath().getString("error"), is(ERROR_FORBIDDEN))
         assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_FORBIDDEN_REQUEST))
+
+        where:
+        cookie               | reason
+        [:]                  | "no cookie"
+        [SESSION: null]      | "empty cookie"
+        [SESSION: "1234567"] | "incorrect cookie value"
     }
 
     //TODO: AUT-630
@@ -353,15 +435,28 @@ class SmartIDAuthSpec extends TaraSpecification {
     def "cancel Smart-ID authentication with invalid method get"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
-        Steps.initSidAuthSession(flow, flow.sessionId, "30303039914")
+        Steps.initSidAuthSession(flow, "30303039914")
 
-        when:
-        Response response = Requests.getRequestWithSessionId(flow, flow.loginService.fullSidCancelUrl)
-
+        when: "Cancel authentication with invalid method"
+        Response response = given()
+                .relaxedHTTPSValidation()
+                .params([_csrf: flow.csrf])
+                .cookies(["SESSION": flow.sessionId])
+                .when()
+                .request(requestType, flow.loginService.fullSidCancelUrl)
+                .then()
+                .extract().response()
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(500))
         assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
         assertThat("Correct error", response.jsonPath().getString("error"), is(ERROR_INTERNAL))
         assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_INTERNAL_ERROR))
+
+        where:
+        requestType | _
+        "GET"       | _
+        "PUT"       | _
+        "PATCH"     | _
+        "DELETE"    | _
     }
 }

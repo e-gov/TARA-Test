@@ -7,8 +7,8 @@ import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import org.apache.commons.lang3.RandomStringUtils
 
+import static io.restassured.RestAssured.given
 import static org.hamcrest.MatcherAssert.assertThat
-import static org.hamcrest.Matchers.hasLength
 import static org.hamcrest.Matchers.is
 
 class LegalPersonAuthConfirmSpec extends TaraSpecification {
@@ -26,7 +26,7 @@ class LegalPersonAuthConfirmSpec extends TaraSpecification {
     def "legal person selection request"() {
         given:
         Steps.startAuthenticationInTaraWithLegalPerson(flow)
-        Steps.authInitAsLegalPerson(flow, "60001019906", "00000766")
+        Steps.authInitAsLegalPerson(flow)
         Response legalPersonsResponse = Steps.loadLegalPersonsList(flow)
         String legalPersonIdentifier = legalPersonsResponse.jsonPath().getString("legalPersons[0].legalPersonIdentifier")
         String legalName = legalPersonsResponse.jsonPath().getString("legalPersons[0].legalName")
@@ -55,9 +55,9 @@ class LegalPersonAuthConfirmSpec extends TaraSpecification {
     def "Verify legal person response headers"() {
         given:
         Steps.startAuthenticationInTaraWithLegalPerson(flow)
-        Steps.authInitAsLegalPerson(flow, "60001019906", "00000766")
+        Steps.authInitAsLegalPerson(flow)
         Response legalPersonsResponse = Steps.loadLegalPersonsList(flow)
-        String legalPersonIdentifier = legalPersonsResponse.jsonPath().get("legalPersons[0].legalPersonIdentifier").toString()
+        String legalPersonIdentifier = legalPersonsResponse.jsonPath().getString("legalPersons[0].legalPersonIdentifier")
 
         when:
         Response response = Steps.selectLegalPerson(flow, legalPersonIdentifier)
@@ -69,52 +69,77 @@ class LegalPersonAuthConfirmSpec extends TaraSpecification {
 
     //TODO: AUT-630
     @Feature("LEGAL_PERSON_SELECTION_ENDPOINT")
-    def "legal person selection request with unsupported method get"() {
+    def "legal person selection request with unsupported method: #requestType "() {
         given:
-        Map paramsMap = ["legal_person_identifier": "123456789"]
+        Steps.startAuthenticationInTaraWithLegalPerson(flow)
+        Steps.authInitAsLegalPerson(flow)
+        Response legalPersonsResponse = Steps.loadLegalPersonsList(flow)
+        String legalPersonIdentifier = legalPersonsResponse.jsonPath().getString("legalPersons[0].legalPersonIdentifier")
 
-        when:
-        Response response = Requests.getRequestWithParams(flow, flow.loginService.fullAuthLegalConfirmUrl, paramsMap, [:])
+        when: "Legal person selection request with unsupported method"
+        Response response = given()
+                .relaxedHTTPSValidation()
+                .cookies([SESSION: flow.sessionId])
+                .params([legal_person_identifier: legalPersonIdentifier,
+                         _csrf                  : flow.csrf])
+                .when()
+                .request(requestType, flow.loginService.fullAuthLegalConfirmUrl)
+                .then()
+                .extract().response()
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(500))
         assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
         assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_INTERNAL_ERROR))
+
+        where:
+        requestType | _
+        "GET"       | _
+        "PUT"       | _
+        "PATCH"     | _
+        "DELETE"    | _
     }
 
     @Feature("LEGAL_PERSON_SELECTION_ENDPOINT")
-    def "legal person selection request with no session and invalid parameter value"() {
+    def "legal person selection request with invalid session cookie: #reason"() {
         given:
         Steps.startAuthenticationInTaraWithLegalPerson(flow)
-        Steps.authInitAsLegalPerson(flow, "60001019906", "00000766")
+        Steps.authInitAsLegalPerson(flow)
         Steps.loadLegalPersonsList(flow)
 
-        Map paramsMap = ["legal_person_identifier": "123456789",
-                         "_csrf"                  : flow.csrf]
-
-        when:
-        Response response = Requests.postRequestWithParams(flow, flow.loginService.fullAuthLegalConfirmUrl, paramsMap, [:])
+        when: "legal person selection request with invalid session cookie"
+        Response response = given()
+                .relaxedHTTPSValidation()
+                .cookies(cookie)
+                .params([legal_person_identifier: "123456789",
+                         _csrf                  : flow.csrf])
+                .when()
+                .post(flow.loginService.fullAuthLegalConfirmUrl)
+                .then()
+                .extract().response()
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(403))
         assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
         assertThat("Correct error", response.jsonPath().getString("error"), is(ERROR_FORBIDDEN))
         assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_FORBIDDEN_REQUEST))
+
+        where:
+        cookie               | reason
+        [:]                  | "no cookie"
+        [SESSION: null]      | "empty cookie"
+        [SESSION: "1234567"] | "incorrect cookie value"
     }
 
     @Feature("LEGAL_PERSON_SELECTION_ENDPOINT")
     def "legal person selection request with invalid parameter value: #label"() {
         given:
         Steps.startAuthenticationInTaraWithLegalPerson(flow)
-        Steps.authInitAsLegalPerson(flow, "60001019906", "00000766")
+        Steps.authInitAsLegalPerson(flow)
         Steps.loadLegalPersonsList(flow)
 
-        Map cookiesMap = ["SESSION": flow.sessionId]
-        Map paramsMap = ["legal_person_identifier": legalPersonIdentifier,
-                         "_csrf"                  : flow.csrf]
-
-        when:
-        Response response = Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullAuthLegalConfirmUrl, cookiesMap, paramsMap, [:])
+        when: "legal person selection request with invalid legal person identifier"
+        Response response = Requests.postRequestWithParams(flow, flow.loginService.fullAuthLegalConfirmUrl, [legal_person_identifier: legalPersonIdentifier, _csrf: flow.csrf])
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(400))
@@ -127,27 +152,6 @@ class LegalPersonAuthConfirmSpec extends TaraSpecification {
         RandomStringUtils.random(51, true, true) | "legal person identifier is too long"            || "confirmLegalPerson.legalPersonIdentifier: size must be between 0 and 50"
         "678@123"                                | "unsupported symbols in legal person identifier" || "confirmLegalPerson.legalPersonIdentifier: invalid legal person identifier"
         RandomStringUtils.random(50, true, true) | "legal person identifier max length"             || "Antud identifikaatoriga juriidilist isikut ei leitud."
-    }
-
-    @Feature("LEGAL_PERSON_SELECTION_ENDPOINT")
-    def "legal person selection request with multiple legal_person_identifier values"() {
-        given:
-        Steps.startAuthenticationInTaraWithLegalPerson(flow)
-        Steps.authInitAsLegalPerson(flow, "60001019906", "00000766")
-        Steps.loadLegalPersonsList(flow)
-
-        Map cookiesMap = ["SESSION": flow.sessionId]
-        Map paramsMap = ["legal_person_identifier": "12597552",
-                         "_csrf"                  : flow.csrf]
-        Map additionalParamsMap = ["legal_person_identifier": "10910878"]
-
-        when:
-        Response response = Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullAuthLegalConfirmUrl, cookiesMap, paramsMap, additionalParamsMap)
-
-        then:
-        assertThat("Correct HTTP status code", response.statusCode, is(400))
-        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct message", response.jsonPath().getString('message'), is(MESSAGE_DUPLICATE_PARAMETERS))
-        assertThat("Incident number is present", response.jsonPath().getString("incident_nr"), hasLength(32))
+        ["12597552", "10910878"]                 | "multiple legal person identifiers"               | MESSAGE_DUPLICATE_PARAMETERS
     }
 }

@@ -24,7 +24,7 @@ class OidcRedirectRequestSpec extends TaraSpecification {
     def "Verify redirection url parameters"() {
         given:
         Steps.startAuthenticationInTara(flow)
-        Response midAuthResponse = Steps.authenticateWithMid(flow,"60001017716", "69100366")
+        Response midAuthResponse = Steps.authenticateWithMid(flow, "60001017716", "69100366")
 
         when:
         Response response = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
@@ -54,7 +54,7 @@ class OidcRedirectRequestSpec extends TaraSpecification {
     def "Verify redirection url with invalid state"() {
         given:
         Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
-        paramsMap.put("state", "ab")
+        paramsMap << [state: "ab"]
 
         when:
         Response response = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
@@ -70,7 +70,7 @@ class OidcRedirectRequestSpec extends TaraSpecification {
     def "Verify redirection url with unsupported response type"() {
         given:
         Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
-        paramsMap.put("response_type", "token")
+        paramsMap << [response_type: "token"]
 
         when:
         Response response = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
@@ -86,9 +86,7 @@ class OidcRedirectRequestSpec extends TaraSpecification {
     def "Verify redirection url with user cancel"() {
         given:
         Steps.startAuthenticationInTara(flow)
-        Map paramsMap = ["error_code": REJECT_ERROR_CODE]
-        Map cookieMap = ["SESSION": flow.sessionId]
-        Response rejectResponse = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullAuthRejectUrl, cookieMap, paramsMap, [:])
+        Response rejectResponse = Requests.getRequestWithParams(flow, flow.loginService.fullAuthRejectUrl, ["error_code": REJECT_ERROR_CODE])
 
         when:
         Response response = Steps.followRedirectWithCookies(flow, rejectResponse, flow.oidcService.cookies)
@@ -97,7 +95,6 @@ class OidcRedirectRequestSpec extends TaraSpecification {
         assertThat("Correct HTTP status code", response.statusCode, is(303))
         assertThat("Correct state parameter", Utils.getParamValueFromResponseHeader(response, "state"), is(flow.state))
         assertThat("Correct error", Utils.getParamValueFromResponseHeader(response, "error"), is(REJECT_ERROR_CODE))
-        assertThat("Correct error description", Utils.getParamValueFromResponseHeader(response, "error_description") , startsWith("User canceled the authentication process"))
+        assertThat("Correct error description", Utils.getParamValueFromResponseHeader(response, "error_description"), startsWith("User canceled the authentication process"))
     }
-
 }

@@ -5,6 +5,7 @@ import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 
+import static io.restassured.RestAssured.given
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.is
 
@@ -23,9 +24,9 @@ class LegalPersonAutInitSpec extends TaraSpecification {
     def "request initialize legal person authentication"() {
         given:
         Steps.startAuthenticationInTaraWithLegalPerson(flow)
-        Steps.initMidAuthSession(flow, flow.sessionId, "60001017705", "69000366")
+        Steps.initMidAuthSession(flow, "60001017705", "69000366")
         Steps.pollMidResponse(flow)
-        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
+        Response acceptResponse = Requests.postRequestWithParams(flow, flow.loginService.fullAuthAcceptUrl)
 
         when:
         Response response = Steps.followRedirectWithSessionId(flow, acceptResponse)
@@ -48,7 +49,7 @@ class LegalPersonAutInitSpec extends TaraSpecification {
         Steps.startAuthenticationInTaraWithLegalPerson(flow)
 
         when:
-        Response response = Steps.authInitAsLegalPerson(flow, "60001017705", "69000366")
+        Response response = Steps.authInitAsLegalPerson(flow)
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(200))
@@ -57,36 +58,55 @@ class LegalPersonAutInitSpec extends TaraSpecification {
     }
 
     @Feature("LEGAL_PERSON_INIT_START_ENDPOINT")
-    def "request initialize legal person authentication with invalid session ID"() {
+    def "request initialize legal person authentication with invalid session cookie: #reason"() {
         given:
-        flow.setSessionId("1234567")
+        Steps.startAuthenticationInTaraWithLegalPerson(flow)
 
-        when:
-        Response response = Requests.getRequestWithSessionId(flow, flow.loginService.fullAuthLegalInitUrl)
+        when: "request authentication with invalid session cookie"
+        Response response = given()
+                .relaxedHTTPSValidation()
+                .cookies(cookie)
+                .when()
+                .get(flow.loginService.fullAuthLegalInitUrl)
+                .then()
+                .extract().response()
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(400))
         assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
         assertThat("Correct error", response.jsonPath().getString("error"), is(ERROR_BAD_REQUEST))
         assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_SESSION_NOT_FOUND))
+
+        where:
+        cookie               | reason
+        [:]                  | "no cookie"
+        [SESSION: null]      | "empty cookie"
+        [SESSION: "1234567"] | "incorrect cookie value"
     }
 
     //TODO: AUT-630
     @Feature("LEGAL_PERSON_INIT_START_ENDPOINT")
-    def "request initialize legal person authentication with invalid method post"() {
+    def "request initialize legal person authentication with invalid method: #requestType"() {
         given:
         Steps.startAuthenticationInTaraWithLegalPerson(flow)
-        Steps.initMidAuthSession(flow, flow.sessionId, "60001017705", "69000366")
+        Steps.initMidAuthSession(flow, "60001017705", "69000366")
         Steps.pollMidResponse(flow)
-        Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
+        Requests.postRequestWithParams(flow, flow.loginService.fullAuthAcceptUrl)
 
-        when:
-        Response response = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthLegalInitUrl)
+        when: "request legal person authentication with invalid request type"
+        Response response = Requests.requestWithType(flow, requestType, flow.loginService.fullAuthLegalInitUrl)
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(500))
         assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
         assertThat("Correct error", response.jsonPath().getString("error"), is(ERROR_INTERNAL))
         assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_INTERNAL_ERROR))
+
+        where:
+        requestType | _
+        "POST"      | _
+        "PUT"       | _
+        "PATCH"     | _
+        "DELETE"    | _
     }
 }

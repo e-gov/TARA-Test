@@ -5,9 +5,9 @@ import com.nimbusds.jose.JOSEException
 import com.nimbusds.jwt.SignedJWT
 import io.qameta.allure.Allure
 import io.qameta.allure.Step
+import io.qameta.allure.model.Link
 import io.restassured.response.Response
 import org.json.JSONObject
-import org.spockframework.lang.Wildcard
 
 import java.text.ParseException
 
@@ -22,8 +22,8 @@ class Steps {
 
     @Step("Initialize authentication sequence in OIDC service with params")
     static Response startAuthenticationInOidcWithParams(Flow flow, Map paramsMap) {
-        Response initSession = Requests.getRequestWithParams(flow, flow.oidcService.fullAuthenticationRequestUrl, paramsMap, [:])
-        Utils.setParameter(flow.oidcService.cookies, "oauth2_authentication_csrf", initSession.getCookie("oauth2_authentication_csrf"))
+        Response initSession = Requests.getRequestWithParams(flow, flow.oidcService.fullAuthenticationRequestUrl, paramsMap)
+        flow.oidcService.cookies << [oauth2_authentication_csrf: initSession.getCookie("oauth2_authentication_csrf")]
         flow.setLoginChallenge(Utils.getParamValueFromResponseHeader(initSession, "login_challenge"))
         return initSession
     }
@@ -104,19 +104,11 @@ class Steps {
     }
 
     @Step("Initialize Mobile-ID authentication session")
-    static Response initMidAuthSession(Flow flow, String sessionId
-                                       , Object idCode, Object telephoneNumber
-                                       , Map additionalParamsMap = [:]) {
-        Map formParamsMap = ["_csrf": flow.csrf]
-        if (!(idCode instanceof Wildcard)) {
-            Utils.setParameter(formParamsMap, "idCode", idCode)
-        }
-        if (!(telephoneNumber instanceof Wildcard)) {
-            Utils.setParameter(formParamsMap, "telephoneNumber", telephoneNumber)
-        }
-        Map cookieMap = ["SESSION": sessionId]
-
-        return Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullMidInitUrl, cookieMap, formParamsMap, additionalParamsMap)
+    static Response initMidAuthSession(Flow flow, Object idCode, Object telephoneNumber) {
+        Map formParamsMap = [_csrf          : flow.csrf,
+                             idCode         : idCode,
+                             telephoneNumber: telephoneNumber]
+        return Requests.postRequestWithParams(flow, flow.loginService.fullMidInitUrl, formParamsMap)
     }
 
     @Step("Polling Mobile-ID authentication response")
@@ -141,65 +133,52 @@ class Steps {
         Response midPollResult = pollMidResponse(flow)
         assertThat("Correct HTTP status code", midPollResult.statusCode, is(200))
         assertThat(midPollResult.jsonPath().getString("status"), is("COMPLETED"))
-        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
+        Response acceptResponse = Requests.postRequestWithParams(flow, flow.loginService.fullAuthAcceptUrl)
         assertThat("Correct HTTP status code", acceptResponse.statusCode, is(302))
-
-        Response oidcServiceResponse = getOAuthCookies(flow, acceptResponse)
+        Response oidcServiceResponse = loginVerifier(flow, acceptResponse)
         assertThat("Correct HTTP status code", oidcServiceResponse.statusCode, is(302))
-
         Response consentResponse = followRedirectWithSessionId(flow, oidcServiceResponse)
-
         return consentResponse
     }
 
     @Step("Authenticate with Smart-ID")
     static Response authenticateWithSid(Flow flow, String idCode) {
-        Response sidInit = initSidAuthSession(flow, flow.sessionId, idCode, [:])
+        Response sidInit = initSidAuthSession(flow, idCode)
         assertThat("Correct HTTP status code", sidInit.statusCode, is(200))
         Response sidPollResult = pollSidResponse(flow)
         assertThat("Correct HTTP status code", sidPollResult.statusCode, is(200))
         assertThat(sidPollResult.jsonPath().get("status").toString(), is("COMPLETED"))
-        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
+        Response acceptResponse = Requests.postRequestWithParams(flow, flow.loginService.fullAuthAcceptUrl)
         assertThat("Correct HTTP status code", acceptResponse.statusCode, is(302))
-
-        Response oidcServiceResponse = getOAuthCookies(flow, acceptResponse)
+        Response oidcServiceResponse = loginVerifier(flow, acceptResponse)
         assertThat("Correct HTTP status code", oidcServiceResponse.statusCode, is(302))
-
         Response consentResponse = followRedirectWithSessionId(flow, oidcServiceResponse)
-
         return consentResponse
     }
 
     @Step("Authenticate with Web eID")
     static Response authenticateWithWebeID(Flow flow) {
 
-        Response initWebEid = Requests.postRequestWithSessionId(flow, flow.loginService.fullWebEidInitUrl)
+        Response initWebEid = Requests.postRequestWithParams(flow, flow.loginService.fullWebEidInitUrl)
         String signAuthValue = Utils.signAuthenticationValue(flow, flow.loginService.baseUrl, initWebEid.jsonPath().get("nonce"))
         JSONObject authToken = Utils.getWebEidAuthTokenParameters(flow, signAuthValue)
         Requests.postRequestWithJsonBody(flow, flow.loginService.fullWebEidLoginUrl, authToken)
 
-        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
-        Response oidcServiceResponse = getOAuthCookies(flow, acceptResponse)
-        Response consentResponse = followRedirectWithSessionId(flow, oidcServiceResponse)
-        Response oidcserviceResponse = followRedirectWithCookies(flow, consentResponse, flow.oidcService.cookies)
-        String authorizationCode = Utils.getParamValueFromResponseHeader(oidcserviceResponse, "code")
+        Response acceptResponse = Requests.postRequestWithParams(flow, flow.loginService.fullAuthAcceptUrl)
+        Response loginVerifier = loginVerifier(flow, acceptResponse)
+        Response consentResponse = followRedirectWithSessionId(flow, loginVerifier)
+        Response consentVerifier = followRedirectWithCookies(flow, consentResponse, flow.oidcService.cookies)
+        String authorizationCode = Utils.getParamValueFromResponseHeader(consentVerifier, "code")
         Response tokenResponse = Requests.getWebToken(flow, authorizationCode)
 
         return tokenResponse
     }
 
     @Step("Initialize Smart-ID authentication session")
-    static Response initSidAuthSession(Flow flow, String sessionId
-                                       , Object idCode
-                                       , Map additionalParamsMap = [:]) {
-        Map formParamsMap = ["_csrf": flow.csrf]
-        if (!(idCode instanceof Wildcard)) {
-            Utils.setParameter(formParamsMap, "idCode", idCode)
-        }
-        Map cookieMap = [
-                "SESSION"     : sessionId,
-                "LOGIN_LOCALE": flow.login_locale]
-        return Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullSidInitUrl, cookieMap, formParamsMap, additionalParamsMap)
+    static Response initSidAuthSession(Flow flow, Object idCode) {
+        Map formParamsMap = ["_csrf": flow.csrf,
+                             idCode : idCode]
+        return Requests.postRequestWithParams(flow, flow.loginService.fullSidInitUrl, formParamsMap)
     }
 
     @Step("Polling Smart-ID authentication response")
@@ -217,21 +196,19 @@ class Steps {
         return response
     }
 
-
-    @Step("Getting OAuth2 cookies")
-    static Response getOAuthCookies(flow, Response response) {
+    @Step("OIDC login verifier request")
+    static Response loginVerifier(Flow flow, Response response) {
         Response oidcServiceResponse = followRedirectWithCookies(flow, response, flow.oidcService.cookies)
-        String oauthConsentCookie = oidcServiceResponse.getCookie("oauth2_consent_csrf")
-        // String oauthSessionCookie = oidcServiceResponse.getCookie("oauth2_authentication_session")
-        // Utils.setParameter(flow.oidcService.cookies, "oauth2_authentication_session", oauthSessionCookie)
-        Utils.setParameter(flow.oidcService.cookies, "oauth2_consent_csrf", oauthConsentCookie)
+        flow.oidcService.cookies << [oauth2_authentication_session: oidcServiceResponse.getCookie("oauth2_authentication_session")]
+        flow.oidcService.cookies << [oauth2_consent_csrf: oidcServiceResponse.getCookie("oauth2_consent_csrf")]
+        assertThat("Correct HTTP status code", oidcServiceResponse.statusCode, is(302))
         return oidcServiceResponse
     }
 
     @Step("Initialize authentication session")
-    static Response initLoginSession(Flow flow, Response response, Map additionalParamsMap) {
+    static Response initLoginSession(Flow flow, Response response, Map paramsMap) {
         String location = response.then().extract().response().header("location")
-        Response initResponse = Requests.getRequestWithCookiesAndParams(flow, location, [:], [:], additionalParamsMap)
+        Response initResponse = Requests.getRequestWithParams(flow, location, paramsMap)
         flow.setSessionId(initResponse.getCookie("SESSION"))
         flow.setCsrf(initResponse.htmlPath().get("**.find {it.@name == '_csrf'}.@value"))
         return initResponse
@@ -252,16 +229,14 @@ class Steps {
     @Step("Follow redirect with session id")
     static Response followRedirectWithSessionId(Flow flow, Response response) {
         String location = response.then().extract().response().header("location")
-        return Requests.getRequestWithSessionId(flow, location)
+        return Requests.getRequest(flow, location)
     }
 
     @Step("Confirm or reject consent")
     static Response submitConsent(Flow flow, boolean consentGiven) {
-        Map cookiesMap = ["SESSION": flow.sessionId]
-        Map formParamsMap = [
-                "consent_given": consentGiven,
-                "_csrf"        : flow.csrf]
-        Response consentConfirmResponse = Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullConsentConfirmUrl, cookiesMap, formParamsMap, [:])
+        Map formParamsMap = [consent_given: consentGiven,
+                             _csrf        : flow.csrf]
+        Response consentConfirmResponse = Requests.postRequestWithParams(flow, flow.loginService.fullConsentConfirmUrl, formParamsMap)
         return consentConfirmResponse
     }
 
@@ -294,7 +269,7 @@ class Steps {
         addJsonAttachment("Header", signedJWT.header.toString())
         addJsonAttachment("Payload", signedJWT.JWTClaimsSet.toString())
         try {
-            Allure.link("View Token in jwt.io", new io.qameta.allure.model.Link().toString(),
+            Allure.link("View Token in jwt.io", new Link().toString(),
                     "https://jwt.io/#debugger-io?token=" + token)
         } catch (Exception e) {
             //NullPointerException when running test from IntelliJ
@@ -345,13 +320,13 @@ class Steps {
     }
 
     @Step("Autheticate with mID and init legal person authorization")
-    static Response authInitAsLegalPerson(Flow flow, String idCode, String phoneNo) {
-        Response initMidAuthenticationSession = initMidAuthSession(flow, flow.sessionId, idCode, phoneNo, [:])
+    static Response authInitAsLegalPerson(Flow flow) {
+        Response initMidAuthenticationSession = initMidAuthSession(flow, "60001019906", "00000766")
         assertThat("Correct HTTP status code", initMidAuthenticationSession.statusCode, is(200))
         Response pollResponse = pollMidResponse(flow)
         assertThat("Correct HTTP status code", pollResponse.statusCode, is(200))
         assertThat(pollResponse.jsonPath().get("status").toString(), is("COMPLETED"))
-        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
+        Response acceptResponse = Requests.postRequestWithParams(flow, flow.loginService.fullAuthAcceptUrl)
         assertThat("Correct HTTP status code", acceptResponse.statusCode, is(302))
 
         Response initLegalResponse = followRedirectWithSessionId(flow, acceptResponse)
@@ -361,7 +336,7 @@ class Steps {
 
     @Step("Load legal persons list")
     static Response loadLegalPersonsList(Flow flow) {
-        return Requests.getRequestWithSessionId(flow, flow.loginService.fullAuthLegalPersonUrl)
+        return Requests.getRequest(flow, flow.loginService.fullAuthLegalPersonUrl)
     }
 
     @Step("Select legal person and confirm it")
@@ -369,9 +344,8 @@ class Steps {
         Response response = selectLegalPerson(flow, legalPersonIdentifier)
         String location = response.header("location")
         assertThat("Correct location header", location, containsString(flow.oidcService.fullAuthorizationUrl))
-        Response oidcServiceResponse = getOAuthCookies(flow, response)
+        Response oidcServiceResponse = loginVerifier(flow, response)
         assertThat("Correct HTTP status code", oidcServiceResponse.statusCode, is(302))
-
         Response consentResponse = followRedirectWithSessionId(flow, oidcServiceResponse)
         assertThat("Correct HTTP status code", consentResponse.statusCode, is(302))
         return consentResponse
@@ -381,9 +355,7 @@ class Steps {
     static Response selectLegalPerson(Flow flow, String legalPersonIdentifier) {
         Map paramsMap = ["legal_person_identifier": legalPersonIdentifier,
                          "_csrf"                  : flow.csrf]
-        Map cookiesMap = ["SESSION": flow.sessionId]
-
-        Response response = Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullAuthLegalConfirmUrl, cookiesMap, paramsMap, [:])
+        Response response = Requests.postRequestWithParams(flow, flow.loginService.fullAuthLegalConfirmUrl, paramsMap)
         assertThat("Correct HTTP status code", response.statusCode, is(302))
         return response
     }

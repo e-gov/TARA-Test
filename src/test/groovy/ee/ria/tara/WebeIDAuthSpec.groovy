@@ -3,6 +3,7 @@ package ee.ria.tara
 import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jwt.JWTClaimsSet
 import io.qameta.allure.Feature
+import io.qameta.allure.Step
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import org.json.JSONObject
@@ -40,7 +41,7 @@ class WebeIDAuthSpec extends TaraSpecification {
         Steps.startAuthenticationInTara(flow)
 
         when:
-        Response initWebEid = Requests.postRequestWithSessionId(flow, flow.loginService.fullWebEidInitUrl)
+        Response initWebEid = Requests.postRequestWithParams(flow, flow.loginService.fullWebEidInitUrl)
 
         then:
         assertThat("Correct HTTP status code", initWebEid.statusCode, is(200))
@@ -51,10 +52,10 @@ class WebeIDAuthSpec extends TaraSpecification {
     def "Init Web eID authentication twice"() {
         given:
         Steps.startAuthenticationInTara(flow)
-        Requests.postRequestWithSessionId(flow, flow.loginService.fullWebEidInitUrl)
+        Requests.postRequestWithParams(flow, flow.loginService.fullWebEidInitUrl)
 
         when:
-        Response initWebEid = Requests.postRequestWithSessionId(flow, flow.loginService.fullWebEidInitUrl)
+        Response initWebEid = Requests.postRequestWithParams(flow, flow.loginService.fullWebEidInitUrl)
 
         then:
         assertThat("Correct HTTP status code", initWebEid.statusCode, is(200))
@@ -69,7 +70,7 @@ class WebeIDAuthSpec extends TaraSpecification {
         flow.setSessionId("00000000-0000-0000-0000-00000000")
 
         when:
-        Response initWebEid = Requests.postRequestWithSessionId(flow, flow.loginService.fullWebEidInitUrl)
+        Response initWebEid = Requests.postRequestWithParams(flow, flow.loginService.fullWebEidInitUrl)
 
         then:
         assertThat("Correct HTTP status code", initWebEid.statusCode, is(403))
@@ -83,7 +84,7 @@ class WebeIDAuthSpec extends TaraSpecification {
         flow.setCsrf("00000000-0000-0000-0000-00000000")
 
         when:
-        Response initWebEid = Requests.postRequestWithSessionId(flow, flow.loginService.fullWebEidInitUrl)
+        Response initWebEid = Requests.postRequestWithParams(flow, flow.loginService.fullWebEidInitUrl)
 
         then:
         assertThat("Correct HTTP status code", initWebEid.statusCode, is(403))
@@ -97,7 +98,7 @@ class WebeIDAuthSpec extends TaraSpecification {
         Steps.startAuthenticationInTara(flow)
 
         when:
-        Response initWebEid = Requests.requestWithSessionId(flow, requestType, flow.loginService.fullWebEidInitUrl)
+        Response initWebEid = Requests.requestWithType(flow, requestType, flow.loginService.fullWebEidInitUrl)
 
         then:
         assertThat("Correct HTTP status code", initWebEid.statusCode, is(500))
@@ -123,7 +124,7 @@ class WebeIDAuthSpec extends TaraSpecification {
         Steps.startAuthenticationInTara(flow)
 
         when:
-        Response initWebEid = Requests.postRequestWithSessionId(flow, flow.loginService.fullWebEidInitUrl)
+        Response initWebEid = Requests.postRequestWithParams(flow, flow.loginService.fullWebEidInitUrl)
 
         then:
         Steps.verifyResponseHeaders(initWebEid)
@@ -131,10 +132,7 @@ class WebeIDAuthSpec extends TaraSpecification {
 
     def "Submit login request for Web eID authentication with valid authentication token"() {
         given:
-        Steps.startAuthenticationInTara(flow)
-        Response initWebEid = Requests.postRequestWithSessionId(flow, flow.loginService.fullWebEidInitUrl)
-        String signAuthValue = Utils.signAuthenticationValue(flow, flow.loginService.baseUrl, initWebEid.jsonPath().get("nonce"))
-        JSONObject authToken = Utils.getWebEidAuthTokenParameters(flow, signAuthValue)
+        JSONObject authToken = authenticationFlowToWebEidParams(flow)
 
         when:
         Response loginWebEid = Requests.postRequestWithJsonBody(flow, flow.loginService.fullWebEidLoginUrl, authToken)
@@ -147,10 +145,7 @@ class WebeIDAuthSpec extends TaraSpecification {
 
     def "Submit login request for Web eID authentication with same valid authentication token twice"() {
         given:
-        Steps.startAuthenticationInTara(flow)
-        Response initWebEid = Requests.postRequestWithSessionId(flow, flow.loginService.fullWebEidInitUrl)
-        String signAuthValue = Utils.signAuthenticationValue(flow, flow.loginService.baseUrl, initWebEid.jsonPath().get("nonce"))
-        JSONObject authToken = Utils.getWebEidAuthTokenParameters(flow, signAuthValue)
+        JSONObject authToken = authenticationFlowToWebEidParams(flow)
         Requests.postRequestWithJsonBody(flow, flow.loginService.fullWebEidLoginUrl, authToken)
 
         when:
@@ -164,10 +159,7 @@ class WebeIDAuthSpec extends TaraSpecification {
 
     def "Submit login request for Web eID authentication with invalid SESSION cookie"() {
         given:
-        Steps.startAuthenticationInTara(flow)
-        Response initWebEid = Requests.postRequestWithSessionId(flow, flow.loginService.fullWebEidInitUrl)
-        String signAuthValue = Utils.signAuthenticationValue(flow, flow.loginService.baseUrl, initWebEid.jsonPath().get("nonce"))
-        JSONObject authToken = Utils.getWebEidAuthTokenParameters(flow, signAuthValue)
+        JSONObject authToken = authenticationFlowToWebEidParams(flow)
         flow.setSessionId("00000000-0000-0000-0000-00000000")
 
         when:
@@ -181,10 +173,7 @@ class WebeIDAuthSpec extends TaraSpecification {
 
     def "Submit login request for Web eID authentication with invalid _csrf code"() {
         given:
-        Steps.startAuthenticationInTara(flow)
-        Response initWebEid = Requests.postRequestWithSessionId(flow, flow.loginService.fullWebEidInitUrl)
-        String signAuthValue = Utils.signAuthenticationValue(flow, flow.loginService.baseUrl, initWebEid.jsonPath().get("nonce"))
-        JSONObject authToken = Utils.getWebEidAuthTokenParameters(flow, signAuthValue)
+        JSONObject authToken = authenticationFlowToWebEidParams(flow)
         flow.setCsrf("00000000-0000-0000-0000-00000000")
 
         when:
@@ -227,10 +216,7 @@ class WebeIDAuthSpec extends TaraSpecification {
 
     def "Submit login request for Web eID authentication with invalid authentication token: #reason"() {
         given:
-        Steps.startAuthenticationInTara(flow)
-        Response initWebEid = Requests.postRequestWithSessionId(flow, flow.loginService.fullWebEidInitUrl)
-        String signAuthValue = Utils.signAuthenticationValue(flow, flow.loginService.baseUrl, initWebEid.jsonPath().get("nonce"))
-        JSONObject authToken = Utils.getWebEidAuthTokenParameters(flow, signAuthValue)
+        JSONObject authToken = authenticationFlowToWebEidParams(flow)
         authToken.getJSONObject("authToken").put(key, value)
 
         when:
@@ -242,12 +228,12 @@ class WebeIDAuthSpec extends TaraSpecification {
         assertThat("Correct message", loginWebEid.jsonPath().getString("message"), is(message))
 
         where:
-        reason                        | key                     | value         | statusCode | error                   | message
+        reason                        | key                     | value         | statusCode | error             | message
         "incorrect format value"      | "format"                | "web-eid:666" | 400        | ERROR_BAD_REQUEST | MESSAGE_INCORRECT_REQUEST
         "empty format value"          | "format"                | ""            | 400        | ERROR_BAD_REQUEST | MESSAGE_INCORRECT_REQUEST
         "incorrect certificate value" | "unverifiedCertificate" | "certificate" | 400        | ERROR_BAD_REQUEST | MESSAGE_INCORRECT_REQUEST
         "empty certificate value"     | "unverifiedCertificate" | ""            | 400        | ERROR_BAD_REQUEST | MESSAGE_INCORRECT_REQUEST
-        "incorrect signature value"   | "signature"             | "signature"   | 500        | ERROR_INTERNAL | MESSAGE_INTERNAL_ERROR
+        "incorrect signature value"   | "signature"             | "signature"   | 500        | ERROR_INTERNAL    | MESSAGE_INTERNAL_ERROR
         "empty signature value"       | "signature"             | ""            | 400        | ERROR_BAD_REQUEST | MESSAGE_INCORRECT_REQUEST
         "incorrect algorithm value"   | "algorithm"             | "RSA384"      | 400        | ERROR_BAD_REQUEST | MESSAGE_INCORRECT_REQUEST
         "empty algorithm value"       | "algorithm"             | ""            | 400        | ERROR_BAD_REQUEST | MESSAGE_INCORRECT_REQUEST
@@ -255,36 +241,30 @@ class WebeIDAuthSpec extends TaraSpecification {
 
     def "Submit login request for Web eID authentication with invalid authentication token: authToken missing #key"() {
         given:
-        Steps.startAuthenticationInTara(flow)
-        Response initWebEid = Requests.postRequestWithSessionId(flow, flow.loginService.fullWebEidInitUrl)
-        String signAuthValue = Utils.signAuthenticationValue(flow, flow.loginService.baseUrl, initWebEid.jsonPath().get("nonce"))
-        JSONObject authToken = Utils.getWebEidAuthTokenParameters(flow, signAuthValue)
+        JSONObject authToken = authenticationFlowToWebEidParams(flow)
         authToken.getJSONObject("authToken").remove(key)
 
         when:
         Response loginWebEid = Requests.postRequestWithJsonBody(flow, flow.loginService.fullWebEidLoginUrl, authToken)
 
         then:
-        assertThat("Correct HTTP status code", loginWebEid.statusCode, is(statusCode))
-        assertThat("Correct error", loginWebEid.jsonPath().getString("error"), is(error))
-        assertThat("Correct message", loginWebEid.jsonPath().getString("message"), is(message))
+        assertThat("Correct HTTP status code", loginWebEid.statusCode, is(400))
+        assertThat("Correct error", loginWebEid.jsonPath().getString("error"), is(ERROR_BAD_REQUEST))
+        assertThat("Correct message", loginWebEid.jsonPath().getString("message"), is(MESSAGE_INCORRECT_REQUEST))
         assertThat("Error is reportable", loginWebEid.jsonPath().get("reportable") as Boolean, is(false))
 
         where:
-        key                     | statusCode | error         | message
-        "format"                | 400        | ERROR_BAD_REQUEST | MESSAGE_INCORRECT_REQUEST
-        "unverifiedCertificate" | 400        | ERROR_BAD_REQUEST | MESSAGE_INCORRECT_REQUEST
-        "signature"             | 400        | ERROR_BAD_REQUEST | MESSAGE_INCORRECT_REQUEST
-        "algorithm"             | 400        | ERROR_BAD_REQUEST | MESSAGE_INCORRECT_REQUEST
+        key                     | _
+        "format"                | _
+        "unverifiedCertificate" | _
+        "signature"             | _
+        "algorithm"             | _
     }
 
     @Feature("REJECT_EXPIRED_CERTS")
     def "Submit login request for Web eID authentication with expired certificate"() {
         given:
-        Steps.startAuthenticationInTara(flow)
-        Response initWebEid = Requests.postRequestWithSessionId(flow, flow.loginService.fullWebEidInitUrl)
-        String signAuthValue = Utils.signAuthenticationValue(flow, flow.loginService.baseUrl, initWebEid.jsonPath().get("nonce"))
-        JSONObject authToken = Utils.getWebEidAuthTokenParameters(flow, signAuthValue)
+        JSONObject authToken = authenticationFlowToWebEidParams(flow)
         authToken.getJSONObject("authToken").put("unverifiedCertificate", Utils.getCertificateAsString("src/test/resources/expired-cert_base64.txt"))
 
         when:
@@ -300,10 +280,7 @@ class WebeIDAuthSpec extends TaraSpecification {
     @Feature("REJECT_REVOKED_CERTS")
     def "Submit login request for Web eID authentication with revoked certificate"() {
         given:
-        Steps.startAuthenticationInTara(flow)
-        Response initWebEid = Requests.postRequestWithSessionId(flow, flow.loginService.fullWebEidInitUrl)
-        String signAuthValue = Utils.signAuthenticationValue(flow, flow.loginService.baseUrl, initWebEid.jsonPath().get("nonce"), "src/test/resources/revoked_auth_EC.p12")
-        JSONObject authToken = Utils.getWebEidAuthTokenParameters(flow, signAuthValue)
+        JSONObject authToken = authenticationFlowToWebEidParams(flow, "src/test/resources/revoked_auth_EC.p12")
 
         when:
         Response loginWebEid = Requests.postRequestWithJsonBody(flow, flow.loginService.fullWebEidLoginUrl, authToken)
@@ -319,10 +296,7 @@ class WebeIDAuthSpec extends TaraSpecification {
     @Feature("REJECT_UNKNOWN_CERTS")
     def "Submit login request for Web eID authentication with unknown certificate"() {
         given:
-        Steps.startAuthenticationInTara(flow)
-        Response initWebEid = Requests.postRequestWithSessionId(flow, flow.loginService.fullWebEidInitUrl)
-        String signAuthValue = Utils.signAuthenticationValue(flow, flow.loginService.baseUrl, initWebEid.jsonPath().get("nonce"), "src/test/resources/unknown_auth_EC.p12")
-        JSONObject authToken = Utils.getWebEidAuthTokenParameters(flow, signAuthValue)
+        JSONObject authToken = authenticationFlowToWebEidParams(flow, "src/test/resources/unknown_auth_EC.p12")
 
         when:
         Response loginWebEid = Requests.postRequestWithJsonBody(flow, flow.loginService.fullWebEidLoginUrl, authToken)
@@ -338,10 +312,10 @@ class WebeIDAuthSpec extends TaraSpecification {
     def "Submit login request for Web eID authentication with unsupported request type: #requestType"() {
         given:
         Steps.startAuthenticationInTara(flow)
-        Requests.postRequestWithSessionId(flow, flow.loginService.fullWebEidInitUrl)
+        Requests.postRequestWithParams(flow, flow.loginService.fullWebEidInitUrl)
 
         when:
-        Response loginWebEid = Requests.requestWithSessionId(flow, requestType, flow.loginService.fullWebEidLoginUrl)
+        Response loginWebEid = Requests.requestWithType(flow, requestType, flow.loginService.fullWebEidLoginUrl)
 
         then:
         assertThat("Correct HTTP status code", loginWebEid.statusCode, is(500))
@@ -364,15 +338,21 @@ class WebeIDAuthSpec extends TaraSpecification {
     @Feature("XSS_DETECTION_FILTER_ENABLED")
     def "Submit login request for Web eID authentication, verify headers"() {
         given:
-        Steps.startAuthenticationInTara(flow)
-        Response initWebEid = Requests.postRequestWithSessionId(flow, flow.loginService.fullWebEidInitUrl)
-        String signAuthValue = Utils.signAuthenticationValue(flow, flow.loginService.baseUrl, initWebEid.jsonPath().get("nonce"))
-        JSONObject authToken = Utils.getWebEidAuthTokenParameters(flow, signAuthValue)
+        JSONObject authToken = authenticationFlowToWebEidParams(flow)
 
         when:
         Response loginWebEid = Requests.postRequestWithJsonBody(flow, flow.loginService.fullWebEidLoginUrl, authToken)
 
         then:
         Steps.verifyResponseHeaders(loginWebEid)
+    }
+
+    @Step("Authentication flow up to Web eID authentication token generation")
+    private static authenticationFlowToWebEidParams(Flow flow, String keyStore = "src/test/resources/joeorg_auth_EC.p12") {
+        Steps.startAuthenticationInTara(flow)
+        Response initWebEid = Requests.postRequestWithParams(flow, flow.loginService.fullWebEidInitUrl)
+        String signAuthValue = Utils.signAuthenticationValue(flow, flow.loginService.baseUrl, initWebEid.jsonPath().get("nonce"), keyStore)
+        JSONObject authToken = Utils.getWebEidAuthTokenParameters(flow, signAuthValue)
+        return authToken
     }
 }

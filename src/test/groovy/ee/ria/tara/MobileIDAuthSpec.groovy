@@ -5,6 +5,7 @@ import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import org.apache.commons.lang3.RandomStringUtils
 
+import static io.restassured.RestAssured.given
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.startsWith
@@ -22,7 +23,7 @@ class MobileIDAuthSpec extends TaraSpecification {
         Steps.startAuthenticationInTara(flow)
 
         when:
-        Response response = Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366")
+        Response response = Steps.initMidAuthSession(flow, "60001017716", "69100366")
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(200))
@@ -31,25 +32,65 @@ class MobileIDAuthSpec extends TaraSpecification {
         assertThat("Verification code exists", controlCode.size(), is(4))
     }
 
+    @Feature("MID_INIT_ENDPOINT")
+    def "initialize Mobile-ID authentication with invalid session cookie: #reason"() {
+        given:
+        Steps.startAuthenticationInTara(flow, "openid smartid")
+
+        when: "initialize Mobile-ID authentication with invalid session cookie"
+        Response response = given()
+                .relaxedHTTPSValidation()
+                .params([idCode: "30303039914",
+                         _csrf : flow.csrf])
+                .cookies(cookie)
+                .when()
+                .post(flow.loginService.fullMidInitUrl)
+                .then()
+                .extract().response()
+
+        then:
+        assertThat("Correct HTTP status code", response.statusCode, is(403))
+        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
+        assertThat("Correct error", response.jsonPath().getString("error"), is(ERROR_FORBIDDEN))
+        assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_FORBIDDEN_REQUEST))
+
+        where:
+        cookie               | reason
+        [:]                  | "no cookie"
+        [SESSION: null]      | "empty cookie"
+        [SESSION: "1234567"] | "incorrect cookie value"
+    }
+
     //TODO: AUT-630
     @Feature("MID_INIT_ENDPOINT")
-    def "initialize mobile-ID authentication with invalid method get"() {
+    def "initialize mobile-ID authentication with invalid method: #requestType"() {
         given:
         Steps.startAuthenticationInTara(flow)
-        Map paramsMap = [
-                "idCode"         : "60001017716",
-                "telephoneNumber": "69100366"]
-        Map cookieMap = [
-                "SESSION": flow.sessionId]
 
-        when:
-        Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullMidInitUrl, cookieMap, paramsMap, [:])
+        when: "initialize mobile-ID authentication with invalid method"
+        Response response = given()
+                .relaxedHTTPSValidation()
+                .params([idCode         : "60001017716",
+                         telephoneNumber: "69100366",
+                         _csrf          : flow.csrf])
+                .cookies(["SESSION": flow.sessionId])
+                .when()
+                .request(requestType, flow.loginService.fullMidInitUrl)
+                .then()
+                .extract().response()
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(500))
         assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
         assertThat("Correct error", response.jsonPath().getString("error"), is(ERROR_INTERNAL))
         assertThat("Correct message", response.jsonPath().getString('message'), is(MESSAGE_INTERNAL_ERROR))
+
+        where:
+        requestType | _
+        "GET"       | _
+        "PUT"       | _
+        "PATCH"     | _
+        "DELETE"    | _
     }
 
     @Feature("MID_INIT_ENDPOINT")
@@ -57,12 +98,18 @@ class MobileIDAuthSpec extends TaraSpecification {
     @Feature("MID_VALID_INPUT_TEL")
     def "initialize mobile-ID authentication with invalid params: #label"() {
         given:
-        Map additionalParamsMap = [:]
-        Utils.setParameter(additionalParamsMap, paramName, paramValue)
         Steps.startAuthenticationInTara(flow)
 
-        when:
-        Response response = Steps.initMidAuthSession(flow, flow.sessionId, idCode, phoneNo, additionalParamsMap)
+        when: "Request MID authentication with invalid parameters"
+        Response response = given()
+                .relaxedHTTPSValidation()
+                .params(params)
+                .params(_csrf: flow.csrf)
+                .cookies(["SESSION": flow.sessionId])
+                .when()
+                .post(flow.loginService.fullMidInitUrl)
+                .then()
+                .extract().response()
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(400))
@@ -70,22 +117,21 @@ class MobileIDAuthSpec extends TaraSpecification {
         assertThat("Correct message", response.jsonPath().getString("message"), is(errorMessage))
 
         where:
-        phoneNo                                   | idCode         | paramName         | paramValue                             | label                                 || errorMessage
-        "00000266"                                | "60001019938"  | _                 | _                                      | "invalid idCode checksum"             || "Isikukood ei ole korrektne."
-        "+37200000266"                            | "60001019939"  | _                 | _                                      | "invalid telephone number"            || "Telefoninumber ei ole korrektne."
-        _                                         | _              | _                 | _                                      | "missing telephone number and idCode" || "Isikukood ei ole korrektne.; Telefoninumber ei ole korrektne."
-        "00000266"                                | _              | _                 | _                                      | "missing idCode"                      || "Isikukood ei ole korrektne."
-        _                                         | "60001019939"  | _                 | _                                      | "missing telephone number"            || "Telefoninumber ei ole korrektne."
-        "00000266"                                | "600010199399" | _                 | _                                      | "too long idCode"                     || "Isikukood ei ole korrektne."
-        "00000266"                                | "60001329939"  | _                 | _                                      | "wrong date inside idCode"            || "Isikukood ei ole korrektne."
-        "00000266"                                | "6000"         | _                 | _                                      | "too short idCode"                    || "Isikukood ei ole korrektne."
-        "abcd"                                    | "ABCD"         | _                 | _                                      | "invalid telephone number and idCode" || "Isikukood ei ole korrektne.; Telefoninumber ei ole korrektne."
-        "00000266"                                | "38500030556"  | _                 | _                                      | "invalid month in idCode"             || "Isikukood ei ole korrektne."
-        "45"                                      | "60001019939"  | _                 | _                                      | "too short telephone number"          || "Telefoninumber ei ole korrektne."
-        RandomStringUtils.random(16, false, true) | "60001019939"  | _                 | _                                      | "too long telephone number"           || "Telefoninumber ei ole korrektne."
-        "69100366"                                | "60001017716"  | "idCode"          | "60001017727"                          | "multiple idCode parameters"          || MESSAGE_DUPLICATE_PARAMETERS
-        "69100366"                                | "60001017716"  | "telephoneNumber" | "00000766"                             | "multiple telephoneNumber parameters" || MESSAGE_DUPLICATE_PARAMETERS
-        "69100366"                                | "60001017716"  | "_csrf"           | "d7860443-a0cc-45db-ad68-3c9300c0b3bb" | "multiple _csrf parameters"           || MESSAGE_DUPLICATE_PARAMETERS
+        params                                                                              | label                                 || errorMessage
+        [telephoneNumber: "00000266", idCode: "60001019938"]                                | "invalid idCode checksum"             || "Isikukood ei ole korrektne."
+        [telephoneNumber: "+37200000266", idCode: "60001019939"]                            | "invalid telephone number"            || "Telefoninumber ei ole korrektne."
+        [:]                                                                                 | "missing telephone number and idCode" || "Isikukood ei ole korrektne.; Telefoninumber ei ole korrektne."
+        [telephoneNumber: "00000266"]                                                       | "missing idCode"                      || "Isikukood ei ole korrektne."
+        [idCode: "60001019939"]                                                             | "missing telephone number"            || "Telefoninumber ei ole korrektne."
+        [telephoneNumber: "00000266", idCode: "600010199399"]                               | "too long idCode"                     || "Isikukood ei ole korrektne."
+        [telephoneNumber: "00000266", idCode: "60001329939"]                                | "wrong date inside idCode"            || "Isikukood ei ole korrektne."
+        [telephoneNumber: "00000266", idCode: "6000"]                                       | "too short idCode"                    || "Isikukood ei ole korrektne."
+        [telephoneNumber: "abcd", idCode: "ABCD"]                                           | "invalid telephone number and idCode" || "Isikukood ei ole korrektne.; Telefoninumber ei ole korrektne."
+        [telephoneNumber: "00000266", idCode: "38500030556"]                                | "invalid month in idCode"             || "Isikukood ei ole korrektne."
+        [telephoneNumber: "45", idCode: "60001019939"]                                      | "too short telephone number"          || "Telefoninumber ei ole korrektne."
+        [telephoneNumber: RandomStringUtils.random(16, false, true), idCode: "60001019939"] | "too long telephone number"           || "Telefoninumber ei ole korrektne."
+        [telephoneNumber: "69100366", idCode: ["60001017716", "60001017727"]]               | "multiple idCode parameters"          || MESSAGE_DUPLICATE_PARAMETERS
+        [telephoneNumber: ["69100366", "00000766"], idCode: "60001017716"]                  | "multiple telephoneNumber parameters" || MESSAGE_DUPLICATE_PARAMETERS
     }
 
     @Feature("MID_AUTH_POLL_RESPONSE_COMPLETE")
@@ -94,7 +140,7 @@ class MobileIDAuthSpec extends TaraSpecification {
     def "initialize mobile-ID authentication with scenario: #label et"() {
         given:
         Steps.startAuthenticationInTara(flow)
-        Steps.initMidAuthSession(flow, flow.sessionId, idCode, phoneNo)
+        Steps.initMidAuthSession(flow, idCode, phoneNo)
 
         when:
         Response response = Steps.pollMidResponse(flow, 3000L)
@@ -123,7 +169,7 @@ class MobileIDAuthSpec extends TaraSpecification {
         Map localeMap = ["lang": "ru"]
         Response initOIDCServiceSession = Steps.startAuthenticationInOidc(flow)
         Steps.initLoginSession(flow, initOIDCServiceSession, localeMap)
-        Steps.initMidAuthSession(flow, flow.sessionId, idCode, phoneNo)
+        Steps.initMidAuthSession(flow, idCode, phoneNo)
 
         when:
         Response response = Steps.pollMidResponse(flow, 3000L)
@@ -151,7 +197,7 @@ class MobileIDAuthSpec extends TaraSpecification {
         Map localeMap = ["lang": "en"]
         Response initOIDCServiceSession = Steps.startAuthenticationInOidc(flow)
         Steps.initLoginSession(flow, initOIDCServiceSession, localeMap)
-        Steps.initMidAuthSession(flow, flow.sessionId, idCode, phoneNo)
+        Steps.initMidAuthSession(flow, idCode, phoneNo)
 
         when:
         Response response = Steps.pollMidResponse(flow, 3000L)
@@ -178,7 +224,7 @@ class MobileIDAuthSpec extends TaraSpecification {
     def "poll mobile-ID authentication session"() {
         given:
         Steps.startAuthenticationInTara(flow)
-        Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366")
+        Steps.initMidAuthSession(flow, "60001017716", "69100366")
 
         when:
         Response response = Requests.pollMid(flow)
@@ -194,7 +240,7 @@ class MobileIDAuthSpec extends TaraSpecification {
     def "poll mobile-ID authentication with session complete"() {
         given:
         Steps.startAuthenticationInTara(flow)
-        Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366")
+        Steps.initMidAuthSession(flow, "60001017716", "69100366")
         sleep 10000
 
         when:
@@ -207,35 +253,60 @@ class MobileIDAuthSpec extends TaraSpecification {
     }
 
     @Feature("MID_AUTH_STATUS_CHECK_ENDPOINT")
-    def "poll mobile-ID authentication session with invalid session ID"() {
+    def "poll mobile-ID authentication session with invalid session cookie: #reason"() {
         given:
         Steps.startAuthenticationInTara(flow)
-        Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366")
-        flow.setSessionId("1234567")
+        Steps.initMidAuthSession(flow, "60001017716", "69100366")
 
-        when:
-        Response response = Requests.pollMid(flow)
+        when: "request polling with invalid session cookie"
+        Response response = given()
+                .relaxedHTTPSValidation()
+                .cookies(cookie)
+                .when()
+                .get(flow.loginService.fullMidPollUrl)
+                .then()
+                .extract().response()
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(400))
         assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
         assertThat("Correct Mobile-ID status", response.jsonPath().getString("message"), is(MESSAGE_SESSION_NOT_FOUND))
+
+        where:
+        cookie               | reason
+        [:]                  | "no cookie"
+        [SESSION: null]      | "empty cookie"
+        [SESSION: "1234567"] | "incorrect cookie value"
     }
 
     //TODO: AUT-630
     @Feature("MID_AUTH_STATUS_CHECK_ENDPOINT")
-    def "poll mobile-ID authentication with invalid method post"() {
+    def "poll mobile-ID authentication with invalid method: #requestType"() {
         given:
         Steps.startAuthenticationInTara(flow)
-        Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366")
+        Steps.initMidAuthSession(flow, "60001017716", "69100366")
 
-        when:
-        Response response = Requests.postRequestWithSessionId(flow, flow.loginService.fullMidPollUrl)
+        when: "request MID polling with invalid request type"
+        Response response = given()
+                .relaxedHTTPSValidation()
+                .cookies(SESSION: flow.sessionId)
+                .params([_csrf: flow.csrf])
+                .when()
+                .request(requestType, flow.loginService.fullMidPollUrl)
+                .then()
+                .extract().response()
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(500))
         assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
         assertThat("Correct error message", response.jsonPath().getString("message"), is(MESSAGE_INTERNAL_ERROR))
+
+        where:
+        requestType | _
+        "POST"      | _
+        "PUT"       | _
+        "PATCH"     | _
+        "DELETE"    | _
     }
 
     @Feature("MID_AUTH_STATUS_CHECK_ENDPOINT")
@@ -243,10 +314,10 @@ class MobileIDAuthSpec extends TaraSpecification {
     def "cancel mobile-ID authentication"() {
         given:
         Steps.startAuthenticationInTara(flow)
-        Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366")
+        Steps.initMidAuthSession(flow, "60001017716", "69100366")
 
         when:
-        Response response = Requests.postRequestWithSessionId(flow, flow.loginService.fullMidCancelUrl)
+        Response response = Requests.postRequestWithParams(flow, flow.loginService.fullMidCancelUrl)
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(302))
@@ -262,10 +333,10 @@ class MobileIDAuthSpec extends TaraSpecification {
     def "Verify cancel mobile-ID authentication response headers"() {
         given:
         Steps.startAuthenticationInTara(flow)
-        Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366")
+        Steps.initMidAuthSession(flow, "60001017716", "69100366")
 
         when:
-        Response response = Requests.postRequestWithSessionId(flow, flow.loginService.fullMidCancelUrl)
+        Response response = Requests.postRequestWithParams(flow, flow.loginService.fullMidCancelUrl)
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(302))
@@ -273,20 +344,31 @@ class MobileIDAuthSpec extends TaraSpecification {
     }
 
     @Feature("MID_AUTH_STATUS_CHECK_ENDPOINT")
-    def "cancel mobile-ID authentication with invalid session ID"() {
+    def "cancel mobile-ID authentication with invalid session cookie: #reason"() {
         given:
         Steps.startAuthenticationInTara(flow)
-        Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366")
-        flow.setSessionId("1234567")
+        Steps.initMidAuthSession(flow, "60001017716", "69100366")
 
-        when:
-        Response response = Requests.postRequestWithSessionId(flow, flow.loginService.fullMidCancelUrl)
+        when: "Cancel MID authentication with invalid session cookie"
+        Response response = given()
+                .relaxedHTTPSValidation()
+                .cookies(cookie)
+                .when()
+                .post(flow.loginService.fullMidCancelUrl)
+                .then()
+                .extract().response()
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(403))
         assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
         assertThat("Correct error", response.jsonPath().getString("error"), is(ERROR_FORBIDDEN))
         assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_FORBIDDEN_REQUEST))
+
+        where:
+        cookie               | reason
+        [:]                  | "no cookie"
+        [SESSION: null]      | "empty cookie"
+        [SESSION: "1234567"] | "incorrect cookie value"
     }
 
     //TODO: AUT-630
@@ -294,14 +376,28 @@ class MobileIDAuthSpec extends TaraSpecification {
     def "cancel mobile-ID authentication with invalid method get"() {
         given:
         Steps.startAuthenticationInTara(flow)
-        Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366")
+        Steps.initMidAuthSession(flow, "60001017716", "69100366")
 
-        when:
-        Response response = Requests.getRequestWithSessionId(flow, flow.loginService.fullMidCancelUrl)
+        when: "Cancel authentication with invalid method"
+        Response response = given()
+                .relaxedHTTPSValidation()
+                .params([_csrf: flow.csrf])
+                .cookies(["SESSION": flow.sessionId])
+                .when()
+                .request(requestType, flow.loginService.fullMidCancelUrl)
+                .then()
+                .extract().response()
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(500))
         assertThat("Correct error", response.jsonPath().getString("error"), is(ERROR_INTERNAL))
         assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_INTERNAL_ERROR))
+
+        where:
+        requestType | _
+        "GET"       | _
+        "PUT"       | _
+        "PATCH"     | _
+        "DELETE"    | _
     }
 }

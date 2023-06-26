@@ -2,24 +2,12 @@ package ee.ria.tara
 
 import io.restassured.response.Response
 import org.json.JSONObject
-import org.spockframework.lang.Wildcard
 
 import java.security.*
 import java.security.cert.Certificate
 
 
 class Utils {
-    //void
-    static Map setParameter(Map map, Object param, Object paramValue) {
-        if (!(param instanceof Wildcard)) {
-            if (!(paramValue instanceof Wildcard)) {
-                map.put(param, paramValue)
-            } else {
-                map.put(param, "")
-            }
-        }
-        return map
-    }
 
     static String getParamValueFromResponseHeader(Response response, String paramName) {
         String[] parameters = response.header("location").toURL().getQuery().split("&")
@@ -36,22 +24,16 @@ class Utils {
         }
     }
 
-    static String encodeUrl(String inputString) {
-        return URLEncoder.encode(inputString, "UTF-8")
-    }
-
     static String getCertificateAsString(String filename) {
         return new File(filename).readLines().join()
     }
 
     static JSONObject getWebEidAuthTokenParameters(Flow flow, String signature) {
-        JSONObject formParams = [
-                "authToken": [
-                        "algorithm"            : "ES384",
-                        "appVersion"           : "https://web-eid.eu/web-eid-app/releases/2.0.2+566",
-                        "format"               : "web-eid:1.0",
-                        "signature"            : signature,
-                        "unverifiedCertificate": flow.authCertificate]]
+        JSONObject formParams = ["authToken": ["algorithm"            : "ES384",
+                                               "appVersion"           : "https://web-eid.eu/web-eid-app/releases/2.0.2+566",
+                                               "format"               : "web-eid:1.0",
+                                               "signature"            : signature,
+                                               "unverifiedCertificate": flow.authCertificate]]
         return formParams
     }
 

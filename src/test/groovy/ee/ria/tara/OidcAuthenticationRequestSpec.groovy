@@ -23,10 +23,10 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
     }
 
     @Feature("https://e-gov.github.io/TARA-Doku/TechnicalSpecification#41-authentication-request")
-    def "Authentication request with invalid param values #paramName"() {
+    def "Authentication request with invalid param values: #parameter"() {
         given:
         Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "openid")
-        paramsMap.put(paramName, paramValue)
+        paramsMap << parameter
 
         when:
         Response response = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
@@ -37,12 +37,12 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
         assertThat("Correct error_description", Utils.getParamValueFromResponseHeader(response, "error_description"), allOf(startsWith(errorSuffix), endsWith(errorPrefix)))
 
         where:
-        paramName       | paramValue                || statusCode | error                       | errorSuffix                                                   | errorPrefix
-        "redirect_uri"  | "https://www.example.com" || 302        | ERROR_REQUEST               | "The request is missing a required parameter"                 | "pre-registered redirect urls."
-        "scope"         | "my_scope"                || 303        | ERROR_SCOPE                 | "The requested scope is invalid"                              | " is not allowed to request scope 'my_scope'."
-        "scope"         | "openid,eidas"            || 303        | ERROR_SCOPE                 | "The requested scope is invalid"                              | " is not allowed to request scope 'openid,eidas'."
-        "response_type" | "token"                   || 303        | "unsupported_response_type" | "The authorization server does not support obtaining a token" | "is not allowed to request response_type 'token'."
-        "client_id"     | "my_client"               || 302        | ERROR_CLIENT                | "Client authentication failed"                                | "The requested OAuth 2.0 Client does not exist."
+        parameter                                 || statusCode | error                       | errorSuffix                                                   | errorPrefix
+        [redirect_uri: "https://www.example.com"] || 302        | ERROR_REQUEST               | "The request is missing a required parameter"                 | "pre-registered redirect urls."
+        [scope: "my_scope"]                       || 303        | ERROR_SCOPE                 | "The requested scope is invalid"                              | " is not allowed to request scope 'my_scope'."
+        [scope: "openid,eidas"]                   || 303        | ERROR_SCOPE                 | "The requested scope is invalid"                              | " is not allowed to request scope 'openid,eidas'."
+        [response_type: "token"]                  || 303        | "unsupported_response_type" | "The authorization server does not support obtaining a token" | "is not allowed to request response_type 'token'."
+        [client_id: "my_client"]                  || 302        | ERROR_CLIENT                | "Client authentication failed"                                | "The requested OAuth 2.0 Client does not exist."
     }
 
     @Feature("https://e-gov.github.io/TARA-Doku/TechnicalSpecification#41-authentication-request")
@@ -64,10 +64,10 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
     def "Authentication request with different ui_locales: #label"() {
         given:
         Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "openid")
-        def value = Utils.setParameter(paramsMap, paramName, paramValue)
+        paramsMap << parameter
         Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
 
-        when:
+        when: "Initialize login request"
         Response response = Steps.followRedirect(flow, initOIDCServiceSession)
 
         then:
@@ -75,23 +75,23 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
         assertThat("Correct HTML title", response.htmlPath().getString("html.head.title"), is(expectedValue))
 
         where:
-        paramName    | paramValue | label                                     || expectedValue
-        "ui_locales" | "zu"       | "Fallback into default language et"       || "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
-        "ui_locales" | "et"       | "Estonian"                                || "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
-        "ui_locales" | "ru"       | "Russian"                                 || "Государственная услуга аутентификации - Для безопасной аутентификации в э-услугах"
-        "ui_locales" | "en"       | "English"                                 || "State authentication service - Secure authentication for e-services"
-        "ui_locales" | "fi ru en" | "Select first supported locale from list" || "Государственная услуга аутентификации - Для безопасной аутентификации в э-услугах"
-        "ui_locales" | "ET"       | "Estonian with big letters"               || "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
-        "ui_locales" | "RU"       | "Russian with big letters"                || "Государственная услуга аутентификации - Для безопасной аутентификации в э-услугах"
-        "ui_locales" | "EN"       | "English with big letters"                || "State authentication service - Secure authentication for e-services"
-        "ui_locales" | _          | "Without locale parameter"                || "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
+        parameter                | label                                     || expectedValue
+        [ui_locales: "zu"]       | "Fallback into default language et"       || "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
+        [ui_locales: "et"]       | "Estonian"                                || "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
+        [ui_locales: "ru"]       | "Russian"                                 || "Государственная услуга аутентификации - Для безопасной аутентификации в э-услугах"
+        [ui_locales: "en"]       | "English"                                 || "State authentication service - Secure authentication for e-services"
+        [ui_locales: "fi ru en"] | "Select first supported locale from list" || "Государственная услуга аутентификации - Для безопасной аутентификации в э-услугах"
+        [ui_locales: "ET"]       | "Estonian with big letters"               || "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
+        [ui_locales: "RU"]       | "Russian with big letters"                || "Государственная услуга аутентификации - Для безопасной аутентификации в э-услугах"
+        [ui_locales: "EN"]       | "English with big letters"                || "State authentication service - Secure authentication for e-services"
+        [ui_locales: null]       | "Without locale parameter"                || "Riigi autentimisteenus - Turvaline autentimine asutuste e-teenustes"
     }
 
     @Feature("https://e-gov.github.io/TARA-Doku/TechnicalSpecification#41-authentication-request")
     def "Authentication request with unknown parameter"() {
         given:
         Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, 'openid')
-        def value = paramsMap.put("my_parameter", "654321")
+        paramsMap << [my_parameter: "654321"]
 
         when:
         Response response = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
@@ -106,7 +106,7 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
     def "Authentication request with invalid acr_values parameter value"() {
         given:
         Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "openid")
-        def value = paramsMap.put("acr_values", "medium")
+        paramsMap << [acr_values: "medium"]
         Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
 
         when:
@@ -193,13 +193,10 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
     }
 
     @Feature("https://e-gov.github.io/TARA-Doku/TechnicalSpecification#41-authentication-request")
-    def "Authentication request with empty optional parameters: #paramName"() {
+    def "Authentication request with empty optional parameters: #parameter"() {
         given:
         Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "openid")
-        Map value = Utils.setParameter(paramsMap, paramName, paramValue)
-        if (paramName.equalsIgnoreCase("nonce")) {
-            flow.nonce = ''
-        }
+        paramsMap << parameter
 
         Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
         Steps.createLoginSession(flow, initOIDCServiceSession)
@@ -215,30 +212,29 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
         assertThat("Correct LoA", claims.getClaim("acr"), is("high"))
 
         where:
-        paramName      | paramValue
-        "ui_locales"   | _
-        "nonce"        | _
-        "acr_values"   | _
-        "redirect_uri" | _
+        parameter            | paramValue
+        [ui_locales: null]   | _
+        [acr_values: null]   | _
+        [redirect_uri: null] | _
     }
 
     @Feature("https://e-gov.github.io/TARA-Doku/TechnicalSpecification#41-authentication-request")
-    def "Authentication request with empty mandatory parameters: #paramName"() {
+    def "Authentication request with empty mandatory parameters: #parameter"() {
         given:
         Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "openid")
-        def value = Utils.setParameter(paramsMap, paramName, _)
+        paramsMap << parameter
 
         when:
-        Response response = Requests.getRequestWithParams(flow, flow.oidcService.fullAuthenticationRequestUrl, paramsMap, [:])
+        Response response = Requests.getRequestWithParams(flow, flow.oidcService.fullAuthenticationRequestUrl, paramsMap)
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(statusCode))
         assertThat("Correct error description", Utils.getParamValueFromResponseHeader(response, "error_description"), is(errorDescription))
 
         where:
-        paramName       || statusCode | errorDescription
-        "state"         || 303        | "The state is missing or does not have enough characters and is therefore considered too weak. Request parameter 'state' must be at least be 8 characters long to ensure sufficient entropy."
-        "response_type" || 303        | "The authorization server does not support obtaining a token using this method. `The request is missing the 'response_type' parameter."
-        "client_id"     || 302        | "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method). The requested OAuth 2.0 Client does not exist."
+        parameter             || statusCode | errorDescription
+        [state: null]         || 303        | "The state is missing or does not have enough characters and is therefore considered too weak. Request parameter 'state' must be at least be 8 characters long to ensure sufficient entropy."
+        [response_type: null] || 303        | "The authorization server does not support obtaining a token using this method. `The request is missing the 'response_type' parameter."
+        [client_id: null]     || 302        | "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method). The requested OAuth 2.0 Client does not exist."
     }
 }

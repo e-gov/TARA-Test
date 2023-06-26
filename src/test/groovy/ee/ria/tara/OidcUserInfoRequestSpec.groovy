@@ -347,7 +347,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
     @Feature("OIDC_USERINFO_RESPONSE_NOK")
     def "Userinfo request without access token"() {
         when:
-        Response response = Requests.getRequestWithParams(flow, flow.openIdServiceConfiguration.getString("userinfo_endpoint"), [:], [:])
+        Response response = Requests.getRequest(flow, flow.openIdServiceConfiguration.getString("userinfo_endpoint"))
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(401))

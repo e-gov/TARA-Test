@@ -38,18 +38,16 @@ class OpenIdConnectSpec extends TaraSpecification {
     }
 
     @Feature("OPENID_CONNECT")
-    def "Request a token twice"() {
+    def "Request an ID-token twice with same authorization code should fail"() {
         given:
         Response initOIDCServiceSession = Steps.startAuthenticationInOidc(flow)
         Steps.createLoginSession(flow, initOIDCServiceSession)
         Response midAuthResponse = Steps.authenticateWithMid(flow, "60001017727", "69200366")
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
         String authorizationCode = Utils.getParamValueFromResponseHeader(authenticationFinishedResponse, "code")
-        // 1
         Requests.getWebToken(flow, authorizationCode)
 
-        when:
-        // 2
+        when: "Request ID-token a second time"
         Response tokenResponse2 = Requests.getWebToken(flow, authorizationCode)
 
         then:
@@ -63,7 +61,7 @@ class OpenIdConnectSpec extends TaraSpecification {
     def "Request with empty scope"() {
         given:
         Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
-        paramsMap.put("scope", "")
+        paramsMap << [scope: null]
         Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
 
         when:
@@ -97,10 +95,10 @@ class OpenIdConnectSpec extends TaraSpecification {
     @Feature("OPENID_CONNECT")
     def "Request with missing parameter #paramName"() {
         given:
-        Map formParamsMap = [
-                "grant_type"  : "code",
-                "code"        : "1234567",
-                "redirect_uri": flow.oidcClientPublic.fullResponseUrl]
+        Map formParamsMap = ["grant_type"  : "code",
+                             "code"        : "1234567",
+                             "redirect_uri": flow.oidcClientPublic.fullResponseUrl]
+
         formParamsMap.remove(paramName)
 
         when:
@@ -121,16 +119,16 @@ class OpenIdConnectSpec extends TaraSpecification {
 
 
     @Feature("OPENID_CONNECT")
-    def "Request with invalid parameter value #paramName"() {
+    def "Request with invalid parameter value #parameter"() {
         given:
-        Map formParamsMap = [
-                "grant_type"  : "code",
-                "code"        : "1234567",
-                "redirect_uri": flow.oidcClientPublic.fullResponseUrl,
-                paramName     : paramValue]
+        Map paramsMap = ["grant_type"  : "code",
+                         "code"        : "1234567",
+                         "redirect_uri": flow.oidcClientPublic.fullResponseUrl]
+
+        paramsMap << parameter
 
         when:
-        Response response = Requests.getWebTokenResponseBody(flow, formParamsMap)
+        Response response = Requests.getWebTokenResponseBody(flow, paramsMap)
 
         then:
         assertThat("Correct status code", response.statusCode, is(400))
@@ -139,10 +137,10 @@ class OpenIdConnectSpec extends TaraSpecification {
         assertThat("Correct error description", response.jsonPath().getString("error_description"), allOf(startsWith(errorSuffix), endsWith(errorPrefix)))
 
         where:
-        paramName      | paramValue                || errorSuffix                                   | errorPrefix
-        "redirect_uri" | "https://www.example.com" || "The request is missing a required parameter" | "whitelisted the redirect_uri you specified."
-        "grant_type"   | "token"                   || "The request is missing a required parameter" | "whitelisted the redirect_uri you specified."
-        "code"         | "45678"                   || "The request is missing a required parameter" | "whitelisted the redirect_uri you specified."
+        parameter                                 || errorSuffix                                   | errorPrefix
+        [redirect_uri: "https://www.example.com"] || "The request is missing a required parameter" | "whitelisted the redirect_uri you specified."
+        [grant_type: "token"]                     || "The request is missing a required parameter" | "whitelisted the redirect_uri you specified."
+        [code: "45678"]                           || "The request is missing a required parameter" | "whitelisted the redirect_uri you specified."
     }
 
     @Feature("OPENID_CONNECT")
@@ -151,8 +149,7 @@ class OpenIdConnectSpec extends TaraSpecification {
         Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
         flow.setState("testȺ田\uD83D\uDE0D&additional=1 %20")
         flow.setNonce("testȺ田\uD83D\uDE0D&additional=1 %20")
-        paramsMap.put("state", flow.state)
-        paramsMap.put("nonce", flow.nonce)
+        paramsMap << [state: flow.state, nonce: flow.nonce]
         Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
         Steps.createLoginSession(flow, initOIDCServiceSession)
         Response midAuthResponse = Steps.authenticateWithMid(flow, "60001017716", "69100366")

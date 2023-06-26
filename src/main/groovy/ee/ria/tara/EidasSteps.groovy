@@ -2,21 +2,22 @@ package ee.ria.tara
 
 import io.qameta.allure.Step
 import io.restassured.response.Response
-import org.spockframework.lang.Wildcard
 
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.is
 
 class EidasSteps {
     @Step("Initialize Eidas authentication session")
-    static Response initEidasAuthSession(Flow flow, String sessionId, Object country, Map additionalParamsMap) {
-        Map queryParamsMap = [:]
-        if (!(country instanceof Wildcard)) {
-            Utils.setParameter(queryParamsMap, "country", country)
+    static Response initEidasAuthSession(Flow flow, Object country) {
+        Map queryParamsMap = [country: country,
+                              _csrf  : flow.csrf]
+        Response response = Requests.postRequestWithParams(flow, flow.loginService.fullEidasInitUrl, queryParamsMap)
+        if (response.statusCode.toInteger() == 200) {
+            flow.setNextEndpoint(response.htmlPath().getString("**.find { form -> form.@method == 'post' }.@action"))
+            flow.setRelayState(response.htmlPath().getString("**.find { input -> input.@name == 'RelayState' }.@value"))
+            flow.setRequestMessage(response.htmlPath().getString("**.find { input -> input.@name == 'SAMLRequest' }.@value"))
         }
-        Utils.setParameter(queryParamsMap, "_csrf", flow.csrf)
-        Map cookieMap = ["SESSION": sessionId]
-        return Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullEidasInitUrl, cookieMap, queryParamsMap, additionalParamsMap)
+        return response
     }
 
     @Step("Eidas service provider request")
@@ -26,7 +27,7 @@ class EidasSteps {
                 "RelayState" : relayState,
                 "SAMLRequest": samlRequest]
 
-        Response serviceProviderResponse = Requests.postRequestWithParams(flow, url, formParamsMap, [:])
+        Response serviceProviderResponse = Requests.postRequestWithParams(flow, url, formParamsMap)
         assertThat("Correct HTTP status code", serviceProviderResponse.statusCode, is(200))
         return serviceProviderResponse
     }
@@ -36,7 +37,7 @@ class EidasSteps {
         String specificConnectorUrl = response.htmlPath().getString("**.find { form -> form.@method == 'post' }.@action")
         String token = response.htmlPath().getString("**.find { input -> input.@name == 'token' }.@value")
         Map formParamsMap = ["token": token]
-        Response serviceProviderResponse = Requests.postRequestWithParams(flow, specificConnectorUrl, formParamsMap, [:])
+        Response serviceProviderResponse = Requests.postRequestWithParams(flow, specificConnectorUrl, formParamsMap)
         assertThat("Correct HTTP status code", serviceProviderResponse.statusCode, is(200))
         return serviceProviderResponse
     }
@@ -46,15 +47,15 @@ class EidasSteps {
         String colleagueRequestUrl = response.htmlPath().getString("**.find { form -> form.@method == 'post' }.@action")
         String samlRequest = response.htmlPath().getString("**.find { input -> input.@id == 'noScriptSAMLRequest' }.@value")
         Map paramsMap = ["SAMLRequest": samlRequest]
-        Response colleagueResponse = Requests.postRequestWithParams(flow, colleagueRequestUrl, paramsMap, [:])
+        Response colleagueResponse = Requests.postRequestWithParams(flow, colleagueRequestUrl, paramsMap)
         assertThat("Correct HTTP status code", colleagueResponse.statusCode, is(200))
         return colleagueResponse
     }
 
     @Step("Eidas proxy service request")
     static Response eidasProxyServiceRequest(Flow flow, String endpointUrl, String token) {
-        Map paramsMap = ["token": token]
-        Response proxyServiceResponse = Requests.postRequestWithParams(flow, endpointUrl, paramsMap, [:])
+        Map paramsMap = [token: token]
+        Response proxyServiceResponse = Requests.postRequestWithParams(flow, endpointUrl, paramsMap)
         assertThat("Correct HTTP status code", proxyServiceResponse.statusCode, is(200))
         return proxyServiceResponse
     }
@@ -64,7 +65,7 @@ class EidasSteps {
         String endpointUrl = response.htmlPath().getString("**.find { it.@name == 'redirectForm' }.@action")
         String smsspRequest = response.htmlPath().getString("**.find { input -> input.@id == 'SMSSPRequest' }.@value")
         Map paramsMap = ["SMSSPRequest": smsspRequest]
-        Response idpResponse = Requests.postRequestWithParams(flow, endpointUrl, paramsMap, [:])
+        Response idpResponse = Requests.postRequestWithParams(flow, endpointUrl, paramsMap)
         assertThat("Correct HTTP status code", idpResponse.statusCode, is(200))
         return idpResponse
     }
@@ -82,7 +83,7 @@ class EidasSteps {
                 "eidasnameid"       : "persistent",
                 "callback"          : callbackUrl,
                 "jSonRequestDecoded": smsspTokenRequestJson]
-        Response authorizationRequest = Requests.postRequestWithParams(flow, flow.foreignIdpProvider.fullResponseUrl, paramsMap, [:])
+        Response authorizationRequest = Requests.postRequestWithParams(flow, flow.foreignIdpProvider.fullResponseUrl, paramsMap)
         assertThat("Correct HTTP status code", authorizationRequest.statusCode, is(200))
         return authorizationRequest
     }
@@ -92,7 +93,7 @@ class EidasSteps {
         String endpointUrl = response.htmlPath().get("**.find {it.@name == 'redirectForm'}.@action")
         String smsspTokenResponse = response.htmlPath().get("**.find {it.@id == 'SMSSPResponseNoJS'}.@value")
         Map paramsMap = ["SMSSPResponse": smsspTokenResponse]
-        Response authorizationResponse = Requests.postRequestWithParams(flow, endpointUrl, paramsMap, [:])
+        Response authorizationResponse = Requests.postRequestWithParams(flow, endpointUrl, paramsMap)
         assertThat("Correct HTTP status code", authorizationResponse.statusCode, is(200))
         return authorizationResponse
     }
@@ -100,7 +101,7 @@ class EidasSteps {
     @Step("Eidas confirm consent")
     static Response eidasConfirmConsent(Flow flow, String binaryLightToken) {
         Map paramsMap = ["binaryLightToken": binaryLightToken]
-        Response consentResponse = Requests.postRequestWithParams(flow, flow.foreignProxyService.fullConsentUrl, paramsMap, [:])
+        Response consentResponse = Requests.postRequestWithParams(flow, flow.foreignProxyService.fullConsentUrl, paramsMap)
         assertThat("Correct HTTP status code", consentResponse.statusCode, is(200))
         return consentResponse
     }
@@ -110,7 +111,7 @@ class EidasSteps {
         String endpointUrl = response.htmlPath().get("**.find {it.@name == 'redirectForm'}.@action")
         String samlResponse = response.htmlPath().get("**.find {it.@name == 'SAMLResponse'}.@value")
         Map paramsMap = ["SAMLResponse": samlResponse]
-        Response colleagueResponse = Requests.postRequestWithParams(flow, endpointUrl, paramsMap, [:])
+        Response colleagueResponse = Requests.postRequestWithParams(flow, endpointUrl, paramsMap)
         assertThat("Correct HTTP status code", colleagueResponse.statusCode, is(200))
         return colleagueResponse
     }
@@ -129,8 +130,8 @@ class EidasSteps {
     @Step("Continue Eidas flow")
     static Response continueEidasFlow(Flow flow, String idpUsername, idpPassword, String eidasloa) {
         Response serviceProviderResponse = eidasServiceProviderRequest(flow, flow.nextEndpoint, flow.relayState, flow.requestMessage)
-        Response specificconnectorResponse = eidasSpecificConnectorRequest(flow, serviceProviderResponse)
-        Response colleagueResponse = eidasColleagueRequest(flow, specificconnectorResponse)
+        Response specificConnectorResponse = eidasSpecificConnectorRequest(flow, serviceProviderResponse)
+        Response colleagueResponse = eidasColleagueRequest(flow, specificConnectorResponse)
         String endpointUrl = colleagueResponse.htmlPath().getString("**.find { it.@id == 'redirectForm' }.@action")
         String token = colleagueResponse.htmlPath().getString("**.find { it.@id == 'token' }.@value")
         Response eidasProxyResponse = eidasProxyServiceRequest(flow, endpointUrl, token)
@@ -138,7 +139,7 @@ class EidasSteps {
         Response initIdpResponse = eidasIdpRequest(flow, eidasProxyResponse)
         Response authorizationRequest = eidasIdpAuthorizationRequest(flow, initIdpResponse, idpUsername, idpPassword, eidasloa)
         Response authorizationResponse = eidasIdpAuthorizationResponse(flow, authorizationRequest)
-        authorizationResponse
+        return authorizationResponse
     }
 
     @Step("Eidas authorization response")
@@ -146,8 +147,11 @@ class EidasSteps {
         String endpointUrl = response.htmlPath().get("**.find {it.@name == 'redirectForm'}.@action")
         String lightToken = response.htmlPath().get("**.find {it.@id == 'token'}.@value")
         Map paramsMap = ["token": lightToken]
-        Response authorizationResponse = Requests.postRequestWithParams(flow, endpointUrl, paramsMap, [:])
+        Response authorizationResponse = Requests.postRequestWithParams(flow, endpointUrl, paramsMap)
         assertThat("Correct HTTP status code", authorizationResponse.statusCode, is(200))
+        flow.setNextEndpoint(authorizationResponse.htmlPath().getString("**.find {it.@method == 'post'}.@action"))
+        flow.setResponseMessage(authorizationResponse.htmlPath().getString("**.find {it.@name == 'SAMLResponse'}.@value"))
+        flow.setRelayState(authorizationResponse.htmlPath().getString("**.find {it.@name == 'RelayState'}.@value"))
         return authorizationResponse
     }
 
@@ -159,7 +163,7 @@ class EidasSteps {
         Map paramsMap = [
                 "SAMLResponse": samlResponse,
                 "RelayState"  : relayState]
-        Response redirectionResponse = Requests.postRequestWithParams(flow, endpointUrl, paramsMap, [:])
+        Response redirectionResponse = Requests.postRequestWithParams(flow, endpointUrl, paramsMap)
         if (checkStatusCode) {
             assertThat("Correct HTTP status code", redirectionResponse.statusCode, is(200))
         }
@@ -169,7 +173,7 @@ class EidasSteps {
     @Step("Eidas accept authorization result")
     static Response eidasAcceptAuthorizationResult(Flow flow, Response response) {
         flow.setCsrf(response.htmlPath().get("**.find {it.@name == '_csrf'}.@value"))
-        return Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
+        return Requests.postRequestWithParams(flow, flow.loginService.fullAuthAcceptUrl)
     }
 
 }

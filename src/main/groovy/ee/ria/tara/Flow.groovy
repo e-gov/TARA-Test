@@ -32,6 +32,7 @@ class Flow {
 
     String nextEndpoint
     String requestMessage
+    String responseMessage
     String relayState
 
     Flow(Properties properties) {

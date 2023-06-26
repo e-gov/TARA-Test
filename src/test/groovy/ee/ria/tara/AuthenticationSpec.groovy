@@ -3,9 +3,11 @@ package ee.ria.tara
 import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jwt.JWTClaimsSet
 import io.qameta.allure.Feature
+import io.qameta.allure.Step
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 
+import static io.restassured.RestAssured.given
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.Matchers.hasLength
@@ -66,16 +68,12 @@ class AuthenticationSpec extends TaraSpecification {
     def "request authentication with eIDAS. LoA: #eidasLoa "() {
         given:
         Steps.startAuthenticationInTaraWithAcr(flow, acr)
-        Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, COUNTRY_CA, [:])
-
-        flow.setNextEndpoint(initEidasAuthenticationSession.htmlPath().getString("**.find { form -> form.@method == 'post' }.@action"))
-        flow.setRelayState(initEidasAuthenticationSession.htmlPath().getString("**.find { input -> input.@name == 'RelayState' }.@value"))
-        flow.setRequestMessage(initEidasAuthenticationSession.htmlPath().getString("**.find { input -> input.@name == 'SAMLRequest' }.@value"))
+        EidasSteps.initEidasAuthSession(flow, COUNTRY_CA)
         Response colleagueResponse = EidasSteps.continueEidasAuthenticationFlow(flow, IDP_USERNAME, IDP_PASSWORD, eidasLoa)
         Response authorizationResponse = EidasSteps.getAuthorizationResponseFromEidas(flow, colleagueResponse)
         Response redirectionResponse = EidasSteps.eidasRedirectAuthorizationResponse(flow, authorizationResponse)
         Response acceptResponse = EidasSteps.eidasAcceptAuthorizationResult(flow, redirectionResponse)
-        Response oidcServiceResponse = Steps.getOAuthCookies(flow, acceptResponse)
+        Response oidcServiceResponse = Steps.loginVerifier(flow, acceptResponse)
         Response redirectResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, redirectResponse)
 
@@ -98,16 +96,12 @@ class AuthenticationSpec extends TaraSpecification {
     def "request authentication with eIDAS with privet sector client"() {
         given:
         Steps.startAuthenticationInTaraWithClient(flow, "openid eidas", flow.oidcClientPrivate.clientId, flow.oidcClientPrivate.fullResponseUrl)
-        Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, COUNTRY_CA, [:])
-
-        flow.setNextEndpoint(initEidasAuthenticationSession.htmlPath().getString("**.find { form -> form.@method == 'post' }.@action"))
-        flow.setRelayState(initEidasAuthenticationSession.htmlPath().getString("**.find { input -> input.@name == 'RelayState' }.@value"))
-        flow.setRequestMessage(initEidasAuthenticationSession.htmlPath().getString("**.find { input -> input.@name == 'SAMLRequest' }.@value"))
+        EidasSteps.initEidasAuthSession(flow, COUNTRY_CA)
         Response colleagueResponse = EidasSteps.continueEidasAuthenticationFlow(flow, IDP_USERNAME, IDP_PASSWORD, EIDASLOA_HIGH)
         Response authorizationResponse = EidasSteps.getAuthorizationResponseFromEidas(flow, colleagueResponse)
         Response redirectionResponse = EidasSteps.eidasRedirectAuthorizationResponse(flow, authorizationResponse)
         Response acceptResponse = EidasSteps.eidasAcceptAuthorizationResult(flow, redirectionResponse)
-        Response oidcServiceResponse = Steps.getOAuthCookies(flow, acceptResponse)
+        Response oidcServiceResponse = Steps.loginVerifier(flow, acceptResponse)
         Response redirectResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, redirectResponse)
 
@@ -144,26 +138,16 @@ class AuthenticationSpec extends TaraSpecification {
     def "request authentication with Eidas. Low level of assurance."() {
         given:
         Steps.startAuthenticationInTara(flow, "openid eidas")
-        Response initEidasAuthenticationSession = EidasSteps.initEidasAuthSession(flow, flow.sessionId, COUNTRY_CA, [:])
-
-        flow.setNextEndpoint(initEidasAuthenticationSession.htmlPath().getString("**.find { form -> form.@method == 'post' }.@action"))
-        flow.setRelayState(initEidasAuthenticationSession.htmlPath().getString("**.find { input -> input.@name == 'RelayState' }.@value"))
-        flow.setRequestMessage(initEidasAuthenticationSession.htmlPath().getString("**.find { input -> input.@name == 'SAMLRequest' }.@value"))
+        EidasSteps.initEidasAuthSession(flow, COUNTRY_CA)
         Response colleagueResponse = EidasSteps.continueEidasAuthenticationFlow(flow, IDP_USERNAME, IDP_PASSWORD, EIDASLOA_LOW)
-        Response authorizationResponse = EidasSteps.getAuthorizationResponseFromEidas(flow, colleagueResponse)
-        String endpointUrl = authorizationResponse.htmlPath().get("**.find {it.@method == 'post'}.@action")
-        String samlResponse = authorizationResponse.htmlPath().get("**.find {it.@name == 'SAMLResponse'}.@value")
-        String relayState = authorizationResponse.htmlPath().get("**.find {it.@name == 'RelayState'}.@value")
-        Map paramsMap = [
-                "SAMLResponse": samlResponse,
-                "RelayState"  : relayState]
+        EidasSteps.getAuthorizationResponseFromEidas(flow, colleagueResponse)
 
         when:
-        Response redirectionResponse = Requests.postRequestWithParams(flow, endpointUrl, paramsMap, [:])
+        Response redirectionResponse = Requests.postRequestWithParams(flow, flow.nextEndpoint, [SAMLResponse: flow.responseMessage, RelayState: flow.relayState])
 
         then:
         assertThat("Correct HTTP status code", redirectionResponse.statusCode, is(400))
-        assertThat(redirectionResponse.jsonPath().get("message").toString(), is("Teie poolt valitud välisriigi autentimisvahend on teenuse poolt nõutust madalama autentimistasemega. Palun valige mõni muu autentimisvahend."))
+        assertThat("Correct message", redirectionResponse.jsonPath().getString("message"), is("Teie poolt valitud välisriigi autentimisvahend on teenuse poolt nõutust madalama autentimistasemega. Palun valige mõni muu autentimisvahend."))
     }
 
     @Feature("DISALLOW_IFRAMES")
@@ -184,9 +168,9 @@ class AuthenticationSpec extends TaraSpecification {
         Response midPollResult = Steps.pollMidResponse(flow)
         assertThat(midPollResult.jsonPath().get("status").toString(), not(equalTo("PENDING")))
         Steps.verifyResponseHeaders(midPollResult)
-        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
+        Response acceptResponse = Requests.postRequestWithParams(flow, flow.loginService.fullAuthAcceptUrl)
         Steps.verifyResponseHeaders(acceptResponse)
-        Response oidcServiceResponse = Steps.getOAuthCookies(flow, acceptResponse)
+        Response oidcServiceResponse = Steps.loginVerifier(flow, acceptResponse)
 
         Response consentResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
         Steps.verifyResponseHeaders(consentResponse)
@@ -212,12 +196,10 @@ class AuthenticationSpec extends TaraSpecification {
     @Feature("AUTH_ACCEPT_LOGIN_ENDPOINT")
     def "request accept authentication"() {
         given:
-        Steps.startAuthenticationInTara(flow)
-        Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366")
-        Steps.pollMidResponse(flow)
+        authenticateToPolling(flow)
 
         when:
-        Response response = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
+        Response response = Requests.postRequestWithParams(flow, flow.loginService.fullAuthAcceptUrl)
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(302))
@@ -226,31 +208,46 @@ class AuthenticationSpec extends TaraSpecification {
     }
 
     @Feature("AUTH_ACCEPT_LOGIN_ENDPOINT")
-    def "request accept authentication with invalid method get"() {
+    def "request accept authentication with invalid method: #requestType"() {
         given:
-        Steps.startAuthenticationInTara(flow)
-        Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366")
-        Steps.pollMidResponse(flow)
+        authenticateToPolling(flow)
 
-        when:
-        Response response = Requests.getRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
+        when: "request accept authentication with invalid method"
+        Response response = given()
+                .relaxedHTTPSValidation()
+                .cookies(SESSION: flow.sessionId)
+                .params([_csrf: flow.csrf])
+                .when()
+                .request(requestType, flow.loginService.fullAuthAcceptUrl)
+                .then()
+                .extract().response()
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(500))
         assertThat('Correct Content-Type', response.contentType, is("application/json;charset=UTF-8"))
         assertThat("Correct message", response.jsonPath().getString('message'), is(MESSAGE_INTERNAL_ERROR))
+
+        where:
+        requestType | _
+        "GET"       | _
+        "PUT"       | _
+        "PATCH"     | _
+        "DELETE"    | _
     }
 
     @Feature("AUTH_ACCEPT_LOGIN_ENDPOINT")
-    def "request accept authentication with invalid session ID"() {
+    def "request accept authentication with invalid session cookie: #reason"() {
         given:
-        Steps.startAuthenticationInTara(flow)
-        Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366")
-        Steps.pollMidResponse(flow)
-        flow.setSessionId("1234567")
+        authenticateToPolling(flow)
 
-        when:
-        Response response = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
+        when: "request accept authentication with invalid session cookie"
+        Response response = given()
+                .relaxedHTTPSValidation()
+                .cookies(cookie)
+                .when()
+                .post(flow.loginService.fullAuthAcceptUrl)
+                .then()
+                .extract().response()
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(403))
@@ -258,19 +255,21 @@ class AuthenticationSpec extends TaraSpecification {
         assertThat("Correct error", response.jsonPath().getString("error"), is(ERROR_FORBIDDEN))
         assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_FORBIDDEN_REQUEST))
         assertThat("Incident number is present", response.jsonPath().getString("incident_nr"), hasLength(32))
+
+        where:
+        cookie               | reason
+        [:]                  | "no cookie"
+        [SESSION: null]      | "empty cookie"
+        [SESSION: "1234567"] | "incorrect cookie value"
     }
 
     @Feature("AUTH_REJECT_LOGIN_ENDPOINT")
-    def "request reject authentication"() {
+    def "OIDC login verifier request after rejecting authentication returns correct error in URL"() {
         given:
-        Steps.startAuthenticationInTara(flow)
-        Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366")
-        Steps.pollMidResponse(flow)
-        Map paramsMap = ["error_code": REJECT_ERROR_CODE]
-        Map cookieMap = ["SESSION": flow.sessionId]
-        Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullAuthRejectUrl, cookieMap, paramsMap, [:])
+        authenticateToPolling(flow)
+        Response response = Requests.getRequestWithParams(flow, flow.loginService.fullAuthRejectUrl, [error_code: REJECT_ERROR_CODE])
 
-        when:
+        when: "OIDC login verifier request after rejecting authentication"
         Response oidcServiceResponse = Steps.followRedirectWithCookies(flow, response, flow.oidcService.cookies)
 
         then:
@@ -286,14 +285,10 @@ class AuthenticationSpec extends TaraSpecification {
     @Feature("XSS_DETECTION_FILTER_ENABLED")
     def "Verify reject authentication response headers"() {
         given:
-        Steps.startAuthenticationInTara(flow)
-        Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366")
-        Steps.pollMidResponse(flow)
-        Map paramsMap = ["error_code": REJECT_ERROR_CODE]
-        Map cookieMap = ["SESSION": flow.sessionId]
+        authenticateToPolling(flow)
 
         when:
-        Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullAuthRejectUrl, cookieMap, paramsMap, [:])
+        Response response = Requests.getRequestWithParams(flow, flow.loginService.fullAuthRejectUrl, [error_code: REJECT_ERROR_CODE])
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(302))
@@ -303,14 +298,10 @@ class AuthenticationSpec extends TaraSpecification {
     @Feature("AUTH_REJECT_LOGIN_ENDPOINT")
     def "request reject authentication with invalid error_code value"() {
         given:
-        Steps.startAuthenticationInTara(flow)
-        Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366")
-        Steps.pollMidResponse(flow)
-        Map paramsMap = ["error_code": "ERROR12345"]
-        Map cookieMap = ["SESSION": flow.sessionId]
+        authenticateToPolling(flow)
 
         when:
-        Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullAuthRejectUrl, cookieMap, paramsMap, [:])
+        Response response = Requests.getRequestWithParams(flow, flow.loginService.fullAuthRejectUrl, [error_code: "ERROR12345"])
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(400))
@@ -320,71 +311,87 @@ class AuthenticationSpec extends TaraSpecification {
     }
 
     @Feature("AUTH_REJECT_LOGIN_ENDPOINT")
-    def "request reject authentication with invalid session ID"() {
+    def "request reject authentication with invalid session cookie"() {
         given:
-        Map paramsMap = ["error_code": REJECT_ERROR_CODE]
-        Map cookieMap = ["SESSION": "S34567"]
+        authenticateToPolling(flow)
 
-        when:
-        Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullAuthRejectUrl, cookieMap, paramsMap, [:])
+        when: "reject authentication with invalid session cookie"
+        Response response = given()
+                .relaxedHTTPSValidation()
+                .cookies(cookie)
+                .param("error_code", REJECT_ERROR_CODE)
+                .when()
+                .get(flow.loginService.fullAuthRejectUrl)
+                .then()
+                .extract().response()
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(400))
         assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
         assertThat("Correct error message", response.jsonPath().getString("message"), is(MESSAGE_SESSION_NOT_FOUND))
-    }
 
-    @Feature("AUTH_REJECT_LOGIN_ENDPOINT")
-    def "request reject authentication with missing session ID"() {
-        given:
-        Map paramsMap = ["error_code": REJECT_ERROR_CODE]
-
-        when:
-        Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullAuthRejectUrl, [:], paramsMap, [:])
-
-        then:
-        assertThat("Correct HTTP status code", response.statusCode, is(400))
-        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct error message", response.jsonPath().getString("message"), is(MESSAGE_SESSION_NOT_FOUND))
+        where:
+        cookie               | reason
+        [:]                  | "no cookie"
+        [SESSION: null]      | "empty cookie"
+        [SESSION: "1234567"] | "incorrect cookie value"
     }
 
     //TODO: AUT-630
-    def "request reject authentication with invalid method post"() {
+    def "Authentication rejection request with invalid request type should fail: #requestType"() {
         given:
-        Steps.startAuthenticationInTara(flow)
-        Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366")
-        Steps.pollMidResponse(flow)
-        Map paramsMap = [
-                "error_code": REJECT_ERROR_CODE,
-                "_csrf"     : flow.csrf]
-        Map cookieMap = ["SESSION": flow.sessionId]
+        authenticateToPolling(flow)
 
-        when:
-        Response response = Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullAuthRejectUrl, cookieMap, paramsMap, [:])
+        when: "reject authentication with invalid request type"
+        Response response = given()
+                .relaxedHTTPSValidation()
+                .cookies(SESSION: flow.sessionId)
+                .params([error_code: REJECT_ERROR_CODE,
+                         _csrf     : flow.csrf])
+                .when()
+                .request(requestType, flow.loginService.fullAuthRejectUrl)
+                .then()
+                .extract().response()
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(500))
         assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
         assertThat("Correct error message", response.jsonPath().getString('message'), is(MESSAGE_INTERNAL_ERROR))
+
+        where:
+        requestType | _
+        "POST"      | _
+        "PUT"       | _
+        "PATCH"     | _
+        "DELETE"    | _
     }
 
     @Feature("AUTH_REJECT_LOGIN_ENDPOINT")
-    def "request reject authentication with multiple error_code values"() {
+    def "Request reject authentication with multiple error_code values"() {
         given:
-        Steps.startAuthenticationInTara(flow)
-        Steps.initMidAuthSession(flow, flow.sessionId, "60001017716", "69100366")
-        Steps.pollMidResponse(flow)
-        Map paramsMap = ["error_code": "ERROR12345"]
-        Map cookieMap = ["SESSION": flow.sessionId]
-        Map additionalParamsMap = ["error_code": REJECT_ERROR_CODE]
+        authenticateToPolling(flow)
 
-        when:
-        Response response = Requests.getRequestWithCookiesAndParams(flow, flow.loginService.fullAuthRejectUrl, cookieMap, paramsMap, additionalParamsMap)
+        when: "Reject authentication with multiple error_code values"
+        Response response = given()
+                .relaxedHTTPSValidation()
+                .cookies([SESSION: flow.sessionId])
+                .params(error_code: ["ERROR12345", "user_cancel"])
+                .when()
+                .get(flow.loginService.fullAuthRejectUrl)
+                .then()
+                .extract().response()
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(400))
         assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
         assertThat("Correct error message", response.jsonPath().getString('message'), is(MESSAGE_DUPLICATE_PARAMETERS))
         assertThat("Incident number is present", response.jsonPath().getString("incident_nr"), hasLength(32))
+    }
+
+    @Step("Authentication flow up to Mobile-ID polling")
+    private static authenticateToPolling(Flow flow) {
+        Steps.startAuthenticationInTara(flow)
+        Steps.initMidAuthSession(flow, "60001017869", "68000769")
+        Steps.pollMidResponse(flow)
     }
 }

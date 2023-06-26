@@ -7,6 +7,7 @@ import io.restassured.response.Response
 import java.time.Duration
 import java.time.ZonedDateTime
 
+import static io.restassured.RestAssured.given
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.is
@@ -21,11 +22,8 @@ class ServiceErrorsSpec extends TaraSpecification {
 
     @Feature("FORWARDED_OIDC_ERRORS")
     def "Filter service errors for end user: #inputValue"() {
-        given:
-        Map paramsMap = ["error": inputValue]
-
         when:
-        Response response = Requests.getRequestWithParams(flow, flow.loginService.fullErrorUrl, paramsMap, [:])
+        Response response = Requests.getRequestWithParams(flow, flow.loginService.fullErrorUrl, ["error": inputValue])
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(statusCode))
@@ -41,11 +39,8 @@ class ServiceErrorsSpec extends TaraSpecification {
 
     @Feature("ERROR_CONTENT_JSON")
     def "Verify error response json"() {
-        given:
-        Map paramsMap = ["error": ERROR_SERVICE]
-
         when:
-        Response response = Requests.getRequestWithParams(flow, flow.loginService.fullErrorUrl, paramsMap, [:])
+        Response response = Requests.getRequestWithParams(flow, flow.loginService.fullErrorUrl, ["error": ERROR_SERVICE])
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(500))
@@ -65,12 +60,16 @@ class ServiceErrorsSpec extends TaraSpecification {
 
     @Feature("USER_ERRORS")
     def "Verify error response html: general error"() {
-        given:
-        Map paramsMap = ["error": ERROR_SERVICE]
-        Map headersMap = ["Accept": "text/html"]
-
         when:
-        Response response = Requests.getRequestWithHeadersAndParams(flow, flow.loginService.fullErrorUrl, headersMap, paramsMap, [:])
+        Response response = given()
+                .relaxedHTTPSValidation()
+                .params(["error": ERROR_SERVICE])
+                .headers(["Accept": "text/html"])
+                .when()
+                .get(flow.loginService.fullErrorUrl)
+                .then()
+                .extract().response()
+
         String htmlResponse = response.body.asString()
 
         then:
@@ -85,12 +84,16 @@ class ServiceErrorsSpec extends TaraSpecification {
 
     @Feature("USER_ERRORS")
     def "Verify error response html: invalid client"() {
-        given:
-        Map paramsMap = ["error": ERROR_CLIENT]
-        Map headersMap = ["Accept": "text/html"]
-
         when:
-        Response response = Requests.getRequestWithHeadersAndParams(flow, flow.loginService.fullErrorUrl, headersMap, paramsMap, [:])
+        Response response = given()
+                .relaxedHTTPSValidation()
+                .params(["error": ERROR_CLIENT])
+                .headers(["Accept": "text/html"])
+                .when()
+                .get(flow.loginService.fullErrorUrl)
+                .then()
+                .extract().response()
+
         String htmlResponse = response.body.asString()
 
         then:

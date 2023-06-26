@@ -5,9 +5,10 @@ import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 
+import static io.restassured.RestAssured.given
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.hasItem
-import static org.hamcrest.Matchers.is 
+import static org.hamcrest.Matchers.is
 
 class LegalPersonAuthSpec extends TaraSpecification {
 
@@ -23,7 +24,7 @@ class LegalPersonAuthSpec extends TaraSpecification {
     def "legal persons authentication request"() {
         given:
         Steps.startAuthenticationInTaraWithLegalPerson(flow)
-        Steps.authInitAsLegalPerson(flow, "60001019906", "00000766")
+        Steps.authInitAsLegalPerson(flow)
 
         when:
         Response response = Steps.loadLegalPersonsList(flow)
@@ -32,10 +33,10 @@ class LegalPersonAuthSpec extends TaraSpecification {
         List<String> legalPersonNames = response.jsonPath().getList("legalPersons.legalName")
 
         then:
-        if(flow.loginService.baseUrl.contains("service-backend")) { //local environment
+        if (flow.loginService.baseUrl.contains("service-backend")) { //local environment
             assertThat("Correct legal name", legalPersonNames, is("Acme INC OÜ"))
             assertThat("Correct person identifier", legalPersonIdentifiers, is("12341234"))
-        }  else {
+        } else {
             // other environments
             assertThat("Correct legal name", legalPersonNames, hasItem("Eesti Kurtide Spordiliit"))
             assertThat("Correct person identifier", legalPersonIdentifiers, hasItem("80092803"))
@@ -52,7 +53,7 @@ class LegalPersonAuthSpec extends TaraSpecification {
     def "legal persons authentication request with security checks"() {
         given:
         Steps.startAuthenticationInTaraWithLegalPerson(flow, "openid legalperson")
-        Steps.authInitAsLegalPerson(flow, "60001019906", "00000766")
+        Steps.authInitAsLegalPerson(flow)
 
         when:
         Response response = Steps.loadLegalPersonsList(flow)
@@ -63,39 +64,64 @@ class LegalPersonAuthSpec extends TaraSpecification {
     }
 
     @Feature("LEGAL_PERSON_AUTH_START_ENDPOINT")
-    def "legal persons authentication request with invalid session ID"() {
+    def "legal persons authentication request with invalid cookie: #reason"() {
         given:
-        flow.setSessionId("1234567")
+        Steps.startAuthenticationInTaraWithLegalPerson(flow, "openid legalperson")
+        Steps.authInitAsLegalPerson(flow)
 
-        when:
-        Response response = Requests.getRequestWithSessionId(flow, flow.loginService.fullAuthLegalPersonUrl)
+        when: "Request legal person authentication with invalid session cookie"
+        Response response = given()
+                .relaxedHTTPSValidation()
+                .cookies(cookie)
+                .when()
+                .get(flow.loginService.fullAuthLegalPersonUrl)
+                .then()
+                .extract().response()
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(400))
         assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
         assertThat("Correct error", response.jsonPath().getString("error"), is(ERROR_BAD_REQUEST))
         assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_SESSION_NOT_FOUND))
+
+        where:
+        cookie               | reason
+        [:]                  | "no cookie"
+        [SESSION: null]      | "empty cookie"
+        [SESSION: "1234567"] | "incorrect cookie value"
     }
 
     //TODO: AUT-630
     @Feature("LEGAL_PERSON_AUTH_START_ENDPOINT")
-    def "legal persons authentication request with invalid method post"() {
+    def "legal persons authentication request with invalid method: #requestType"() {
         given:
         Steps.startAuthenticationInTaraWithLegalPerson(flow)
-        Steps.initMidAuthSession(flow, flow.sessionId, "60001019906", "00000766")
+        Steps.initMidAuthSession(flow, "60001019906", "00000766")
         Steps.pollMidResponse(flow)
-        Response acceptResponse = Requests.postRequestWithSessionId(flow, flow.loginService.fullAuthAcceptUrl)
+        Response acceptResponse = Requests.postRequestWithParams(flow, flow.loginService.fullAuthAcceptUrl)
         Steps.followRedirectWithSessionId(flow, acceptResponse)
-        Map cookiesMap = ["SESSION": flow.sessionId]
-        Map formParamsMap = ["_csrf": flow.csrf]
 
-        when:
-        Response response = Requests.postRequestWithCookiesAndParams(flow, flow.loginService.fullAuthLegalPersonUrl, cookiesMap, formParamsMap, [:])
+        when: "legal persons authentication request with invalid method"
+        Response response = given()
+                .relaxedHTTPSValidation()
+                .cookies(["SESSION": flow.sessionId])
+                .params(["_csrf": flow.csrf])
+                .when()
+                .request(requestType, flow.loginService.fullAuthLegalPersonUrl)
+                .then()
+                .extract().response()
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(500))
         assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
         assertThat("Correct error", response.jsonPath().getString("error"), is(ERROR_INTERNAL))
         assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_INTERNAL_ERROR))
+
+        where:
+        requestType | _
+        "POST"      | _
+        "PUT"       | _
+        "PATCH"     | _
+        "DELETE"    | _
     }
 }

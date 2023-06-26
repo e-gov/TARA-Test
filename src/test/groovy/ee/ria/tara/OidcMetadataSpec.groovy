@@ -24,7 +24,7 @@ class OidcMetadataSpec extends TaraSpecification {
     @Feature("OIDC_DISCOVERY_ENDPOINT")
     def "Verify discovery path #path"() {
         when:
-        Response response = Requests.getRequest(flow.oidcService.baseUrl + path)
+        Response response = Requests.getRequest(flow, flow.oidcService.baseUrl + path)
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(200))
@@ -84,7 +84,7 @@ class OidcMetadataSpec extends TaraSpecification {
         JsonPath jsonResponse = Requests.getOpenidConfiguration(flow.oidcService.fullConfigurationUrl)
 
         when:
-        Response authorizationResponse = Requests.getRequest(jsonResponse.getString('authorization_endpoint'))
+        Response authorizationResponse = Requests.getRequest(flow, jsonResponse.getString('authorization_endpoint'))
 
         then:
         assertThat("Correct HTTP status code", authorizationResponse.statusCode, is(302))
@@ -125,12 +125,12 @@ class OidcMetadataSpec extends TaraSpecification {
         JsonPath jsonResponse = Requests.getOpenidConfiguration(flow.oidcService.fullConfigurationUrl)
 
         when:
-        Response response = Requests.getRequest(jsonResponse.getString("jwks_uri"))
+        Response response = Requests.getRequest(flow, jsonResponse.getString("jwks_uri"))
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(200))
         assertThat("Correct Content-Type", response.contentType, is("application/json; charset=utf-8"))
         assertThat("Correct n size", response.jsonPath().getString("keys.n").size(), greaterThan(300))
-        assertThat("Correct e size", response.jsonPath().getString("keys.e").size(),  greaterThan(3))
+        assertThat("Correct e size", response.jsonPath().getString("keys.e").size(), greaterThan(3))
     }
 }
