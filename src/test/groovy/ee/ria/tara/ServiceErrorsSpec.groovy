@@ -71,15 +71,16 @@ class ServiceErrorsSpec extends TaraSpecification {
 
         when:
         Response response = Requests.getRequestWithHeadersAndParams(flow, flow.loginService.fullErrorUrl, headersMap, paramsMap, [:])
+        String htmlResponse = response.body.asString()
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(500))
         assertThat("Correct Content-Type", response.contentType, is("text/html;charset=UTF-8"))
-        assertThat(response.htmlPath().getString("*"), containsString("Kasutaja tuvastamine ebaõnnestus."))
-        assertThat(response.htmlPath().getString("*"), containsString("Autentimine ebaõnnestus teenuse tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti."))
-        assertThat(response.htmlPath().getString("*"), containsString("Intsidendi number:"))
-        assertThat(response.htmlPath().getString("*"), containsString("Edasta veakirjeldus"))
-        assertThat(response.htmlPath().getString("*"), containsString("Palun saatke e-kiri aadressile"))
+        assertThat(htmlResponse, containsString("Kasutaja tuvastamine ebaõnnestus."))
+        assertThat(htmlResponse, containsString("Autentimine ebaõnnestus teenuse tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti."))
+        assertThat(htmlResponse, containsString("Intsidendi number:"))
+        assertThat(htmlResponse, containsString("Edasta veakirjeldus"))
+        assertThat(htmlResponse, containsString("Palun saatke e-kiri aadressile"))
     }
 
     @Feature("USER_ERRORS")
@@ -90,15 +91,16 @@ class ServiceErrorsSpec extends TaraSpecification {
 
         when:
         Response response = Requests.getRequestWithHeadersAndParams(flow, flow.loginService.fullErrorUrl, headersMap, paramsMap, [:])
+        String htmlResponse = response.body.asString()
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(400))
         assertThat("Correct Content-Type", response.contentType, is("text/html;charset=UTF-8"))
-        assertThat(response.htmlPath().getString("*"), containsString("Kasutaja tuvastamine ebaõnnestus."))
-        assertThat(response.htmlPath().getString("*"), containsString("Kliendi autentimine ebaõnnestus. Tundmatu klient."))
-        assertThat(response.htmlPath().getString("*"), containsString("Intsidendi number:"))
-        assertThat(response.htmlPath().getString("*"), containsString("Edasta veakirjeldus"))
-        assertThat(response.htmlPath().getString("*"), containsString("Palun saatke e-kiri aadressile"))
+        assertThat(htmlResponse, containsString("Kasutaja tuvastamine ebaõnnestus."))
+        assertThat(htmlResponse, containsString("Kliendi autentimine ebaõnnestus. Tundmatu klient."))
+        assertThat(htmlResponse, containsString("Intsidendi number:"))
+        assertThat(htmlResponse, containsString("Edasta veakirjeldus"))
+        assertThat(htmlResponse, containsString("Palun saatke e-kiri aadressile"))
     }
 
 
