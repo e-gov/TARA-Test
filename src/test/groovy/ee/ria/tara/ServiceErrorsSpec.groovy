@@ -9,7 +9,6 @@ import java.time.ZonedDateTime
 
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.containsString
-import static org.hamcrest.Matchers.greaterThan
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.lessThan
 
@@ -58,7 +57,7 @@ class ServiceErrorsSpec extends TaraSpecification {
         def jsonTimestamp = ZonedDateTime.parse(response.jsonPath().get("timestamp"))
         def now = ZonedDateTime.now()
         Duration duration = Duration.between(now, jsonTimestamp)
-        def durationInSeconds = Math.abs(duration.toSeconds());
+        def durationInSeconds = Math.abs(duration.toSeconds())
         assertThat("Correct timestamp", durationInSeconds.toInteger(), lessThan(10))
         assertThat("Supported locale", response.jsonPath().getString("locale"), is("et"))
         assertThat("Incident number is present", response.jsonPath().getString("incident_nr").size() > 15)
@@ -76,11 +75,11 @@ class ServiceErrorsSpec extends TaraSpecification {
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(500))
         assertThat("Correct Content-Type", response.contentType, is("text/html;charset=UTF-8"))
-        assertThat(response.htmlPath().getInt("**.find { strong -> strong.text() == 'Kasutaja tuvastamine ebaõnnestus.'}.size()"), greaterThan(0))
-        assertThat(response.htmlPath().getInt("**.find { p -> p.text() == 'Autentimine ebaõnnestus teenuse tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti.'}.size()"), greaterThan(0))
-        assertThat(response.htmlPath().getString("**.find { it.@role == 'alert'}.p.text()"), containsString("Intsidendi number:"))
-        assertThat(response.htmlPath().getString("**.find { it.@role == 'alert'}.p.text()"), containsString("Edasta veakirjeldus"))
-        assertThat(response.htmlPath().getString("**.find { it.@role == 'alert'}.p.text()"), containsString("Palun saatke e-kiri aadressile"))
+        assertThat(response.htmlPath().getString("*"), containsString("Kasutaja tuvastamine ebaõnnestus."))
+        assertThat(response.htmlPath().getString("*"), containsString("Autentimine ebaõnnestus teenuse tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti."))
+        assertThat(response.htmlPath().getString("*"), containsString("Intsidendi number:"))
+        assertThat(response.htmlPath().getString("*"), containsString("Edasta veakirjeldus"))
+        assertThat(response.htmlPath().getString("*"), containsString("Palun saatke e-kiri aadressile"))
     }
 
     @Feature("USER_ERRORS")
@@ -95,11 +94,11 @@ class ServiceErrorsSpec extends TaraSpecification {
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(400))
         assertThat("Correct Content-Type", response.contentType, is("text/html;charset=UTF-8"))
-        assertThat(response.htmlPath().getInt("**.find { strong -> strong.text() == 'Kasutaja tuvastamine ebaõnnestus.'}.size()"), greaterThan(0))
-        assertThat(response.htmlPath().getInt("**.find { p -> p.text() == 'Kliendi autentimine ebaõnnestus. Tundmatu klient.'}.size()"), greaterThan(0))
-        assertThat(response.htmlPath().getString("**.find { it.@role == 'alert'}.p.text()"), containsString("Intsidendi number:"))
-        assertThat(response.htmlPath().getString("**.find { it.@role == 'alert'}.p.text()"), containsString("Edasta veakirjeldus"))
-        assertThat(response.htmlPath().getString("**.find { it.@role == 'alert'}.p.text()"), containsString("Palun saatke e-kiri aadressile"))
+        assertThat(response.htmlPath().getString("*"), containsString("Kasutaja tuvastamine ebaõnnestus."))
+        assertThat(response.htmlPath().getString("*"), containsString("Kliendi autentimine ebaõnnestus. Tundmatu klient."))
+        assertThat(response.htmlPath().getString("*"), containsString("Intsidendi number:"))
+        assertThat(response.htmlPath().getString("*"), containsString("Edasta veakirjeldus"))
+        assertThat(response.htmlPath().getString("*"), containsString("Palun saatke e-kiri aadressile"))
     }
 
 

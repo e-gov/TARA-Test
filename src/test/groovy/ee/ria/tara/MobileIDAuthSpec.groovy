@@ -137,10 +137,10 @@ class MobileIDAuthSpec extends TaraSpecification {
         where:
         phoneNo    | idCode        | reportable | label                                            || errorMessage
         "00000266" | "60001019939" | false      | "Mobile-ID user has no active certificates"      || "У пользователя отсутствует договор об услуге"
-        "07110066" | "60001019947" | false      | "Sending authentication request to phone failed" || "На телефон пользователя нельзя отправить сообщение аутентификации Mobiil-ID."
-        "01100266" | "60001019950" | false      | "User cancelled authentication"                  || "Пользователь отменил аутентификацию с Mobiil-ID на своем телефоне."
+        "07110066" | "60001019947" | false      | "Sending authentication request to phone failed" || "На телефон пользователя нельзя отправить сообщение аутентификации<span lang=\"et\"> Mobiil-ID</span>."
+        "01100266" | "60001019950" | false      | "User cancelled authentication"                  || "Пользователь отменил аутентификацию с<span lang=\"et\"> Mobiil-ID </span>на своем телефоне."
         "00000666" | "60001019961" | true       | "Created signature is not valid"                 || "Аутентификация с помощью Вашего"
-        "01200266" | "60001019972" | false      | "Phone cannot receive Mobile-ID auth messages"   || "На телефон пользователя нельзя отправить сообщение аутентификации Mobiil-ID."
+        "01200266" | "60001019972" | false      | "Phone cannot receive Mobile-ID auth messages"   || "На телефон пользователя нельзя отправить сообщение аутентификации<span lang=\"et\"> Mobiil-ID</span>."
         "13100266" | "60001019983" | false      | "Phone is not in coverage area"                  || "Телефон пользователя находится вне зоны доступа."
         "66000266" | "50001018908" | false      | "User timeout"                                   || "Пользователь не прошел аутентификацию на телефоне в течение требуемого времени. Пожалуйста, попробуйте еще раз."
     }

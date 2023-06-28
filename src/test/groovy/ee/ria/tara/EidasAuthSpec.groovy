@@ -53,11 +53,11 @@ class EidasAuthSpec extends TaraSpecification {
         where:
         country | label                                     || errorMessage
         _       | "missing country parameter"               || "Required request parameter 'country' for method parameter type String is not present"
-        "bg"    | "country code is not in list"             || "Antud riigikood ei ole lubatud. Lubatud riigikoodid on: CA, DE"
-        "BG"    | "capitalized country code is not in list" || "Antud riigikood ei ole lubatud. Lubatud riigikoodid on: CA, DE"
-        "ca"    | "country code must be capitalized"        || "Antud riigikood ei ole lubatud. Lubatud riigikoodid on: CA, DE"
-        "F"     | "country code must be capitalized"        || "Antud riigikood ei ole lubatud. Lubatud riigikoodid on: CA, DE"
-        "a1"    | "country code is not in list"             || "Antud riigikood ei ole lubatud. Lubatud riigikoodid on: CA, DE"
+        "bg"    | "country code is not in list"             || "Antud riigikood ei ole lubatud. Lubatud riigikoodid on:<span translate=\"no\"> CA, DE</span>"
+        "BG"    | "capitalized country code is not in list" || "Antud riigikood ei ole lubatud. Lubatud riigikoodid on:<span translate=\"no\"> CA, DE</span>"
+        "ca"    | "country code must be capitalized"        || "Antud riigikood ei ole lubatud. Lubatud riigikoodid on:<span translate=\"no\"> CA, DE</span>"
+        "F"     | "country code must be capitalized"        || "Antud riigikood ei ole lubatud. Lubatud riigikoodid on:<span translate=\"no\"> CA, DE</span>"
+        "a1"    | "country code is not in list"             || "Antud riigikood ei ole lubatud. Lubatud riigikoodid on:<span translate=\"no\"> CA, DE</span>"
     }
 
     @Feature("EIDAS_AUTH_INIT_ENDPOINT")
