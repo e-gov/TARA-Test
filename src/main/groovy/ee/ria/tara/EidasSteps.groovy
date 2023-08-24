@@ -21,11 +21,10 @@ class EidasSteps {
     }
 
     @Step("Eidas service provider request")
-    static Response eidasServiceProviderRequest(Flow flow, String url, String relayState, String samlRequest, String country = "CA") {
-        Map formParamsMap = [
-                "country"    : country,
-                "RelayState" : relayState,
-                "SAMLRequest": samlRequest]
+    static Response eidasServiceProviderRequest(Flow flow, String url, String relayState, String samlRequest) {
+        Map formParamsMap = ["country"    : "CA",
+                             "RelayState" : relayState,
+                             "SAMLRequest": samlRequest]
 
         Response serviceProviderResponse = Requests.postRequestWithParams(flow, url, formParamsMap)
         assertThat("Correct HTTP status code", serviceProviderResponse.statusCode, is(200))
@@ -173,7 +172,7 @@ class EidasSteps {
     @Step("Eidas accept authorization result")
     static Response eidasAcceptAuthorizationResult(Flow flow, Response response) {
         flow.setCsrf(response.htmlPath().get("**.find {it.@name == '_csrf'}.@value"))
-        return Requests.postRequestWithParams(flow, flow.loginService.fullAuthAcceptUrl)
+        return Requests.postRequest(flow, flow.loginService.fullAuthAcceptUrl)
     }
 
 }

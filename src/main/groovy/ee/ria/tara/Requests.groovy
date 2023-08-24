@@ -2,14 +2,12 @@ package ee.ria.tara
 
 import io.qameta.allure.Step
 import io.qameta.allure.restassured.AllureRestAssured
-import io.restassured.RestAssured
 import io.restassured.http.ContentType
 import io.restassured.path.json.JsonPath
 import io.restassured.response.Response
 import org.json.JSONObject
 
 import static io.restassured.RestAssured.given
-import static io.restassured.config.EncoderConfig.encoderConfig
 
 class Requests {
 
@@ -23,12 +21,10 @@ class Requests {
                 .cookie("SESSION", flow.sessionId)
                 .formParam("_csrf", flow.csrf)
                 .log().cookies()
-                .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
-                .when()
+                .urlEncodingEnabled(true)
+                .relaxedHTTPSValidation()
                 .redirects().follow(false)
                 .post(flow.loginService.fullMidInitUrl)
-                .then()
-                .extract().response()
     }
 
     @Step("Mobile-ID response poll request")
@@ -38,12 +34,10 @@ class Requests {
                 .filter(new AllureRestAssured())
                 .cookie("SESSION", flow.sessionId)
                 .log().cookies()
-                .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
-                .when()
+                .urlEncodingEnabled(true)
+                .relaxedHTTPSValidation()
                 .redirects().follow(false)
                 .get(flow.loginService.fullMidPollUrl)
-                .then()
-                .extract().response()
     }
 
     @Step("Smart-ID response poll request")
@@ -54,12 +48,10 @@ class Requests {
                 .cookie("SESSION", flow.sessionId)
                 .cookie("LOGIN_LOCALE", flow.login_locale)
                 .log().cookies()
-                .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
-                .when()
+                .urlEncodingEnabled(true)
+                .relaxedHTTPSValidation()
                 .redirects().follow(false)
                 .get(flow.loginService.fullSidPollUrl)
-                .then()
-                .extract().response()
     }
 
     @Step("Follow redirect request")
@@ -67,14 +59,11 @@ class Requests {
         return given()
                 .filter(new AllureRestAssured())
                 .filter(flow.cookieFilter)
-                .relaxedHTTPSValidation()
                 .log().cookies()
-                .when()
-                .redirects().follow(false)
+                .relaxedHTTPSValidation()
                 .urlEncodingEnabled(true)
+                .redirects().follow(false)
                 .get(location)
-                .then()
-                .extract().response()
     }
 
     @Step("Simple get request")
@@ -82,15 +71,12 @@ class Requests {
         return given()
                 .filter(flow.cookieFilter)
                 .filter(new AllureRestAssured())
-                .relaxedHTTPSValidation()
                 .log().cookies()
-                .when()
+                .relaxedHTTPSValidation()
+                .urlEncodingEnabled(true)
                 .baseUri(flow.loginService.baseUrl)
                 .redirects().follow(false)
-                .urlEncodingEnabled(true)
                 .get(location)
-                .then()
-                .extract().response()
     }
 
     @Step("Simple post request with form parameters")
@@ -100,28 +86,24 @@ class Requests {
                 .filter(new AllureRestAssured())
                 .formParams(parameters)
                 .contentType(ContentType.URLENC)
-                .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
+                .urlEncodingEnabled(true)
+                .relaxedHTTPSValidation()
                 .log().cookies()
-                .when()
                 .post(location)
-                .then()
-                .extract().response()
     }
 
     @Step("Login service post request with session id")
-    static Response postRequestWithParams(Flow flow, String location) {
+    static Response postRequest(Flow flow, String location) {
         return given()
                 .filter(flow.cookieFilter)
                 .filter(new AllureRestAssured())
                 .cookie("SESSION", flow.sessionId)
                 .formParam("_csrf", flow.csrf)
                 .log().cookies()
-                .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
-                .when()
+                .urlEncodingEnabled(true)
+                .relaxedHTTPSValidation()
                 .redirects().follow(false)
                 .post(location)
-                .then()
-                .extract().response()
     }
 
     @Step("{1} request with session id")
@@ -131,12 +113,10 @@ class Requests {
                 .filter(new AllureRestAssured())
                 .formParam("_csrf", flow.csrf)
                 .log().cookies()
-                .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
-                .when()
+                .urlEncodingEnabled(true)
+                .relaxedHTTPSValidation()
                 .redirects().follow(false)
                 .request(requestType, location)
-                .then()
-                .extract().response()
     }
 
     // TODO: review after dependency update. Current version does not handle OIDC cookies correctly
@@ -148,12 +128,9 @@ class Requests {
                 .filter(new AllureRestAssured())
                 .log().cookies()
                 .relaxedHTTPSValidation()
-                .when()
                 .redirects().follow(false)
                 .urlEncodingEnabled(false)
                 .get(location)
-                .then()
-                .extract().response()
     }
 
     @Step("Get request with params")
@@ -164,20 +141,17 @@ class Requests {
                 .filter(new AllureRestAssured())
                 .log().cookies()
                 .relaxedHTTPSValidation()
-                .when()
                 .redirects().follow(false)
                 .urlEncodingEnabled(true)
                 .get(url)
-                .then()
-                .extract().response()
     }
 
     @Step("Get heartbeat")
     static Response getHeartbeat(Flow flow) {
         return given()
                 .filter(new AllureRestAssured())
-                .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
-                .when()
+                .urlEncodingEnabled(true)
+                .relaxedHTTPSValidation()
                 .get(flow.loginService.fullHeartbeatUrl)
                 .then()
                 .statusCode(200)
@@ -189,7 +163,6 @@ class Requests {
         return given()
                 .filter(new AllureRestAssured())
                 .relaxedHTTPSValidation()
-                .when()
                 .get(url)
                 .then()
                 .statusCode(200)
@@ -201,7 +174,6 @@ class Requests {
         return given()
                 .filter(new AllureRestAssured())
                 .relaxedHTTPSValidation()
-                .when()
                 .get(url)
                 .then()
                 .statusCode(200)
@@ -211,85 +183,69 @@ class Requests {
     @Step("Get token")
     static Response getWebToken(Flow flow, String authorizationCode) {
         return given()
-                .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
                 .filter(new AllureRestAssured())
                 .formParam("grant_type", "authorization_code")
                 .formParam("code", authorizationCode)
                 .formParam("redirect_uri", flow.oidcClientPublic.fullResponseUrl)
                 .auth().preemptive().basic(flow.oidcClientPublic.clientId, flow.oidcClientPublic.clientSecret)
-                .when()
                 .urlEncodingEnabled(true)
+                .relaxedHTTPSValidation()
                 .post(flow.openIdServiceConfiguration.getString("token_endpoint"))
-                .then()
-                .extract().response()
     }
 
     @Step("Get token with client")
     static Response getWebTokenWithClient(Flow flow, String authorizationCode, String redirectUri, String clientId, String clientSecret) {
         return given()
-                .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
                 .filter(new AllureRestAssured())
                 .formParam("grant_type", "authorization_code")
                 .formParam("code", authorizationCode)
                 .formParam("redirect_uri", redirectUri)
                 .auth().preemptive().basic(clientId, clientSecret)
-                .when()
                 .urlEncodingEnabled(true)
+                .relaxedHTTPSValidation()
                 .post(flow.openIdServiceConfiguration.getString("token_endpoint"))
-                .then()
-                .extract().response()
     }
 
     @Step("Get token response body")
     static Response getWebTokenResponseBody(Flow flow, Map formParams) {
         return given()
-                .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
                 .filter(new AllureRestAssured())
                 .formParams(formParams)
                 .auth().preemptive().basic(flow.oidcClientPublic.clientId, flow.oidcClientPublic.clientSecret)
-                .when()
                 .urlEncodingEnabled(true)
+                .relaxedHTTPSValidation()
                 .post(flow.openIdServiceConfiguration.getString("token_endpoint"))
-                .then()
-                .extract().response()
     }
 
     @Step("Get user info with header parameter")
     static Response getUserInfoWithHeaderParam(Flow flow, String requestType, Map headers) {
         return given()
-                .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
                 .filter(new AllureRestAssured())
                 .headers(headers)
-                .when()
                 .urlEncodingEnabled(true)
+                .relaxedHTTPSValidation()
                 .request(requestType, flow.openIdServiceConfiguration.getString("userinfo_endpoint"))
-                .then()
-                .extract().response()
     }
 
     @Step("Get user info with query parameter")
     static Response getUserInfoWithQueryParam(Flow flow, String requestType, Map queryParams) {
         return given()
-                .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
                 .filter(new AllureRestAssured())
                 .params(queryParams)
-                .when()
                 .urlEncodingEnabled(true)
+                .relaxedHTTPSValidation()
                 .request(requestType, flow.openIdServiceConfiguration.getString("userinfo_endpoint"))
-                .then()
-                .extract().response()
     }
 
     @Step("Post request with json body for admin api")
     static Response jsonRequest(Flow flow, String location, Map<String, Object> jsonAsMap) {
         return given()
                 .filter(flow.cookieFilter)
-                .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
                 .filter(new AllureRestAssured())
                 .contentType(ContentType.JSON)
                 .body(jsonAsMap)
-                .when()
                 .urlEncodingEnabled(true)
+                .relaxedHTTPSValidation()
                 .post(location)
                 .then()
                 .log().cookies()
@@ -300,14 +256,13 @@ class Requests {
     static Response postRequestWithJsonBody(Flow flow, String location, JSONObject body) {
         return given()
                 .filter(flow.cookieFilter)
-                .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
                 .filter(new AllureRestAssured())
                 .cookie("SESSION", flow.sessionId)
                 .contentType("application/json")
                 .header("X-CSRF-TOKEN", flow.csrf)
                 .body(body.toString())
-                .when()
                 .urlEncodingEnabled(true)
+                .relaxedHTTPSValidation()
                 .post(location)
                 .then()
                 .log().cookies()
@@ -318,14 +273,13 @@ class Requests {
     static Response postRequestAdminApiWithJsonBody(Flow flow, String location, Map cookies, String body) {
         return given()
                 .filter(flow.cookieFilter)
-                .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
                 .filter(new AllureRestAssured())
                 .header("X-XSRF-TOKEN", cookies.get("XSRF-TOKEN"))
                 .cookies(cookies)
                 .contentType(ContentType.JSON)
                 .body(body)
-                .when()
                 .urlEncodingEnabled(true)
+                .relaxedHTTPSValidation()
                 .post(location)
                 .then()
                 .log().cookies()
@@ -336,29 +290,23 @@ class Requests {
     static Response deleteRequest(Flow flow, String location, Map cookies) {
         return given()
                 .filter(flow.cookieFilter)
-                .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
                 .filter(new AllureRestAssured())
                 .header("X-XSRF-TOKEN", cookies.get("XSRF-TOKEN"))
                 .cookies(cookies)
-                .when()
                 .urlEncodingEnabled(true)
+                .relaxedHTTPSValidation()
                 .delete(location)
-                .then()
-                .extract().response()
     }
 
     @Step("Get request for admin api")
     static Response getRequest(Flow flow, String location, Map cookies) {
         return given()
                 .filter(flow.cookieFilter)
-                .config(RestAssured.config().encoderConfig(encoderConfig().defaultContentCharset("UTF-8"))).relaxedHTTPSValidation()
                 .filter(new AllureRestAssured())
                 .header("X-XSRF-TOKEN", cookies.get("XSRF-TOKEN"))
                 .cookies(cookies)
-                .when()
                 .urlEncodingEnabled(true)
+                .relaxedHTTPSValidation()
                 .get(location)
-                .then()
-                .extract().response()
     }
 }

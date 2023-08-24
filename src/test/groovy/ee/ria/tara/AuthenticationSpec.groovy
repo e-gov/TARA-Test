@@ -28,7 +28,7 @@ class AuthenticationSpec extends TaraSpecification {
     }
 
     @Feature("AUTHENTICATION")
-    def "request authentication with mobile-ID: #certificate certificate chain"() {
+    def "Request authentication with mobile-ID: #certificate certificate chain"() {
         given:
         Steps.startAuthenticationInTara(flow)
         Response midAuthResponse = Steps.authenticateWithMid(flow, idCode, phoneNumber)
@@ -49,7 +49,7 @@ class AuthenticationSpec extends TaraSpecification {
     }
 
     @Feature("AUTHENTICATION")
-    def "request authentication with Smart-ID"() {
+    def "Request authentication with Smart-ID"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
         Response sidAuthResponse = Steps.authenticateWithSid(flow, "30303039914")
@@ -65,7 +65,7 @@ class AuthenticationSpec extends TaraSpecification {
     }
 
     @Feature("AUTHENTICATION")
-    def "request authentication with eIDAS. LoA: #eidasLoa "() {
+    def "Request authentication with eIDAS. LoA: #eidasLoa "() {
         given:
         Steps.startAuthenticationInTaraWithAcr(flow, acr)
         EidasSteps.initEidasAuthSession(flow, COUNTRY_CA)
@@ -93,7 +93,7 @@ class AuthenticationSpec extends TaraSpecification {
     }
 
     @Feature("AUTHENTICATION")
-    def "request authentication with eIDAS with privet sector client"() {
+    def "Request authentication with eIDAS with privet sector client"() {
         given:
         Steps.startAuthenticationInTaraWithClient(flow, "openid eidas", flow.oidcClientPrivate.clientId, flow.oidcClientPrivate.fullResponseUrl)
         EidasSteps.initEidasAuthSession(flow, COUNTRY_CA)
@@ -118,7 +118,7 @@ class AuthenticationSpec extends TaraSpecification {
     }
 
     @Feature("AUTHENTICATION")
-    def "request authentication with mobile-ID with Specific Proxy Service as OIDC client"() {
+    def "Request authentication with mobile-ID with Specific Proxy Service as OIDC client"() {
         given:
         Steps.startAuthenticationInTaraWithSpecificProxyService(flow)
         Response midAuthResponse = Steps.authenticateWithMid(flow, "60001017716", "69100366")
@@ -135,7 +135,7 @@ class AuthenticationSpec extends TaraSpecification {
     }
 
     @Feature("AUTHENTICATION")
-    def "request authentication with Eidas. Low level of assurance."() {
+    def "Request authentication with Eidas. Low level of assurance."() {
         given:
         Steps.startAuthenticationInTara(flow, "openid eidas")
         EidasSteps.initEidasAuthSession(flow, COUNTRY_CA)
@@ -157,7 +157,7 @@ class AuthenticationSpec extends TaraSpecification {
     @Feature("CACHE_POLICY")
     @Feature("NOSNIFF")
     @Feature("XSS_DETECTION_FILTER_ENABLED")
-    def "request authentication with security checks"() {
+    def "Request authentication with security checks"() {
         given:
         Response initLoginSession = Steps.startAuthenticationInTara(flow)
         Steps.verifyResponseHeaders(initLoginSession)
@@ -168,7 +168,7 @@ class AuthenticationSpec extends TaraSpecification {
         Response midPollResult = Steps.pollMidResponse(flow)
         assertThat(midPollResult.jsonPath().get("status").toString(), not(equalTo("PENDING")))
         Steps.verifyResponseHeaders(midPollResult)
-        Response acceptResponse = Requests.postRequestWithParams(flow, flow.loginService.fullAuthAcceptUrl)
+        Response acceptResponse = Requests.postRequest(flow, flow.loginService.fullAuthAcceptUrl)
         Steps.verifyResponseHeaders(acceptResponse)
         Response oidcServiceResponse = Steps.loginVerifier(flow, acceptResponse)
 
@@ -194,12 +194,12 @@ class AuthenticationSpec extends TaraSpecification {
     }
 
     @Feature("AUTH_ACCEPT_LOGIN_ENDPOINT")
-    def "request accept authentication"() {
+    def "Request accept authentication"() {
         given:
         authenticateToPolling(flow)
 
         when:
-        Response response = Requests.postRequestWithParams(flow, flow.loginService.fullAuthAcceptUrl)
+        Response response = Requests.postRequest(flow, flow.loginService.fullAuthAcceptUrl)
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(302))
@@ -208,7 +208,7 @@ class AuthenticationSpec extends TaraSpecification {
     }
 
     @Feature("AUTH_ACCEPT_LOGIN_ENDPOINT")
-    def "request accept authentication with invalid method: #requestType"() {
+    def "Request accept authentication with invalid method: #requestType"() {
         given:
         authenticateToPolling(flow)
 
@@ -217,10 +217,7 @@ class AuthenticationSpec extends TaraSpecification {
                 .relaxedHTTPSValidation()
                 .cookies(SESSION: flow.sessionId)
                 .params([_csrf: flow.csrf])
-                .when()
                 .request(requestType, flow.loginService.fullAuthAcceptUrl)
-                .then()
-                .extract().response()
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(500))
@@ -236,7 +233,7 @@ class AuthenticationSpec extends TaraSpecification {
     }
 
     @Feature("AUTH_ACCEPT_LOGIN_ENDPOINT")
-    def "request accept authentication with invalid session cookie: #reason"() {
+    def "Request accept authentication with invalid session cookie: #reason"() {
         given:
         authenticateToPolling(flow)
 
@@ -244,10 +241,7 @@ class AuthenticationSpec extends TaraSpecification {
         Response response = given()
                 .relaxedHTTPSValidation()
                 .cookies(cookie)
-                .when()
                 .post(flow.loginService.fullAuthAcceptUrl)
-                .then()
-                .extract().response()
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(403))
@@ -296,7 +290,7 @@ class AuthenticationSpec extends TaraSpecification {
     }
 
     @Feature("AUTH_REJECT_LOGIN_ENDPOINT")
-    def "request reject authentication with invalid error_code value"() {
+    def "Request reject authentication with invalid error_code value"() {
         given:
         authenticateToPolling(flow)
 
@@ -311,7 +305,7 @@ class AuthenticationSpec extends TaraSpecification {
     }
 
     @Feature("AUTH_REJECT_LOGIN_ENDPOINT")
-    def "request reject authentication with invalid session cookie"() {
+    def "Request reject authentication with invalid session cookie"() {
         given:
         authenticateToPolling(flow)
 
@@ -320,10 +314,7 @@ class AuthenticationSpec extends TaraSpecification {
                 .relaxedHTTPSValidation()
                 .cookies(cookie)
                 .param("error_code", REJECT_ERROR_CODE)
-                .when()
                 .get(flow.loginService.fullAuthRejectUrl)
-                .then()
-                .extract().response()
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(400))
@@ -348,10 +339,7 @@ class AuthenticationSpec extends TaraSpecification {
                 .cookies(SESSION: flow.sessionId)
                 .params([error_code: REJECT_ERROR_CODE,
                          _csrf     : flow.csrf])
-                .when()
                 .request(requestType, flow.loginService.fullAuthRejectUrl)
-                .then()
-                .extract().response()
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(500))
@@ -376,10 +364,7 @@ class AuthenticationSpec extends TaraSpecification {
                 .relaxedHTTPSValidation()
                 .cookies([SESSION: flow.sessionId])
                 .params(error_code: ["ERROR12345", "user_cancel"])
-                .when()
                 .get(flow.loginService.fullAuthRejectUrl)
-                .then()
-                .extract().response()
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(400))

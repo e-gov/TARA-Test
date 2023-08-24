@@ -21,12 +21,12 @@ class LegalPersonAutInitSpec extends TaraSpecification {
     @Feature("LEGAL_PERSON_INIT_START_ENDPOINT")
     @Feature("AUTH_REDIRECT_TO_LEGALPERSON_INIT")
     @Feature("OIDC_SCOPE_LEGALPERSON")
-    def "request initialize legal person authentication"() {
+    def "Request initialize legal person authentication should succeed"() {
         given:
         Steps.startAuthenticationInTaraWithLegalPerson(flow)
         Steps.initMidAuthSession(flow, "60001017705", "69000366")
         Steps.pollMidResponse(flow)
-        Response acceptResponse = Requests.postRequestWithParams(flow, flow.loginService.fullAuthAcceptUrl)
+        Response acceptResponse = Requests.postRequest(flow, flow.loginService.fullAuthAcceptUrl)
 
         when:
         Response response = Steps.followRedirectWithSessionId(flow, acceptResponse)
@@ -44,7 +44,7 @@ class LegalPersonAutInitSpec extends TaraSpecification {
     @Feature("CACHE_POLICY")
     @Feature("NOSNIFF")
     @Feature("XSS_DETECTION_FILTER_ENABLED")
-    def "request initialize legal person authentication with security checks"() {
+    def "Request initialize legal person authentication with security checks should succeed"() {
         given:
         Steps.startAuthenticationInTaraWithLegalPerson(flow)
 
@@ -58,7 +58,7 @@ class LegalPersonAutInitSpec extends TaraSpecification {
     }
 
     @Feature("LEGAL_PERSON_INIT_START_ENDPOINT")
-    def "request initialize legal person authentication with invalid session cookie: #reason"() {
+    def "Request initialize legal person authentication with invalid session cookie should fail: #reason"() {
         given:
         Steps.startAuthenticationInTaraWithLegalPerson(flow)
 
@@ -66,10 +66,7 @@ class LegalPersonAutInitSpec extends TaraSpecification {
         Response response = given()
                 .relaxedHTTPSValidation()
                 .cookies(cookie)
-                .when()
                 .get(flow.loginService.fullAuthLegalInitUrl)
-                .then()
-                .extract().response()
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(400))
@@ -86,12 +83,12 @@ class LegalPersonAutInitSpec extends TaraSpecification {
 
     //TODO: AUT-630
     @Feature("LEGAL_PERSON_INIT_START_ENDPOINT")
-    def "request initialize legal person authentication with invalid method: #requestType"() {
+    def "Request initialize legal person authentication with invalid method should fail: #requestType"() {
         given:
         Steps.startAuthenticationInTaraWithLegalPerson(flow)
         Steps.initMidAuthSession(flow, "60001017705", "69000366")
         Steps.pollMidResponse(flow)
-        Requests.postRequestWithParams(flow, flow.loginService.fullAuthAcceptUrl)
+        Requests.postRequest(flow, flow.loginService.fullAuthAcceptUrl)
 
         when: "request legal person authentication with invalid request type"
         Response response = Requests.requestWithType(flow, requestType, flow.loginService.fullAuthLegalInitUrl)

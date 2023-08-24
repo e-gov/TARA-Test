@@ -104,7 +104,7 @@ class Steps {
     }
 
     @Step("Initialize Mobile-ID authentication session")
-    static Response initMidAuthSession(Flow flow, Object idCode, Object telephoneNumber) {
+    static Response initMidAuthSession(Flow flow, String idCode, String telephoneNumber) {
         Map formParamsMap = [_csrf          : flow.csrf,
                              idCode         : idCode,
                              telephoneNumber: telephoneNumber]
@@ -133,7 +133,7 @@ class Steps {
         Response midPollResult = pollMidResponse(flow)
         assertThat("Correct HTTP status code", midPollResult.statusCode, is(200))
         assertThat(midPollResult.jsonPath().getString("status"), is("COMPLETED"))
-        Response acceptResponse = Requests.postRequestWithParams(flow, flow.loginService.fullAuthAcceptUrl)
+        Response acceptResponse = Requests.postRequest(flow, flow.loginService.fullAuthAcceptUrl)
         assertThat("Correct HTTP status code", acceptResponse.statusCode, is(302))
         Response oidcServiceResponse = loginVerifier(flow, acceptResponse)
         assertThat("Correct HTTP status code", oidcServiceResponse.statusCode, is(302))
@@ -148,7 +148,7 @@ class Steps {
         Response sidPollResult = pollSidResponse(flow)
         assertThat("Correct HTTP status code", sidPollResult.statusCode, is(200))
         assertThat(sidPollResult.jsonPath().get("status").toString(), is("COMPLETED"))
-        Response acceptResponse = Requests.postRequestWithParams(flow, flow.loginService.fullAuthAcceptUrl)
+        Response acceptResponse = Requests.postRequest(flow, flow.loginService.fullAuthAcceptUrl)
         assertThat("Correct HTTP status code", acceptResponse.statusCode, is(302))
         Response oidcServiceResponse = loginVerifier(flow, acceptResponse)
         assertThat("Correct HTTP status code", oidcServiceResponse.statusCode, is(302))
@@ -159,12 +159,12 @@ class Steps {
     @Step("Authenticate with Web eID")
     static Response authenticateWithWebeID(Flow flow) {
 
-        Response initWebEid = Requests.postRequestWithParams(flow, flow.loginService.fullWebEidInitUrl)
+        Response initWebEid = Requests.postRequest(flow, flow.loginService.fullWebEidInitUrl)
         String signAuthValue = Utils.signAuthenticationValue(flow, flow.loginService.baseUrl, initWebEid.jsonPath().get("nonce"))
         JSONObject authToken = Utils.getWebEidAuthTokenParameters(flow, signAuthValue)
         Requests.postRequestWithJsonBody(flow, flow.loginService.fullWebEidLoginUrl, authToken)
 
-        Response acceptResponse = Requests.postRequestWithParams(flow, flow.loginService.fullAuthAcceptUrl)
+        Response acceptResponse = Requests.postRequest(flow, flow.loginService.fullAuthAcceptUrl)
         Response loginVerifier = loginVerifier(flow, acceptResponse)
         Response consentResponse = followRedirectWithSessionId(flow, loginVerifier)
         Response consentVerifier = followRedirectWithCookies(flow, consentResponse, flow.oidcService.cookies)
@@ -326,7 +326,7 @@ class Steps {
         Response pollResponse = pollMidResponse(flow)
         assertThat("Correct HTTP status code", pollResponse.statusCode, is(200))
         assertThat(pollResponse.jsonPath().get("status").toString(), is("COMPLETED"))
-        Response acceptResponse = Requests.postRequestWithParams(flow, flow.loginService.fullAuthAcceptUrl)
+        Response acceptResponse = Requests.postRequest(flow, flow.loginService.fullAuthAcceptUrl)
         assertThat("Correct HTTP status code", acceptResponse.statusCode, is(302))
 
         Response initLegalResponse = followRedirectWithSessionId(flow, acceptResponse)

@@ -19,7 +19,7 @@ class AuthInitSpec extends TaraSpecification {
     }
 
     @Feature("AUTH_INIT_ENDPOINT")
-    def "request initialize authentication"() {
+    def "Request initialize authentication"() {
         given:
         Response initOIDCServiceSession = Steps.startAuthenticationInOidc(flow)
 
@@ -33,7 +33,7 @@ class AuthInitSpec extends TaraSpecification {
     }
 
     @Feature("AUTH_INIT_ENDPOINT")
-    def "request initialize authentication language: #requestLocale"() {
+    def "Request initialize authentication language: #requestLocale"() {
         given:
         Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "openid", requestLocale)
         Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
@@ -56,7 +56,7 @@ class AuthInitSpec extends TaraSpecification {
     }
 
     @Feature("AUTH_INIT_ENDPOINT")
-    def "initialize authentication session with: #label"() {
+    def "Initialize authentication session with: #label"() {
         given:
         Steps.startAuthenticationInOidc(flow)
 

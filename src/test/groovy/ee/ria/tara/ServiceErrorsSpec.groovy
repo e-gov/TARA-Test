@@ -65,10 +65,7 @@ class ServiceErrorsSpec extends TaraSpecification {
                 .relaxedHTTPSValidation()
                 .params(["error": ERROR_SERVICE])
                 .headers(["Accept": "text/html"])
-                .when()
                 .get(flow.loginService.fullErrorUrl)
-                .then()
-                .extract().response()
 
         String htmlResponse = response.body.asString()
 
@@ -89,10 +86,7 @@ class ServiceErrorsSpec extends TaraSpecification {
                 .relaxedHTTPSValidation()
                 .params(["error": ERROR_CLIENT])
                 .headers(["Accept": "text/html"])
-                .when()
                 .get(flow.loginService.fullErrorUrl)
-                .then()
-                .extract().response()
 
         String htmlResponse = response.body.asString()
 

@@ -50,10 +50,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         Response response = given()
                 .relaxedHTTPSValidation()
                 .cookies(cookie)
-                .when()
                 .get(loginVerifier.getHeader("location"))
-                .then()
-                .extract().response()
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(400))
@@ -78,10 +75,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
                 .relaxedHTTPSValidation()
                 .cookie("SESSION", flow.sessionId)
                 .params("_csrf", flow.csrf)
-                .when()
                 .request(requestType, loginVerifier.header("location"))
-                .then()
-                .extract().response()
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(500))
@@ -162,10 +156,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
                 .filter(flow.cookieFilter)
                 .params([_csrf        : flow.csrf,
                          consent_given: true])
-                .when()
                 .request(requestType, flow.loginService.fullConsentConfirmUrl)
-                .then()
-                .extract().response()
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(500))
@@ -191,10 +182,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
                 .cookies(cookie)
                 .formParams(["consent_given": true,
                              "_csrf"        : flow.csrf])
-                .when()
                 .post(flow.loginService.fullConsentConfirmUrl)
-                .then()
-                .extract().response()
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(403))
@@ -253,7 +241,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         Steps.startAuthenticationInTaraWithSpecificProxyService(flow)
         Requests.startMidAuthentication(flow, "60001017869", "68000769")
         Steps.pollMidResponse(flow)
-        Response acceptResponse = Requests.postRequestWithParams(flow, flow.loginService.fullAuthAcceptUrl)
+        Response acceptResponse = Requests.postRequest(flow, flow.loginService.fullAuthAcceptUrl)
         Response loginVerifier = Steps.loginVerifier(flow, acceptResponse)
         return loginVerifier
     }

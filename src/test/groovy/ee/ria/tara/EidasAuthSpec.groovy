@@ -23,7 +23,7 @@ class EidasAuthSpec extends TaraSpecification {
     }
 
     @Feature("EIDAS_AUTH_INIT_ENDPOINT")
-    def "Initialize eIDAS authentication"() {
+    def "Initialize eIDAS authentication should succeed"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid eidas")
 
@@ -39,7 +39,7 @@ class EidasAuthSpec extends TaraSpecification {
 
     @Feature("EIDAS_AUTH_INIT_ENDPOINT")
     @Feature("EIDAS_AUTH_INIT_REQUEST_CHECKS")
-    def "Initialize eIDAS authentication with #label"() {
+    def "Initialize eIDAS authentication should fail with #label"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid eidas")
 
@@ -63,7 +63,7 @@ class EidasAuthSpec extends TaraSpecification {
     }
 
     @Feature("EIDAS_AUTH_INIT_ENDPOINT")
-    def "Initialize eIDAS authentication without session cookie"() {
+    def "Initialize eIDAS authentication without session cookie should fail"() {
         when:
         Response response = Requests.postRequestWithParams(flow, flow.loginService.fullEidasInitUrl, [country: COUNTRY_CA])
 
@@ -85,10 +85,7 @@ class EidasAuthSpec extends TaraSpecification {
                 .cookies(SESSION: flow.sessionId)
                 .params([country: COUNTRY_CA,
                          _csrf  : flow.csrf])
-                .when()
                 .request(requestType, flow.loginService.fullEidasInitUrl)
-                .then()
-                .extract().response()
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(500))

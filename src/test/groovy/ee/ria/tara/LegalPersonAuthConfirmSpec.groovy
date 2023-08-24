@@ -23,7 +23,7 @@ class LegalPersonAuthConfirmSpec extends TaraSpecification {
     @Feature("LEGAL_PERSON_SELECTION_ENDPOINT")
     @Feature("UI_CONSENT_VIEW")
     @Feature("OIDC_ID_TOKEN")
-    def "legal person selection request"() {
+    def "Legal person selection request should succeed"() {
         given:
         Steps.startAuthenticationInTaraWithLegalPerson(flow)
         Steps.authInitAsLegalPerson(flow)
@@ -52,7 +52,7 @@ class LegalPersonAuthConfirmSpec extends TaraSpecification {
     @Feature("CACHE_POLICY")
     @Feature("NOSNIFF")
     @Feature("XSS_DETECTION_FILTER_ENABLED")
-    def "Verify legal person response headers"() {
+    def "Verify legal person response headers should succeed"() {
         given:
         Steps.startAuthenticationInTaraWithLegalPerson(flow)
         Steps.authInitAsLegalPerson(flow)
@@ -69,7 +69,7 @@ class LegalPersonAuthConfirmSpec extends TaraSpecification {
 
     //TODO: AUT-630
     @Feature("LEGAL_PERSON_SELECTION_ENDPOINT")
-    def "legal person selection request with unsupported method: #requestType "() {
+    def "Legal person selection request with unsupported method should fail: #requestType "() {
         given:
         Steps.startAuthenticationInTaraWithLegalPerson(flow)
         Steps.authInitAsLegalPerson(flow)
@@ -82,10 +82,7 @@ class LegalPersonAuthConfirmSpec extends TaraSpecification {
                 .cookies([SESSION: flow.sessionId])
                 .params([legal_person_identifier: legalPersonIdentifier,
                          _csrf                  : flow.csrf])
-                .when()
                 .request(requestType, flow.loginService.fullAuthLegalConfirmUrl)
-                .then()
-                .extract().response()
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(500))
@@ -101,7 +98,7 @@ class LegalPersonAuthConfirmSpec extends TaraSpecification {
     }
 
     @Feature("LEGAL_PERSON_SELECTION_ENDPOINT")
-    def "legal person selection request with invalid session cookie: #reason"() {
+    def "Legal person selection request with invalid session cookie should fail: #reason"() {
         given:
         Steps.startAuthenticationInTaraWithLegalPerson(flow)
         Steps.authInitAsLegalPerson(flow)
@@ -113,10 +110,7 @@ class LegalPersonAuthConfirmSpec extends TaraSpecification {
                 .cookies(cookie)
                 .params([legal_person_identifier: "123456789",
                          _csrf                  : flow.csrf])
-                .when()
                 .post(flow.loginService.fullAuthLegalConfirmUrl)
-                .then()
-                .extract().response()
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(403))
@@ -132,7 +126,7 @@ class LegalPersonAuthConfirmSpec extends TaraSpecification {
     }
 
     @Feature("LEGAL_PERSON_SELECTION_ENDPOINT")
-    def "legal person selection request with invalid parameter value: #label"() {
+    def "Legal person selection request with invalid parameter value should fail: #label"() {
         given:
         Steps.startAuthenticationInTaraWithLegalPerson(flow)
         Steps.authInitAsLegalPerson(flow)
@@ -152,6 +146,6 @@ class LegalPersonAuthConfirmSpec extends TaraSpecification {
         RandomStringUtils.random(51, true, true) | "legal person identifier is too long"            || "confirmLegalPerson.legalPersonIdentifier: size must be between 0 and 50"
         "678@123"                                | "unsupported symbols in legal person identifier" || "confirmLegalPerson.legalPersonIdentifier: invalid legal person identifier"
         RandomStringUtils.random(50, true, true) | "legal person identifier max length"             || "Antud identifikaatoriga juriidilist isikut ei leitud."
-        ["12597552", "10910878"]                 | "multiple legal person identifiers"               | MESSAGE_DUPLICATE_PARAMETERS
+        ["12597552", "10910878"]                 | "multiple legal person identifiers"              || MESSAGE_DUPLICATE_PARAMETERS
     }
 }

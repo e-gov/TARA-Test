@@ -21,7 +21,7 @@ class LegalPersonAuthSpec extends TaraSpecification {
     }
 
     @Feature("LEGAL_PERSON_AUTH_START_ENDPOINT")
-    def "legal persons authentication request"() {
+    def "Legal persons authentication request should return correct legal person name"() {
         given:
         Steps.startAuthenticationInTaraWithLegalPerson(flow)
         Steps.authInitAsLegalPerson(flow)
@@ -50,7 +50,7 @@ class LegalPersonAuthSpec extends TaraSpecification {
     @Feature("CACHE_POLICY")
     @Feature("NOSNIFF")
     @Feature("XSS_DETECTION_FILTER_ENABLED")
-    def "legal persons authentication request with security checks"() {
+    def "Legal persons authentication request with security checks should succeed"() {
         given:
         Steps.startAuthenticationInTaraWithLegalPerson(flow, "openid legalperson")
         Steps.authInitAsLegalPerson(flow)
@@ -64,7 +64,7 @@ class LegalPersonAuthSpec extends TaraSpecification {
     }
 
     @Feature("LEGAL_PERSON_AUTH_START_ENDPOINT")
-    def "legal persons authentication request with invalid cookie: #reason"() {
+    def "Legal persons authentication request with invalid cookie should fail: #reason"() {
         given:
         Steps.startAuthenticationInTaraWithLegalPerson(flow, "openid legalperson")
         Steps.authInitAsLegalPerson(flow)
@@ -73,10 +73,7 @@ class LegalPersonAuthSpec extends TaraSpecification {
         Response response = given()
                 .relaxedHTTPSValidation()
                 .cookies(cookie)
-                .when()
                 .get(flow.loginService.fullAuthLegalPersonUrl)
-                .then()
-                .extract().response()
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(400))
@@ -93,12 +90,12 @@ class LegalPersonAuthSpec extends TaraSpecification {
 
     //TODO: AUT-630
     @Feature("LEGAL_PERSON_AUTH_START_ENDPOINT")
-    def "legal persons authentication request with invalid method: #requestType"() {
+    def "Legal persons authentication request with invalid method should fail: #requestType"() {
         given:
         Steps.startAuthenticationInTaraWithLegalPerson(flow)
         Steps.initMidAuthSession(flow, "60001019906", "00000766")
         Steps.pollMidResponse(flow)
-        Response acceptResponse = Requests.postRequestWithParams(flow, flow.loginService.fullAuthAcceptUrl)
+        Response acceptResponse = Requests.postRequest(flow, flow.loginService.fullAuthAcceptUrl)
         Steps.followRedirectWithSessionId(flow, acceptResponse)
 
         when: "legal persons authentication request with invalid method"
@@ -106,10 +103,7 @@ class LegalPersonAuthSpec extends TaraSpecification {
                 .relaxedHTTPSValidation()
                 .cookies(["SESSION": flow.sessionId])
                 .params(["_csrf": flow.csrf])
-                .when()
                 .request(requestType, flow.loginService.fullAuthLegalPersonUrl)
-                .then()
-                .extract().response()
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(500))
