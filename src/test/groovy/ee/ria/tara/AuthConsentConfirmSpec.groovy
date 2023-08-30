@@ -31,10 +31,10 @@ class AuthConsentConfirmSpec extends TaraSpecification {
 
         then: "Correct status code and info in HTML"
         assertThat("Correct HTTP status code", response.statusCode, is(200))
-        List<String> identityFields = response.htmlPath().getList("**.findAll {th -> th.@colspan == \'1\'}.b")
+        List<String> identityFields = response.htmlPath().getList("**.findAll { div -> div.@class == 'personal-info-label'}")
         List<String> buttons = response.htmlPath().getList("**.findAll { it.@method == \'POST\'}.button")
         assertThat("Correct buttons", buttons, hasItems("Nõustun", "Keeldun"))
-        assertThat("Correct fields", identityFields, hasItems("Isikukood:", "Perenimi:", "Eesnimi:", "Sünniaeg:"))
+        assertThat("Correct fields", identityFields, hasItems("Isikukood", "Perenimi", "Eesnimi", "Sünniaeg"))
         assertThat("Correct ID code", response.htmlPath().getString("**.find { it.@id == 'natural-person-id-code'}"), is("60001017716"))
         assertThat("Correct surname", response.htmlPath().getString("**.find { it.@id == 'natural-person-surname'}"), is("TESTNUMBER"))
         assertThat("Correct given name", response.htmlPath().getString("**.find { it.@id == 'natural-person-given-name'}"), is("ONE"))
