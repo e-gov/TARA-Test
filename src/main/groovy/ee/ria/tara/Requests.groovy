@@ -16,10 +16,10 @@ class Requests {
         return given()
                 .filter(flow.cookieFilter)
                 .filter(new AllureRestAssured())
-                .formParam("idCode", idCode)
-                .formParam("telephoneNumber", phoneNo)
+                .params([idCode         : idCode,
+                         telephoneNumber: phoneNo,
+                         _csrf          : flow.csrf])
                 .cookie("SESSION", flow.sessionId)
-                .formParam("_csrf", flow.csrf)
                 .log().cookies()
                 .urlEncodingEnabled(true)
                 .relaxedHTTPSValidation()
@@ -45,8 +45,8 @@ class Requests {
         return given()
                 .filter(flow.cookieFilter)
                 .filter(new AllureRestAssured())
-                .cookie("SESSION", flow.sessionId)
-                .cookie("LOGIN_LOCALE", flow.login_locale)
+                .cookies([SESSION     : flow.sessionId,
+                          LOGIN_LOCALE: flow.login_locale])
                 .log().cookies()
                 .urlEncodingEnabled(true)
                 .relaxedHTTPSValidation()
@@ -180,27 +180,32 @@ class Requests {
                 .extract().body().asInputStream()
     }
 
-    @Step("Get token")
-    static Response getWebToken(Flow flow, String authorizationCode) {
+    @Step("Get JWT with basic method")
+    static Response webTokenBasicRequest(Flow flow,
+                                         String authorizationCode,
+                                         String clientId = flow.oidcClientPublic.clientId,
+                                         String clientSecret = flow.oidcClientPublic.clientSecret,
+                                         String redirectUri = flow.oidcClientPublic.fullResponseUrl) {
         return given()
                 .filter(new AllureRestAssured())
-                .formParam("grant_type", "authorization_code")
-                .formParam("code", authorizationCode)
-                .formParam("redirect_uri", flow.oidcClientPublic.fullResponseUrl)
-                .auth().preemptive().basic(flow.oidcClientPublic.clientId, flow.oidcClientPublic.clientSecret)
+                .params([grant_type  : "authorization_code",
+                         code        : authorizationCode,
+                         redirect_uri: redirectUri])
+                .auth().preemptive().basic(clientId, clientSecret)
                 .urlEncodingEnabled(true)
                 .relaxedHTTPSValidation()
                 .post(flow.openIdServiceConfiguration.getString("token_endpoint"))
     }
 
-    @Step("Get token with client")
-    static Response getWebTokenWithClient(Flow flow, String authorizationCode, String redirectUri, String clientId, String clientSecret) {
+    @Step("Get token client_secret_post")
+    static Response webTokenPostRequest(Flow flow, String authorizationCode) {
         return given()
                 .filter(new AllureRestAssured())
-                .formParam("grant_type", "authorization_code")
-                .formParam("code", authorizationCode)
-                .formParam("redirect_uri", redirectUri)
-                .auth().preemptive().basic(clientId, clientSecret)
+                .params([grant_type   : "authorization_code",
+                         redirect_uri : flow.redirectUri,
+                         code         : authorizationCode,
+                         client_id    : flow.clientId,
+                         client_secret: flow.clientSecret])
                 .urlEncodingEnabled(true)
                 .relaxedHTTPSValidation()
                 .post(flow.openIdServiceConfiguration.getString("token_endpoint"))
@@ -210,7 +215,7 @@ class Requests {
     static Response getWebTokenResponseBody(Flow flow, Map formParams) {
         return given()
                 .filter(new AllureRestAssured())
-                .formParams(formParams)
+                .params(formParams)
                 .auth().preemptive().basic(flow.oidcClientPublic.clientId, flow.oidcClientPublic.clientSecret)
                 .urlEncodingEnabled(true)
                 .relaxedHTTPSValidation()

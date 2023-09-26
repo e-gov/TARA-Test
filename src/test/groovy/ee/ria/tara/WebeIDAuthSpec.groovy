@@ -27,7 +27,7 @@ class WebeIDAuthSpec extends TaraSpecification {
         Steps.startAuthenticationInTara(flow)
 
         when:
-        Response tokenResponse = Steps.authenticateWithWebeID(flow)
+        Response tokenResponse = Steps.authenticateWithWebEid(flow)
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.jsonPath().get("id_token")).JWTClaimsSet
 
         then:

@@ -97,7 +97,7 @@ class OidcMetadataSpec extends TaraSpecification {
         flow.setOpenIdServiceConfiguration(Requests.getOpenidConfiguration(flow.oidcService.fullConfigurationUrl))
 
         when:
-        Response tokenResponse = Requests.getWebToken(flow, "123456")
+        Response tokenResponse = Requests.webTokenBasicRequest(flow, "123456")
 
         then:
         assertThat("Correct HTTP status code", tokenResponse.statusCode, is(400))

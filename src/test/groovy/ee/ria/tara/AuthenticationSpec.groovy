@@ -95,7 +95,7 @@ class AuthenticationSpec extends TaraSpecification {
     @Feature("AUTHENTICATION")
     def "Request authentication with eIDAS with privet sector client"() {
         given:
-        Steps.startAuthenticationInTaraWithClient(flow, "openid eidas", flow.oidcClientPrivate.clientId, flow.oidcClientPrivate.fullResponseUrl)
+        Steps.startAuthenticationInTaraWithClient(flow, flow.oidcClientPrivate.clientId, flow.oidcClientPrivate.clientSecret, flow.oidcClientPrivate.fullResponseUrl)
         EidasSteps.initEidasAuthSession(flow, COUNTRY_CA)
         Response colleagueResponse = EidasSteps.continueEidasAuthenticationFlow(flow, IDP_USERNAME, IDP_PASSWORD, EIDASLOA_HIGH)
         Response authorizationResponse = EidasSteps.getAuthorizationResponseFromEidas(flow, colleagueResponse)
@@ -106,7 +106,7 @@ class AuthenticationSpec extends TaraSpecification {
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, redirectResponse)
 
         when:
-        Response tokenResponse = Steps.getIdentityTokenResponseWithClient(flow, authenticationFinishedResponse, flow.oidcClientPrivate.fullResponseUrl, flow.oidcClientPrivate.clientId, flow.oidcClientPrivate.clientSecret)
+        Response tokenResponse = Steps.getIdentityTokenResponseWithClient(flow, authenticationFinishedResponse, flow.oidcClientPrivate.clientId, flow.oidcClientPrivate.clientSecret, flow.oidcClientPrivate.fullResponseUrl)
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.jsonPath().get("id_token")).JWTClaimsSet
 
         then:
@@ -125,7 +125,7 @@ class AuthenticationSpec extends TaraSpecification {
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
 
         when:
-        Response tokenResponse = Steps.getIdentityTokenResponseWithClient(flow, authenticationFinishedResponse, flow.specificProxyService.fullResponseUrl, flow.specificProxyService.clientId, flow.specificProxyService.clientSecret)
+        Response tokenResponse = Steps.getIdentityTokenResponseWithClient(flow, authenticationFinishedResponse, flow.specificProxyService.clientId, flow.specificProxyService.clientSecret, flow.specificProxyService.fullResponseUrl)
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.jsonPath().get('id_token')).JWTClaimsSet
 
         then:
@@ -166,7 +166,7 @@ class AuthenticationSpec extends TaraSpecification {
         Response midInit = Requests.startMidAuthentication(flow, "60001017716", "69100366")
         Steps.verifyResponseHeaders(midInit)
         Response midPollResult = Steps.pollMidResponse(flow)
-        assertThat(midPollResult.jsonPath().get("status").toString(), not(equalTo("PENDING")))
+        assertThat(midPollResult.jsonPath().getString("status"), not(equalTo("PENDING")))
         Steps.verifyResponseHeaders(midPollResult)
         Response acceptResponse = Requests.postRequest(flow, flow.loginService.fullAuthAcceptUrl)
         Steps.verifyResponseHeaders(acceptResponse)
@@ -184,7 +184,7 @@ class AuthenticationSpec extends TaraSpecification {
         String authorizationCode = Utils.getParamValueFromResponseHeader(oidcserviceResponse, "code")
 
         when:
-        Response tokenResponse = Requests.getWebToken(flow, authorizationCode)
+        Response tokenResponse = Requests.webTokenBasicRequest(flow, authorizationCode)
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.jsonPath().get("id_token")).JWTClaimsSet
 
         then:

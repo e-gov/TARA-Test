@@ -27,22 +27,28 @@ class OpenIdUtils {
                            response_type: "code",
                            scope        : scope,
                            client_id    : flow.oidcClientPublic.clientId,
-                           redirect_uri : flow.oidcClientPublic.fullResponseUrl.toString(),
+                           redirect_uri : flow.oidcClientPublic.fullResponseUrl,
                            state        : flow.state,
                            nonce        : flow.nonce]
+        flow.setClientId(flow.oidcClientPublic.clientId)
+        flow.setClientSecret(flow.oidcClientPublic.clientSecret)
+        flow.setRedirectUri(flow.oidcClientPublic.fullResponseUrl)
         return queryParams
     }
 
-    static Map getAuthorizationParametersWithClient(Flow flow, String scope = "openid", String clientId, String redirectUri) {
+    static Map getAuthorizationParametersWithClient(Flow flow, String clientId, String clientSecret, String redirectUri) {
         flow.setState(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
         flow.setNonce(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
         Map queryParams = [ui_locales   : "et",
                            response_type: "code",
-                           scope        : scope,
+                           scope        : "openid",
                            client_id    : clientId,
-                           redirec_uri  : redirectUri,
+                           redirect_uri : redirectUri,
                            state        : flow.state,
                            nonce        : flow.nonce]
+        flow.setClientId(clientId)
+        flow.setClientSecret(clientSecret)
+        flow.setRedirectUri(redirectUri)
         return queryParams
     }
 
@@ -53,7 +59,7 @@ class OpenIdUtils {
                            response_type: "code",
                            scope        : scope,
                            client_id    : flow.oidcClientLegal.clientId,
-                           redirec_uri  : flow.oidcClientLegal.fullResponseUrl.toString(),
+                           redirect_uri : flow.oidcClientLegal.fullResponseUrl,
                            state        : flow.state,
                            nonce        : flow.nonce]
         return queryParams
@@ -66,7 +72,7 @@ class OpenIdUtils {
                            response_type: "code",
                            scope        : scope,
                            client_id    : flow.specificProxyService.clientId,
-                           redirect_uri : flow.specificProxyService.fullResponseUrl.toString(),
+                           redirect_uri : flow.specificProxyService.fullResponseUrl,
                            state        : flow.state,
                            nonce        : flow.nonce]
         return queryParams
@@ -80,7 +86,7 @@ class OpenIdUtils {
                            response_type: "code",
                            scope        : "openid",
                            client_id    : flow.oidcClientPublic.clientId,
-                           redirect_uri : flow.oidcClientPublic.fullResponseUrl.toString(),
+                           redirect_uri : flow.oidcClientPublic.fullResponseUrl,
                            state        : flow.state,
                            nonce        : flow.nonce]
         return queryParams

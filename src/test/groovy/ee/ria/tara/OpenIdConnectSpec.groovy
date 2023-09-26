@@ -38,26 +38,6 @@ class OpenIdConnectSpec extends TaraSpecification {
     }
 
     @Feature("OPENID_CONNECT")
-    def "Request an ID-token twice with same authorization code should fail"() {
-        given:
-        Response initOIDCServiceSession = Steps.startAuthenticationInOidc(flow)
-        Steps.createLoginSession(flow, initOIDCServiceSession)
-        Response midAuthResponse = Steps.authenticateWithMid(flow, "60001017727", "69200366")
-        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
-        String authorizationCode = Utils.getParamValueFromResponseHeader(authenticationFinishedResponse, "code")
-        Requests.getWebToken(flow, authorizationCode)
-
-        when: "Request ID-token a second time"
-        Response tokenResponse2 = Requests.getWebToken(flow, authorizationCode)
-
-        then:
-        assertThat("Correct HTTP status code", tokenResponse2.statusCode, is(400))
-        assertThat("Correct Content-Type", tokenResponse2.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct error", tokenResponse2.jsonPath().getString("error"), is(ERROR_GRANT))
-        assertThat("Correct error description", tokenResponse2.jsonPath().getString("error_description"), endsWith("The authorization code has already been used."))
-    }
-
-    @Feature("OPENID_CONNECT")
     def "Request with empty scope"() {
         given:
         Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
@@ -84,7 +64,7 @@ class OpenIdConnectSpec extends TaraSpecification {
         String authorizationCode = Utils.getParamValueFromResponseHeader(authenticationFinishedResponse, "code")
 
         when:
-        Response response = Requests.getWebToken(flow, authorizationCode + "e")
+        Response response = Requests.webTokenBasicRequest(flow, authorizationCode + "e")
 
         then:
         assertThat("Correct status code", response.statusCode, is(400))

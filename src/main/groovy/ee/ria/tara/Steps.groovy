@@ -71,8 +71,8 @@ class Steps {
     }
 
     @Step("Start authentication in TARA with specified client and follow redirects")
-    static Response startAuthenticationInTaraWithClient(Flow flow, String scopeList = "openid", String clientId, String redirectUri, boolean checkStatusCode = true) {
-        Map paramsMap = OpenIdUtils.getAuthorizationParametersWithClient(flow, scopeList, clientId, redirectUri)
+    static Response startAuthenticationInTaraWithClient(Flow flow, String clientId, String clientSecret, String redirectUri, boolean checkStatusCode = true) {
+        Map paramsMap = OpenIdUtils.getAuthorizationParametersWithClient(flow, clientId, clientSecret, redirectUri)
         Response initOIDCServiceSession = startAuthenticationInOidcWithParams(flow, paramsMap)
         Response initLoginSession = createLoginSession(flow, initOIDCServiceSession)
         if (checkStatusCode) {
@@ -147,7 +147,7 @@ class Steps {
         assertThat("Correct HTTP status code", sidInit.statusCode, is(200))
         Response sidPollResult = pollSidResponse(flow)
         assertThat("Correct HTTP status code", sidPollResult.statusCode, is(200))
-        assertThat(sidPollResult.jsonPath().get("status").toString(), is("COMPLETED"))
+        assertThat(sidPollResult.jsonPath().getString("status"), is("COMPLETED"))
         Response acceptResponse = Requests.postRequest(flow, flow.loginService.fullAuthAcceptUrl)
         assertThat("Correct HTTP status code", acceptResponse.statusCode, is(302))
         Response oidcServiceResponse = loginVerifier(flow, acceptResponse)
@@ -157,7 +157,7 @@ class Steps {
     }
 
     @Step("Authenticate with Web eID")
-    static Response authenticateWithWebeID(Flow flow) {
+    static Response authenticateWithWebEid(Flow flow, boolean clientSecretBasic = true) {
 
         Response initWebEid = Requests.postRequest(flow, flow.loginService.fullWebEidInitUrl)
         String signAuthValue = Utils.signAuthenticationValue(flow, flow.loginService.baseUrl, initWebEid.jsonPath().get("nonce"))
@@ -169,9 +169,12 @@ class Steps {
         Response consentResponse = followRedirectWithSessionId(flow, loginVerifier)
         Response consentVerifier = followRedirectWithCookies(flow, consentResponse, flow.oidcService.cookies)
         String authorizationCode = Utils.getParamValueFromResponseHeader(consentVerifier, "code")
-        Response tokenResponse = Requests.getWebToken(flow, authorizationCode)
-
-        return tokenResponse
+        flow.setCode(authorizationCode)
+        if (clientSecretBasic) {
+            return Requests.webTokenBasicRequest(flow, authorizationCode, flow.clientId, flow.clientSecret, flow.redirectUri)
+            } else {
+            return Requests.webTokenPostRequest(flow, authorizationCode)
+        }
     }
 
     @Step("Initialize Smart-ID authentication session")
@@ -253,13 +256,13 @@ class Steps {
     @Step("Get identity token")
     static Response getIdentityTokenResponse(Flow flow, Response response) {
         String authorizationCode = Utils.getParamValueFromResponseHeader(response, "code")
-        return Requests.getWebToken(flow, authorizationCode)
+        return Requests.webTokenBasicRequest(flow, authorizationCode)
     }
 
     @Step("Get identity token response with OIDC client details")
-    static Response getIdentityTokenResponseWithClient(Flow flow, Response response, String redirectUrl, String clientId, String clientSecret) {
+    static Response getIdentityTokenResponseWithClient(Flow flow, Response response, String clientId, String clientSecret, String redirectUrl) {
         String authorizationCode = Utils.getParamValueFromResponseHeader(response, "code")
-        return Requests.getWebTokenWithClient(flow, authorizationCode, redirectUrl, clientId, clientSecret)
+        return Requests.webTokenBasicRequest(flow, authorizationCode, clientId, clientSecret, redirectUrl)
     }
 
     @Step("verify token")
@@ -325,7 +328,7 @@ class Steps {
         assertThat("Correct HTTP status code", initMidAuthenticationSession.statusCode, is(200))
         Response pollResponse = pollMidResponse(flow)
         assertThat("Correct HTTP status code", pollResponse.statusCode, is(200))
-        assertThat(pollResponse.jsonPath().get("status").toString(), is("COMPLETED"))
+        assertThat(pollResponse.jsonPath().getString("status"), is("COMPLETED"))
         Response acceptResponse = Requests.postRequest(flow, flow.loginService.fullAuthAcceptUrl)
         assertThat("Correct HTTP status code", acceptResponse.statusCode, is(302))
 

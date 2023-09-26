@@ -55,7 +55,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
     def "Verify user info response: auth id-card, email scope"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid email")
-        Response idCardAuthResponse = Steps.authenticateWithWebeID(flow)
+        Response idCardAuthResponse = Steps.authenticateWithWebEid(flow)
         String accessToken = idCardAuthResponse.jsonPath().getString("access_token")
 
         when:
@@ -82,7 +82,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
     def "Verify user info response: auth id-card, phone scope"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid email")
-        Response idCardAuthResponse = Steps.authenticateWithWebeID(flow)
+        Response idCardAuthResponse = Steps.authenticateWithWebEid(flow)
         String accessToken = idCardAuthResponse.jsonPath().getString("access_token")
 
         when:
@@ -108,7 +108,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
     def "Verify user info response: auth id-card, openid scope"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid")
-        Response idCardAuthResponse = Steps.authenticateWithWebeID(flow)
+        Response idCardAuthResponse = Steps.authenticateWithWebEid(flow)
         String accessToken = idCardAuthResponse.jsonPath().getString("access_token")
 
         when:
@@ -296,7 +296,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
     def "Unsupported request types in header #requestType"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid")
-        Response idCardAuthResponse = Steps.authenticateWithWebeID(flow)
+        Response idCardAuthResponse = Steps.authenticateWithWebEid(flow)
         String accessToken = idCardAuthResponse.jsonPath().getString("access_token")
 
         when:

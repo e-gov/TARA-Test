@@ -165,7 +165,7 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
         Steps.startAuthenticationInTara(flow, "openid email")
 
         when:
-        Response tokenResponse = Steps.authenticateWithWebeID(flow)
+        Response tokenResponse = Steps.authenticateWithWebEid(flow)
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.jsonPath().get("id_token")).JWTClaimsSet
 
         then:
@@ -202,7 +202,7 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
         Steps.createLoginSession(flow, initOIDCServiceSession)
 
         when:
-        Response tokenResponse = Steps.authenticateWithWebeID(flow)
+        Response tokenResponse = Steps.authenticateWithWebEid(flow)
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.jsonPath().get('id_token')).JWTClaimsSet
 
         then:
