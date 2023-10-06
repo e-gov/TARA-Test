@@ -35,7 +35,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         List<String> buttons = response.htmlPath().getList("**.findAll { it.@method == \'POST\'}.button")
         assertThat("Correct buttons", buttons, hasItems("Nõustu", "Keeldu"))
         assertThat("Correct fields", identityFields, hasItems("Isikukood", "Perenimi", "Eesnimi", "Sünniaeg"))
-        assertThat("Correct ID code", response.htmlPath().getString("**.find { it.@id == 'natural-person-id-code'}"), is("60001017716"))
+        assertThat("Correct ID code", response.htmlPath().getString("**.find { it.@id == 'natural-person-id-code'}"), is("EE60001017716"))
         assertThat("Correct surname", response.htmlPath().getString("**.find { it.@id == 'natural-person-surname'}"), is("TESTNUMBER"))
         assertThat("Correct given name", response.htmlPath().getString("**.find { it.@id == 'natural-person-given-name'}"), is("ONE"))
         assertThat("Correct date of birth", response.htmlPath().getString("**.find { it.@id == 'natural-person-date-of-birth'}"), is("01.01.2000"))
