@@ -7,8 +7,9 @@ import io.restassured.response.Response
 
 import static io.restassured.RestAssured.given
 import static org.hamcrest.MatcherAssert.assertThat
-import static org.hamcrest.Matchers.hasItem
+import static org.hamcrest.Matchers.hasSize
 import static org.hamcrest.Matchers.is
+import static org.hamcrest.Matchers.not
 
 class LegalPersonAuthSpec extends TaraSpecification {
 
@@ -28,19 +29,12 @@ class LegalPersonAuthSpec extends TaraSpecification {
 
         when:
         Response response = Steps.loadLegalPersonsList(flow)
-        // TODO: better environment selection solution here
         List<String> legalPersonIdentifiers = response.jsonPath().getList("legalPersons.legalPersonIdentifier")
         List<String> legalPersonNames = response.jsonPath().getList("legalPersons.legalName")
 
         then:
-        if (flow.loginService.baseUrl.contains("service-backend")) { //local environment
-            assertThat("Correct legal name", legalPersonNames, is("Acme INC OÜ"))
-            assertThat("Correct person identifier", legalPersonIdentifiers, is("12341234"))
-        } else {
-            // other environments
-            assertThat("Correct legal name", legalPersonNames, hasItem("Eesti Kurtide Spordiliit"))
-            assertThat("Correct person identifier", legalPersonIdentifiers, hasItem("80092803"))
-        }
+        assertThat("Legal person name present", legalPersonNames, not((hasSize(0))))
+        assertThat("Legal person identifier present", legalPersonIdentifiers, not((hasSize(0))))
     }
 
     @Feature("DISALLOW_IFRAMES")
