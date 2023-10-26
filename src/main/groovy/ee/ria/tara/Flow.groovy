@@ -158,13 +158,11 @@ class LoginService {
 class OidcService {
     String host
     String protocol
-    String authenticationRequestUrl
     String authorizationUrl
     String jwksUrl
     String configurationUrl
     Map cookies
 
-    @Lazy fullAuthenticationRequestUrl = "${protocol}://${host}${authenticationRequestUrl}"
     @Lazy fullAuthorizationUrl = "${protocol}://${host}${authorizationUrl}"
     @Lazy fullJwksUrl = "${protocol}://${host}${jwksUrl}"
     @Lazy fullConfigurationUrl = "${protocol}://${host}${configurationUrl}"
@@ -173,7 +171,6 @@ class OidcService {
     OidcService(Properties properties) {
         this.host = properties."oidcservice.host"
         this.protocol = properties."oidcservice.protocol"
-        this.authenticationRequestUrl = properties."oidcservice.authenticationRequestUrl"
         this.authorizationUrl = properties."oidcservice.authorizationUrl"
         this.jwksUrl = properties."oidcservice.jwksUrl"
         this.configurationUrl = properties."oidcservice.configurationUrl"

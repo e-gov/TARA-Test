@@ -62,4 +62,14 @@ class HeartBeatSpec extends TaraSpecification {
         then:
         Steps.verifyResponseHeaders(heartBeat)
     }
+
+    @Feature("HEALTH_MONITORING_ENDPOINT")
+    def "Heartbeat endpoint cannot be accessed through proxy"() {
+        when:
+        Response response = Requests.getRequest(flow, flow.loginService.heartbeatUrl)
+
+        then:
+        assertThat("Correct status code", response.statusCode, is(404))
+        assertThat("Correct path", response.jsonPath().getString("path"), is("/notfound"))
+    }
 }

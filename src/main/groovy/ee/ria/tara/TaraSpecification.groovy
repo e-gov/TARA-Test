@@ -27,6 +27,7 @@ class TaraSpecification extends Specification {
     static final ERROR_BAD_REQUEST = "Bad Request"
     static final ERROR_FORBIDDEN = "Forbidden"
     static final ERROR_UNAUTHORIZED = "request_unauthorized"
+    static final ERROR_UNAUTHORIZED_CLIENT = "unauthorized_client"
     static final ERROR_INTERNAL = "Internal Server Error"
     static final ERROR_SCOPE = "invalid_scope"
     static final ERROR_GRANT = "invalid_grant"

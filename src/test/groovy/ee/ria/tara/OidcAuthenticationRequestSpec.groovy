@@ -225,7 +225,7 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
         paramsMap << parameter
 
         when:
-        Response response = Requests.getRequestWithParams(flow, flow.oidcService.fullAuthenticationRequestUrl, paramsMap)
+        Response response = Requests.getRequestWithParams(flow, flow.oidcService.fullAuthorizationUrl, paramsMap)
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(statusCode))

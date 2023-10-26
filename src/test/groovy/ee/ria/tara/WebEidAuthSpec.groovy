@@ -13,7 +13,7 @@ import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.notNullValue
 
-class WebeIDAuthSpec extends TaraSpecification {
+class WebEidAuthSpec extends TaraSpecification {
     Flow flow = new Flow(props)
 
     def setup() {

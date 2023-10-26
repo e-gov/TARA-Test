@@ -3,6 +3,7 @@ package ee.ria.tara
 import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jwt.JWTClaimsSet
 import io.qameta.allure.Feature
+import io.qameta.allure.restassured.AllureRestAssured
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 
@@ -13,6 +14,8 @@ import static org.hamcrest.Matchers.endsWith
 import static org.hamcrest.Matchers.greaterThan
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.lessThan
+import static org.hamcrest.Matchers.allOf
+import static org.hamcrest.Matchers.startsWith
 
 class OidcIdentityTokenRequestSpec extends TaraSpecification {
     Flow flow = new Flow(props)
@@ -107,9 +110,9 @@ class OidcIdentityTokenRequestSpec extends TaraSpecification {
         }
 
         where:
-        clientJWTMethod       | JWTBasic | label
+        clientJWTMethod      | JWTBasic | label
         "client_secret_basic" | true     | "correct"
-        "client_secret_post"  | false    | "incorrect"
+        "client_secret_post" | false    | "incorrect"
     }
 
     @Feature("OIDC_ID_TOKEN")
@@ -157,10 +160,10 @@ class OidcIdentityTokenRequestSpec extends TaraSpecification {
 
 
         where:
-        parameter      || statusCode | error        | errorDescription
-        "ClientId"     || 401        | ERROR_CLIENT | "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method)."
-        "ClientSecret" || 401        | ERROR_CLIENT | "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method)."
-        "RedirectUri"  || 400        | ERROR_GRANT  | "The 'redirect_uri' from this request does not match the one from the authorize request."
+        parameter      || statusCode | error                     | errorDescription
+        "ClientId"     || 400        | ERROR_UNAUTHORIZED_CLIENT | "is not whitelisted"
+        "ClientSecret" || 401        | ERROR_CLIENT              | "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method)."
+        "RedirectUri"  || 400        | ERROR_GRANT               | "The 'redirect_uri' from this request does not match the one from the authorize request."
     }
 
     @Feature("OIDC_ID_TOKEN")
@@ -179,10 +182,10 @@ class OidcIdentityTokenRequestSpec extends TaraSpecification {
 
 
         where:
-        parameter      || statusCode | error        | errorDescription
-        "ClientId"     || 401        | ERROR_CLIENT | "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method)."
-        "ClientSecret" || 401        | ERROR_CLIENT | "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method)."
-        "RedirectUri"  || 400        | ERROR_GRANT  | "The 'redirect_uri' from this request does not match the one from the authorize request."
+        parameter      || statusCode | error                     | errorDescription
+        "ClientId"     || 400        | ERROR_UNAUTHORIZED_CLIENT | "is not whitelisted"
+        "ClientSecret" || 401        | ERROR_CLIENT              | "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method)."
+        "RedirectUri"  || 400        | ERROR_GRANT               | "The 'redirect_uri' from this request does not match the one from the authorize request."
     }
 
 
@@ -220,14 +223,55 @@ class OidcIdentityTokenRequestSpec extends TaraSpecification {
         assertThat("Correct error description", tokenResponse2.jsonPath().getString("error_description"), endsWith("The authorization code has already been used."))
     }
 
-    def "Request token with not allowed HTTP method: #method"() {
-        when: "Request token with not allowed method"
-        Response response = given()
+    @Feature("OPENID_CONNECT")
+    @Feature("OIDC_ID_TOKEN")
+    def "Request token from a non-whitelisted address should fail"() {
+        given: "Authenticate in TARA"
+        Steps.startAuthenticationInTara(flow)
+        Response midAuthResponse = Steps.authenticateWithMid(flow, "60001017716", "69100366")
+        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
+        String authorizationCode = Utils.getParamValueFromResponseHeader(authenticationFinishedResponse, "code")
+
+        when: "Request token"
+        Response tokenResponse = given()
+                .filter(new AllureRestAssured())
+                .params([grant_type  : "authorization_code",
+                         code        : authorizationCode,
+                         redirect_uri: flow.redirectUri])
+                .auth().preemptive().basic("tara-client", "secret")
                 .relaxedHTTPSValidation()
-                .(method)(flow.openIdServiceConfiguration.getString("token_endpoint"))
+                .post(flow.openIdServiceConfiguration.getString("token_endpoint"))
 
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(405))
+        assertThat("Correct HTTP status code", tokenResponse.statusCode, is(400))
+        assertThat("Correct error", tokenResponse.jsonPath().getString("error"), is(ERROR_UNAUTHORIZED_CLIENT))
+        assertThat("Correct error description", tokenResponse.jsonPath().getString("error_description"),
+                allOf(startsWith("Your IP address"), endsWith("is not whitelisted")))
+    }
+
+    @Feature("OPENID_CONNECT")
+    @Feature("OIDC_ID_TOKEN")
+    def "Request token with not allowed HTTP method: #method should fail"() {
+        given: "Authenticate in TARA"
+        Steps.startAuthenticationInTara(flow)
+        Response midAuthResponse = Steps.authenticateWithMid(flow, "60001017716", "69100366")
+        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
+        String authorizationCode = Utils.getParamValueFromResponseHeader(authenticationFinishedResponse, "code")
+
+        when: "Request token with incorrect HTTP method: #method"
+        Response tokenResponse = given()
+                .filter(new AllureRestAssured())
+                .params([grant_type  : "authorization_code",
+                         code        : authorizationCode,
+                         redirect_uri: flow.redirectUri])
+                .auth().preemptive().basic(flow.clientId, flow.clientSecret)
+                .urlEncodingEnabled(true)
+                .relaxedHTTPSValidation()
+                .request(method, flow.openIdServiceConfiguration.getString("token_endpoint"))
+
+        then:
+        assertThat("Correct HTTP status code", tokenResponse.statusCode, is(405))
+        assertThat("Correct message", tokenResponse.body.asString(), containsString("Method Not Allowed"))
 
         where:
         method   | _

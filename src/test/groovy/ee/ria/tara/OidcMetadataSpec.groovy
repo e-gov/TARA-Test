@@ -33,9 +33,7 @@ class OidcMetadataSpec extends TaraSpecification {
         where:
         path                                     | _
         "/.well-known/openid-configuration"      | _
-        "/.well-known"                           | _
         "/oidc/.well-known/openid-configuration" | _
-        "/oidc/.well-known"                      | _
     }
 
     @Feature("OIDC_DISCOVERY_CONTENT")

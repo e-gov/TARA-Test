@@ -22,7 +22,7 @@ class Steps {
 
     @Step("Initialize authentication sequence in OIDC service with params")
     static Response startAuthenticationInOidcWithParams(Flow flow, Map paramsMap) {
-        Response initSession = Requests.getRequestWithParams(flow, flow.oidcService.fullAuthenticationRequestUrl, paramsMap)
+        Response initSession = Requests.getRequestWithParams(flow, flow.oidcService.fullAuthorizationUrl, paramsMap)
         flow.oidcService.cookies << [oauth2_authentication_csrf: initSession.getCookie("oauth2_authentication_csrf")]
         flow.setLoginChallenge(Utils.getParamValueFromResponseHeader(initSession, "login_challenge"))
         return initSession
