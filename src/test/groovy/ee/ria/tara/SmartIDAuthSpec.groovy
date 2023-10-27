@@ -185,7 +185,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         where:
         idCode        | label                                             || errorMessage
         "30403039917" | "USER_REFUSED"                                    || "Kasutaja katkestas autentimise<span translate=\"no\" lang=\"en\"> Smart-ID </span>rakenduses."
-        "30403039928" | "USER_REFUSED_DISPLAYTEXTANDPIN"                  || "Kasutaja katkestas <span translate=\"no\" lang=\"en\">Smart-ID</span> rakenduses PIN koodi sisestamise."
+        "30403039928" | "USER_REFUSED_DISPLAYTEXTANDPIN"                  || "Kasutaja katkestas<span translate=\"no\" lang=\"en\"> Smart-ID </span>rakenduses PIN koodi sisestamise."
         "30403039939" | "USER_REFUSED_VC_CHOICE"                          || "Kasutaja katkestas<span translate=\"no\" lang=\"en\"> Smart-ID </span>rakenduses kontrollkoodi valiku."
         "30403039946" | "USER_REFUSED_CONFIRMATIONMESSAGE"                || "Kasutaja katkestas autentimise<span translate=\"no\" lang=\"en\"> Smart-ID </span>rakenduses kinnitusekraanil."
         "30403039950" | "USER_REFUSED_CONFIRMATIONMESSAGE_WITH_VC_CHOICE" || "Kasutaja katkestas autentimise<span translate=\"no\" lang=\"en\"> Smart-ID </span>rakenduses kontrollkoodi kinnituskraanil."
