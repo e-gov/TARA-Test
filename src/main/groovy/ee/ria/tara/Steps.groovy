@@ -23,7 +23,7 @@ class Steps {
     @Step("Initialize authentication sequence in OIDC service with params")
     static Response startAuthenticationInOidcWithParams(Flow flow, Map paramsMap) {
         Response initSession = Requests.getRequestWithParams(flow, flow.oidcService.fullAuthorizationUrl, paramsMap)
-        flow.oidcService.cookies << [oauth2_authentication_csrf: initSession.getCookie("oauth2_authentication_csrf")]
+        flow.oidcService.cookies << initSession.getCookies()
         flow.setLoginChallenge(Utils.getParamValueFromResponseHeader(initSession, "login_challenge"))
         return initSession
     }
@@ -202,8 +202,7 @@ class Steps {
     @Step("OIDC login verifier request")
     static Response loginVerifier(Flow flow, Response response) {
         Response oidcServiceResponse = followRedirectWithCookies(flow, response, flow.oidcService.cookies)
-        flow.oidcService.cookies << [oauth2_authentication_session: oidcServiceResponse.getCookie("oauth2_authentication_session")]
-        flow.oidcService.cookies << [oauth2_consent_csrf: oidcServiceResponse.getCookie("oauth2_consent_csrf")]
+        flow.oidcService.cookies << oidcServiceResponse.getCookies()
         assertThat("Correct HTTP status code", oidcServiceResponse.statusCode, is(302))
         return oidcServiceResponse
     }
