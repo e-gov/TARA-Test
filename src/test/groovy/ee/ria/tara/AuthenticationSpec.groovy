@@ -161,8 +161,8 @@ class AuthenticationSpec extends TaraSpecification {
         given:
         Response initLoginSession = Steps.startAuthenticationInTara(flow)
         Steps.verifyResponseHeaders(initLoginSession)
-        assertThat(initLoginSession.getDetailedCookie("SESSION").toString(), containsString("HttpOnly"))
-        assertThat(initLoginSession.getDetailedCookie("SESSION").toString(), containsString("SameSite=Strict"))
+        assertThat(initLoginSession.getDetailedCookie("__Host-SESSION").toString(), containsString("HttpOnly"))
+        assertThat(initLoginSession.getDetailedCookie("__Host-SESSION").toString(), containsString("SameSite=Strict"))
         Response midInit = Requests.startMidAuthentication(flow, "60001017716", "69100366")
         Steps.verifyResponseHeaders(midInit)
         Response midPollResult = Steps.pollMidResponse(flow)
@@ -215,7 +215,7 @@ class AuthenticationSpec extends TaraSpecification {
         when: "request accept authentication with invalid method"
         Response response = given()
                 .relaxedHTTPSValidation()
-                .cookies(SESSION: flow.sessionId)
+                .cookies("__Host-SESSION": flow.sessionId)
                 .params([_csrf: flow.csrf])
                 .request(requestType, flow.loginService.fullAuthAcceptUrl)
 
@@ -251,10 +251,10 @@ class AuthenticationSpec extends TaraSpecification {
         assertThat("Incident number is present", response.jsonPath().getString("incident_nr"), hasLength(32))
 
         where:
-        cookie               | reason
-        [:]                  | "no cookie"
-        [SESSION: null]      | "empty cookie"
-        [SESSION: "1234567"] | "incorrect cookie value"
+        cookie                        | reason
+        [:]                           | "no cookie"
+        ["__Host-SESSION": null]      | "empty cookie"
+        ["__Host-SESSION": "1234567"] | "incorrect cookie value"
     }
 
     @Feature("AUTH_REJECT_LOGIN_ENDPOINT")
@@ -322,10 +322,10 @@ class AuthenticationSpec extends TaraSpecification {
         assertThat("Correct error message", response.jsonPath().getString("message"), is(MESSAGE_SESSION_NOT_FOUND))
 
         where:
-        cookie               | reason
-        [:]                  | "no cookie"
-        [SESSION: null]      | "empty cookie"
-        [SESSION: "1234567"] | "incorrect cookie value"
+        cookie                        | reason
+        [:]                           | "no cookie"
+        ["__Host-SESSION": null]      | "empty cookie"
+        ["__Host-SESSION": "1234567"] | "incorrect cookie value"
     }
 
     //TODO: AUT-630
@@ -336,7 +336,7 @@ class AuthenticationSpec extends TaraSpecification {
         when: "reject authentication with invalid request type"
         Response response = given()
                 .relaxedHTTPSValidation()
-                .cookies(SESSION: flow.sessionId)
+                .cookies("__Host-SESSION": flow.sessionId)
                 .params([error_code: REJECT_ERROR_CODE,
                          _csrf     : flow.csrf])
                 .request(requestType, flow.loginService.fullAuthRejectUrl)
@@ -362,7 +362,7 @@ class AuthenticationSpec extends TaraSpecification {
         when: "Reject authentication with multiple error_code values"
         Response response = given()
                 .relaxedHTTPSValidation()
-                .cookies([SESSION: flow.sessionId])
+                .cookies(["__Host-SESSION": flow.sessionId])
                 .params(error_code: ["ERROR12345", "user_cancel"])
                 .get(flow.loginService.fullAuthRejectUrl)
 

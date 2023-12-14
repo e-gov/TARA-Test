@@ -76,10 +76,10 @@ class LegalPersonAuthSpec extends TaraSpecification {
         assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_SESSION_NOT_FOUND))
 
         where:
-        cookie               | reason
-        [:]                  | "no cookie"
-        [SESSION: null]      | "empty cookie"
-        [SESSION: "1234567"] | "incorrect cookie value"
+        cookie                        | reason
+        [:]                           | "no cookie"
+        ["__Host-SESSION": null]      | "empty cookie"
+        ["__Host-SESSION": "1234567"] | "incorrect cookie value"
     }
 
     //TODO: AUT-630
@@ -95,7 +95,7 @@ class LegalPersonAuthSpec extends TaraSpecification {
         when: "legal persons authentication request with invalid method"
         Response response = given()
                 .relaxedHTTPSValidation()
-                .cookies(["SESSION": flow.sessionId])
+                .cookies(["__Host-SESSION": flow.sessionId])
                 .params(["_csrf": flow.csrf])
                 .request(requestType, flow.loginService.fullAuthLegalPersonUrl)
 

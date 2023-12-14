@@ -19,7 +19,7 @@ class Requests {
                 .params([idCode         : idCode,
                          telephoneNumber: phoneNo,
                          _csrf          : flow.csrf])
-                .cookie("SESSION", flow.sessionId)
+                .cookie("__Host-SESSION", flow.sessionId)
                 .log().cookies()
                 .urlEncodingEnabled(true)
                 .relaxedHTTPSValidation()
@@ -32,7 +32,7 @@ class Requests {
         return given()
                 .filter(flow.cookieFilter)
                 .filter(new AllureRestAssured())
-                .cookie("SESSION", flow.sessionId)
+                .cookie("__Host-SESSION", flow.sessionId)
                 .log().cookies()
                 .urlEncodingEnabled(true)
                 .relaxedHTTPSValidation()
@@ -45,8 +45,8 @@ class Requests {
         return given()
                 .filter(flow.cookieFilter)
                 .filter(new AllureRestAssured())
-                .cookies([SESSION     : flow.sessionId,
-                          LOGIN_LOCALE: flow.login_locale])
+                .cookies(["__Host-SESSION": flow.sessionId,
+                          "__Host-LOCALE" : flow.locale])
                 .log().cookies()
                 .urlEncodingEnabled(true)
                 .relaxedHTTPSValidation()
@@ -97,7 +97,7 @@ class Requests {
         return given()
                 .filter(flow.cookieFilter)
                 .filter(new AllureRestAssured())
-                .cookie("SESSION", flow.sessionId)
+                .cookie("__Host-SESSION", flow.sessionId)
                 .formParam("_csrf", flow.csrf)
                 .log().cookies()
                 .urlEncodingEnabled(true)
@@ -262,7 +262,7 @@ class Requests {
         return given()
                 .filter(flow.cookieFilter)
                 .filter(new AllureRestAssured())
-                .cookie("SESSION", flow.sessionId)
+                .cookie("__Host-SESSION", flow.sessionId)
                 .contentType("application/json")
                 .header("X-CSRF-TOKEN", flow.csrf)
                 .body(body.toString())

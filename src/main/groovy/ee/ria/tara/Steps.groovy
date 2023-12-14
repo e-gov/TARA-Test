@@ -39,8 +39,8 @@ class Steps {
     @Step("Initialize authentication sequence in login service")
     static Response createLoginSession(Flow flow, Response response) {
         Response initLogin = followRedirect(flow, response)
-        flow.setSessionId(initLogin.getCookie("SESSION"))
-        flow.setLogin_locale(initLogin.getCookie("LOGIN_LOCALE"))
+        flow.setSessionId(initLogin.getCookie("__Host-SESSION"))
+        flow.setLocale(initLogin.getCookie("__Host-LOCALE"))
         // TODO initLogin.body("input", contains("_csrf"))
         if (initLogin.body.prettyPrint().contains("_csrf")) { // TARA2-121
             flow.setCsrf(initLogin.htmlPath().get("**.find {it.@name == '_csrf'}.@value"))
@@ -172,7 +172,7 @@ class Steps {
         flow.setCode(authorizationCode)
         if (clientSecretBasic) {
             return Requests.webTokenBasicRequest(flow, authorizationCode, flow.clientId, flow.clientSecret, flow.redirectUri)
-            } else {
+        } else {
             return Requests.webTokenPostRequest(flow, authorizationCode)
         }
     }
@@ -211,7 +211,7 @@ class Steps {
     static Response initLoginSession(Flow flow, Response response, Map paramsMap) {
         String location = response.then().extract().response().header("location")
         Response initResponse = Requests.getRequestWithParams(flow, location, paramsMap)
-        flow.setSessionId(initResponse.getCookie("SESSION"))
+        flow.setSessionId(initResponse.getCookie("__Host-SESSION"))
         flow.setCsrf(initResponse.htmlPath().get("**.find {it.@name == '_csrf'}.@value"))
         return initResponse
     }

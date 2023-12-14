@@ -79,7 +79,7 @@ class LegalPersonAuthConfirmSpec extends TaraSpecification {
         when: "Legal person selection request with unsupported method"
         Response response = given()
                 .relaxedHTTPSValidation()
-                .cookies([SESSION: flow.sessionId])
+                .cookies(["__Host-SESSION": flow.sessionId])
                 .params([legal_person_identifier: legalPersonIdentifier,
                          _csrf                  : flow.csrf])
                 .request(requestType, flow.loginService.fullAuthLegalConfirmUrl)
@@ -119,10 +119,10 @@ class LegalPersonAuthConfirmSpec extends TaraSpecification {
         assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_FORBIDDEN_REQUEST))
 
         where:
-        cookie               | reason
-        [:]                  | "no cookie"
-        [SESSION: null]      | "empty cookie"
-        [SESSION: "1234567"] | "incorrect cookie value"
+        cookie                        | reason
+        [:]                           | "no cookie"
+        ["__Host-SESSION": null]      | "empty cookie"
+        ["__Host-SESSION": "1234567"] | "incorrect cookie value"
     }
 
     @Feature("LEGAL_PERSON_SELECTION_ENDPOINT")

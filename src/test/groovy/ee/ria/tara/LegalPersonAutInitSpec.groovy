@@ -75,10 +75,10 @@ class LegalPersonAutInitSpec extends TaraSpecification {
         assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_SESSION_NOT_FOUND))
 
         where:
-        cookie               | reason
-        [:]                  | "no cookie"
-        [SESSION: null]      | "empty cookie"
-        [SESSION: "1234567"] | "incorrect cookie value"
+        cookie                        | reason
+        [:]                           | "no cookie"
+        ["__Host-SESSION": null]      | "empty cookie"
+        ["__Host-SESSION": "1234567"] | "incorrect cookie value"
     }
 
     //TODO: AUT-630

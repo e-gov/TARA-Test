@@ -110,9 +110,9 @@ class OidcIdentityTokenRequestSpec extends TaraSpecification {
         }
 
         where:
-        clientJWTMethod      | JWTBasic | label
+        clientJWTMethod       | JWTBasic | label
         "client_secret_basic" | true     | "correct"
-        "client_secret_post" | false    | "incorrect"
+        "client_secret_post"  | false    | "incorrect"
     }
 
     @Feature("OIDC_ID_TOKEN")

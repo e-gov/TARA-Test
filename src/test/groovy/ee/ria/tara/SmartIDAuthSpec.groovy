@@ -80,10 +80,10 @@ class SmartIDAuthSpec extends TaraSpecification {
         assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_FORBIDDEN_REQUEST))
 
         where:
-        cookie               | reason
-        [:]                  | "no cookie"
-        [SESSION: null]      | "empty cookie"
-        [SESSION: "1234567"] | "incorrect cookie value"
+        cookie                        | reason
+        [:]                           | "no cookie"
+        ["__Host-SESSION": null]      | "empty cookie"
+        ["__Host-SESSION": "1234567"] | "incorrect cookie value"
     }
 
     //TODO: AUT-630
@@ -97,7 +97,7 @@ class SmartIDAuthSpec extends TaraSpecification {
                 .relaxedHTTPSValidation()
                 .params([idCode: "30303039914",
                          _csrf : flow.csrf])
-                .cookies(["SESSION": flow.sessionId])
+                .cookies(["__Host-SESSION": flow.sessionId])
                 .request(requestType, flow.loginService.fullSidInitUrl)
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(500))
@@ -123,7 +123,7 @@ class SmartIDAuthSpec extends TaraSpecification {
                 .relaxedHTTPSValidation()
                 .params(_csrf: flow.csrf)
                 .params(params)
-                .cookies(SESSION: flow.sessionId)
+                .cookies("__Host-SESSION": flow.sessionId)
                 .post(flow.loginService.fullSidInitUrl)
 
         then:
@@ -320,10 +320,10 @@ class SmartIDAuthSpec extends TaraSpecification {
         assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_SESSION_NOT_FOUND))
 
         where:
-        cookie               | reason
-        [:]                  | "no cookie"
-        [SESSION: null]      | "empty cookie"
-        [SESSION: "1234567"] | "incorrect cookie value"
+        cookie                        | reason
+        [:]                           | "no cookie"
+        ["__Host-SESSION": null]      | "empty cookie"
+        ["__Host-SESSION": "1234567"] | "incorrect cookie value"
     }
 
     //TODO: AUT-630
@@ -336,7 +336,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         when: "request Smart-ID polling with invalid request type"
         Response response = given()
                 .relaxedHTTPSValidation()
-                .cookies(SESSION: flow.sessionId)
+                .cookies("__Host-SESSION": flow.sessionId)
                 .params([_csrf: flow.csrf])
                 .request(requestType, flow.loginService.fullSidPollUrl)
 
@@ -406,10 +406,10 @@ class SmartIDAuthSpec extends TaraSpecification {
         assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_FORBIDDEN_REQUEST))
 
         where:
-        cookie               | reason
-        [:]                  | "no cookie"
-        [SESSION: null]      | "empty cookie"
-        [SESSION: "1234567"] | "incorrect cookie value"
+        cookie                        | reason
+        [:]                           | "no cookie"
+        ["__Host-SESSION": null]      | "empty cookie"
+        ["__Host-SESSION": "1234567"] | "incorrect cookie value"
     }
 
     //TODO: AUT-630
@@ -423,7 +423,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         Response response = given()
                 .relaxedHTTPSValidation()
                 .params([_csrf: flow.csrf])
-                .cookies(["SESSION": flow.sessionId])
+                .cookies(["__Host-SESSION": flow.sessionId])
                 .request(requestType, flow.loginService.fullSidCancelUrl)
 
         then:

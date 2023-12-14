@@ -52,10 +52,10 @@ class MobileIDAuthSpec extends TaraSpecification {
         assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_FORBIDDEN_REQUEST))
 
         where:
-        cookie               | reason
-        [:]                  | "no cookie"
-        [SESSION: null]      | "empty cookie"
-        [SESSION: "1234567"] | "incorrect cookie value"
+        cookie                        | reason
+        [:]                           | "no cookie"
+        ["__Host-SESSION": null]      | "empty cookie"
+        ["__Host-SESSION": "1234567"] | "incorrect cookie value"
     }
 
     //TODO: AUT-630
@@ -70,7 +70,7 @@ class MobileIDAuthSpec extends TaraSpecification {
                 .params([idCode         : "60001017716",
                          telephoneNumber: "69100366",
                          _csrf          : flow.csrf])
-                .cookies(["SESSION": flow.sessionId])
+                .cookies(["__Host-SESSION": flow.sessionId])
                 .request(requestType, flow.loginService.fullMidInitUrl)
 
         then:
@@ -99,7 +99,7 @@ class MobileIDAuthSpec extends TaraSpecification {
                 .relaxedHTTPSValidation()
                 .params(params)
                 .params(_csrf: flow.csrf)
-                .cookies(["SESSION": flow.sessionId])
+                .cookies(["__Host-SESSION": flow.sessionId])
                 .post(flow.loginService.fullMidInitUrl)
 
         then:
@@ -261,10 +261,10 @@ class MobileIDAuthSpec extends TaraSpecification {
         assertThat("Correct Mobile-ID status", response.jsonPath().getString("message"), is(MESSAGE_SESSION_NOT_FOUND))
 
         where:
-        cookie               | reason
-        [:]                  | "no cookie"
-        [SESSION: null]      | "empty cookie"
-        [SESSION: "1234567"] | "incorrect cookie value"
+        cookie                        | reason
+        [:]                           | "no cookie"
+        ["__Host-SESSION": null]      | "empty cookie"
+        ["__Host-SESSION": "1234567"] | "incorrect cookie value"
     }
 
     //TODO: AUT-630
@@ -277,7 +277,7 @@ class MobileIDAuthSpec extends TaraSpecification {
         when: "request MID polling with invalid request type"
         Response response = given()
                 .relaxedHTTPSValidation()
-                .cookies(SESSION: flow.sessionId)
+                .cookies("__Host-SESSION": flow.sessionId)
                 .params([_csrf: flow.csrf])
                 .request(requestType, flow.loginService.fullMidPollUrl)
 
@@ -347,10 +347,10 @@ class MobileIDAuthSpec extends TaraSpecification {
         assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_FORBIDDEN_REQUEST))
 
         where:
-        cookie               | reason
-        [:]                  | "no cookie"
-        [SESSION: null]      | "empty cookie"
-        [SESSION: "1234567"] | "incorrect cookie value"
+        cookie                        | reason
+        [:]                           | "no cookie"
+        ["__Host-SESSION": null]      | "empty cookie"
+        ["__Host-SESSION": "1234567"] | "incorrect cookie value"
     }
 
     //TODO: AUT-630
@@ -364,7 +364,7 @@ class MobileIDAuthSpec extends TaraSpecification {
         Response response = given()
                 .relaxedHTTPSValidation()
                 .params([_csrf: flow.csrf])
-                .cookies(["SESSION": flow.sessionId])
+                .cookies(["__Host-SESSION": flow.sessionId])
                 .request(requestType, flow.loginService.fullMidCancelUrl)
 
         then:

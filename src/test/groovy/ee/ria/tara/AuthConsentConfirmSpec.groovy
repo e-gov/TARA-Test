@@ -58,10 +58,10 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         assertThat("Correct error message", response.jsonPath().getString("message"), is(MESSAGE_SESSION_NOT_FOUND))
 
         where:
-        cookie               | reason
-        [:]                  | "no cookie"
-        [SESSION: null]      | "empty cookie"
-        [SESSION: "1234567"] | "incorrect cookie value"
+        cookie                        | reason
+        [:]                           | "no cookie"
+        ["__Host-SESSION": null]      | "empty cookie"
+        ["__Host-SESSION": "1234567"] | "incorrect cookie value"
     }
 
     //TODO: AUT-630
@@ -73,7 +73,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         when: "Consent request with invalid request type: #requestType"
         Response response = given()
                 .relaxedHTTPSValidation()
-                .cookie("SESSION", flow.sessionId)
+                .cookie("__Host-SESSION", flow.sessionId)
                 .params("_csrf", flow.csrf)
                 .request(requestType, loginVerifier.header("location"))
 
@@ -142,7 +142,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         assertThat("Correct HTTP status code", consentConfirmResponse.statusCode, is(302))
         assertThat("Correct location header", consentConfirmResponse.header("location"), startsWith(flow.oidcService.baseUrl + "/oidc/authorize"))
         assertThat("Correct state", Utils.getParamValueFromResponseHeader(consentConfirmResponse, "state"), is(flow.state))
-        assertThat("Session cookie is invalidated", consentConfirmResponse.cookie("SESSION"), is(emptyString()))
+        assertThat("Session cookie is invalidated", consentConfirmResponse.cookie("__Host-SESSION"), is(emptyString()))
     }
 
     @Feature("USER_CONSENT_CONFIRM_ENDPOINT")
@@ -191,10 +191,10 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_FORBIDDEN_REQUEST))
 
         where:
-        cookie               | reason
-        [:]                  | "no cookie"
-        [SESSION: null]      | "empty cookie"
-        [SESSION: "1234567"] | "incorrect cookie value"
+        cookie                        | reason
+        [:]                           | "no cookie"
+        ["__Host-SESSION": null]      | "empty cookie"
+        ["__Host-SESSION": "1234567"] | "incorrect cookie value"
     }
 
     @Feature("USER_CONSENT_CONFIRM_ENDPOINT")

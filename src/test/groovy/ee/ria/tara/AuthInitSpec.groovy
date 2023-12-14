@@ -29,7 +29,7 @@ class AuthInitSpec extends TaraSpecification {
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(200))
         assertThat("Correct Content-Type", response.contentType, is("text/html;charset=UTF-8"))
-        assertThat("Correct cookie attributes", response.detailedCookie("SESSION").toString(), allOf(containsString("Secure"), containsString("HttpOnly"), containsString("Path=/"), containsString("SameSite=Strict")))
+        assertThat("Correct cookie attributes", response.detailedCookie("__Host-SESSION").toString(), allOf(containsString("Secure"), containsString("HttpOnly"), containsString("Path=/"), containsString("SameSite=Strict")))
     }
 
     @Feature("AUTH_INIT_ENDPOINT")

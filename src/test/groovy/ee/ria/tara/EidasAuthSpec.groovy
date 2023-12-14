@@ -82,7 +82,7 @@ class EidasAuthSpec extends TaraSpecification {
         when: "Initialize eIDAS authentication with invalid method"
         Response response = given()
                 .relaxedHTTPSValidation()
-                .cookies(SESSION: flow.sessionId)
+                .cookies("__Host-SESSION": flow.sessionId)
                 .params([country: COUNTRY_CA,
                          _csrf  : flow.csrf])
                 .request(requestType, flow.loginService.fullEidasInitUrl)

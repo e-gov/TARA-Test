@@ -25,7 +25,7 @@ class Flow {
     String redirectUri
     String sessionId
     String code
-    String login_locale
+    String locale
     String csrf
     String loginChallenge
     String authCertificate
