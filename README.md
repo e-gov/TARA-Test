@@ -16,7 +16,7 @@ The configuration changes made in these setups may result test failures if the t
 
 2. Fetch the tests:
 
-`git clone https://github.com/e-gov/TARA2-Test`
+`git clone https://github.com/e-gov/TARA-Test`
 
 ## Configuring the test
 
