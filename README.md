@@ -1,16 +1,16 @@
 <img src="doc/img/eu_regional_development_fund_horizontal.jpg" width="350" height="200">
 
-# TARA2 integration tests
+# TARA integration tests
 
-Tests for TARA2 (both Hydra OIDC and Estonian specific login service component)
+Tests for TARA (both Hydra OIDC and Estonian specific login service component)
 
 ## Prerequisites
 
-1. SUT (TARA2) must be deployed in the cluster. The deployment can be done in two different setups:
+1. SUT (TARA) must be deployed in the cluster. The deployment can be done in two different setups:
 
-a) General - deployment of TARA2 service as Estonian domestic authentication service.
+a) General - deployment of TARA service as Estonian domestic authentication service.
 
-b) idp - deployment of TARA2 service as identity provider for eIDAS Proxy service.
+b) idp - deployment of TARA service as identity provider for eIDAS Proxy service.
 
 The configuration changes made in these setups may result test failures if the tests are not kept in sync.
 
@@ -38,7 +38,7 @@ Description of values:
 
 **loginservice** - Estonian specific login service parameters
 
-**oidcclient** - Tests act like connecting OIDC client. This client must be registered in TARA2 service.
+**oidcclient** - Tests act like connecting OIDC client. This client must be registered in TARA service.
 
 **ca-proxyservice** - Foreign country (CA) proxy service configuration for eIDAS authentication tests.
 
