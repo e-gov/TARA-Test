@@ -28,7 +28,7 @@ class AuthenticationSpec extends TaraSpecification {
     }
 
     @Feature("AUTHENTICATION")
-    def "Request authentication with mobile-ID: #certificate certificate chain"() {
+    def "Request authentication with Mobile-ID: #certificate certificate chain"() {
         given:
         Steps.startAuthenticationInTara(flow)
         Response midAuthResponse = Steps.authenticateWithMid(flow, idCode, phoneNumber)
@@ -49,6 +49,23 @@ class AuthenticationSpec extends TaraSpecification {
     }
 
     @Feature("AUTHENTICATION")
+    @Feature("MID_AUTH_INIT_REQUEST")
+    def "Authenticate with Mobile-ID with custom relying party name and UUID"() {
+        given:
+        Steps.startAuthenticationInTaraWithClient(flow, "SysTest-Relying-Party-client", "secret", "https://rp-client.test/oauth/response")
+        Response sidAuthResponse = Steps.authenticateWithMid(flow, "60001017869", "68000769")
+        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, sidAuthResponse)
+
+        when:
+        Response tokenResponse = Steps.getIdentityTokenResponseWithClient(flow, authenticationFinishedResponse,"SysTest-Relying-Party-client", "secret", "https://rp-client.test/oauth/response")
+        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.jsonPath().get("id_token")).JWTClaimsSet
+
+        then:
+        assertThat("Correct audience", claims.audience[0], is("SysTest-Relying-Party-client"))
+        assertThat("Correct subject", claims.subject, is("EE60001017869"))
+    }
+
+    @Feature("AUTHENTICATION")
     def "Request authentication with Smart-ID"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
@@ -65,6 +82,7 @@ class AuthenticationSpec extends TaraSpecification {
     }
 
     @Feature("AUTHENTICATION")
+    @Feature("SID_AUTH_INIT_REQUEST")
     def "Authenticate with Smart-ID with custom relying party name and UUID"() {
         given:
         Steps.startAuthenticationInTaraWithClient(flow, "SysTest-Relying-Party-client", "secret", "https://rp-client.test/oauth/response")
