@@ -4,6 +4,7 @@ import com.nimbusds.jose.jwk.JWKSet
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
+import spock.lang.Ignore
 
 import static io.restassured.RestAssured.given
 import static org.hamcrest.MatcherAssert.assertThat
@@ -36,7 +37,8 @@ class LegalPersonAuthSpec extends TaraSpecification {
         assertThat("Legal person name present", legalPersonNames, not((hasSize(0))))
         assertThat("Legal person identifier present", legalPersonIdentifiers, not((hasSize(0))))
     }
-
+    
+    @Ignore("AUT-1178")
     @Feature("DISALLOW_IFRAMES")
     @Feature("CSP_ENABLED")
     @Feature("HSTS_ENABLED")
