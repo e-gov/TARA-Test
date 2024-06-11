@@ -246,7 +246,7 @@ class OidcIdentityTokenRequestSpec extends TaraSpecification {
         assertThat("Correct HTTP status code", tokenResponse.statusCode, is(400))
         assertThat("Correct error", tokenResponse.jsonPath().getString("error"), is(ERROR_UNAUTHORIZED_CLIENT))
         assertThat("Correct error description", tokenResponse.jsonPath().getString("error_description"),
-                allOf(startsWith("Your IP address"), endsWith("is not whitelisted")))
+                allOf(startsWith("IP address"), endsWith("is not whitelisted for client_id \"tara-client\"")))
     }
 
     @Feature("OPENID_CONNECT")
