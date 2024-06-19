@@ -43,9 +43,10 @@ class AuthenticationSpec extends TaraSpecification {
         assertThat("Correct subject", claims.subject, is(subject))
 
         where:
-        certificate              | idCode        | phoneNumber || subject
-        "TEST of ESTEID-SK 2015" | "60001017716" | "69100366"  || "EE" + idCode
-        "TEST of EID-SK 2016"    | "60001017869" | "68000769"  || "EE" + idCode
+        certificate                           | idCode        | phoneNumber || subject
+        "TEST of ESTEID-SK 2015"              | "60001017716" | "69100366"  || "EE" + idCode
+        "TEST of EID-SK 2016"                 | "60001017869" | "68000769"  || "EE" + idCode
+        "TEST of SK ID Solutions EID-Q 2021E" | "51307149560" | "69930366"  || "EE" + idCode
     }
 
     @Feature("AUTHENTICATION")
@@ -57,7 +58,7 @@ class AuthenticationSpec extends TaraSpecification {
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, sidAuthResponse)
 
         when:
-        Response tokenResponse = Steps.getIdentityTokenResponseWithClient(flow, authenticationFinishedResponse,"SysTest-Relying-Party-client", "secret", "https://rp-client.test/oauth/response")
+        Response tokenResponse = Steps.getIdentityTokenResponseWithClient(flow, authenticationFinishedResponse, "SysTest-Relying-Party-client", "secret", "https://rp-client.test/oauth/response")
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.jsonPath().get("id_token")).JWTClaimsSet
 
         then:
@@ -90,7 +91,7 @@ class AuthenticationSpec extends TaraSpecification {
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, sidAuthResponse)
 
         when:
-        Response tokenResponse = Steps.getIdentityTokenResponseWithClient(flow, authenticationFinishedResponse,"SysTest-Relying-Party-client", "secret", "https://rp-client.test/oauth/response")
+        Response tokenResponse = Steps.getIdentityTokenResponseWithClient(flow, authenticationFinishedResponse, "SysTest-Relying-Party-client", "secret", "https://rp-client.test/oauth/response")
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.jsonPath().get("id_token")).JWTClaimsSet
 
         then:
