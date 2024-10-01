@@ -83,7 +83,6 @@ class Requests {
     static Response postRequestWithParams(Flow flow, String location, Map parameters) {
         return given()
                 .filter(flow.cookieFilter)
-                .filter(new AllureRestAssured())
                 .formParams(parameters)
                 .contentType(ContentType.URLENC)
                 .urlEncodingEnabled(true)

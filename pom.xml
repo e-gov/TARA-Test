@@ -11,11 +11,11 @@
     <!-- Configurable properties -->
     <properties>
         <!-- Dependency versions -->
-        <groovy.version>3.0.13</groovy.version>
-        <spock.version>2.2-groovy-3.0</spock.version>
-        <allure.version>2.22.2</allure.version>
+        <groovy.version>4.0.22</groovy.version>
+        <spock.version>2.4-M4-groovy-4.0</spock.version>
+        <allure.version>2.29.0</allure.version>
         <opensaml.version>4.0.1</opensaml.version>
-        <rest-assured.version>4.5.1</rest-assured.version>
+        <rest-assured.version>5.5.0</rest-assured.version>
         <commons-validator.version>1.7</commons-validator.version>
         <nimbus-jose-jwt.version>9.25</nimbus-jose-jwt.version>
         <com.fasterxml.jackson.core.version>2.13.4</com.fasterxml.jackson.core.version>
@@ -24,11 +24,11 @@
         <json.version>20220924</json.version>
 
         <!-- Plugin versions -->
-        <maven.surefire.plugin.version>3.0.0-M7</maven.surefire.plugin.version>
-        <gmavenplus.plugin.version>1.13.1</gmavenplus.plugin.version>
-        <build.helper.plugin.version>3.3.0</build.helper.plugin.version>
-        <aspectj.version>1.9.9.1</aspectj.version>
-        <allure-maven.version>2.11.2</allure-maven.version>
+        <maven.surefire.plugin.version>3.4.0</maven.surefire.plugin.version>
+        <gmavenplus.plugin.version>3.0.2</gmavenplus.plugin.version>
+        <build.helper.plugin.version>3.6.0</build.helper.plugin.version>
+        <aspectj.version>1.9.22.1</aspectj.version>
+        <allure-maven.version>2.13.0</allure-maven.version>
         <maven.compiler.plugin.version>3.10.1</maven.compiler.plugin.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
@@ -36,7 +36,7 @@
 
         <!-- Groovy -->
         <dependency>
-            <groupId>org.codehaus.groovy</groupId>
+            <groupId>org.apache.groovy</groupId>
             <artifactId>groovy-all</artifactId>
             <version>${groovy.version}</version>
             <type>pom</type>
@@ -156,7 +156,7 @@
                 </executions>
                 <dependencies>
                     <dependency>
-                        <groupId>org.codehaus.groovy</groupId>
+                        <groupId>org.apache.groovy</groupId>
                         <artifactId>groovy-all</artifactId>
                         <version>${groovy.version}</version>
                         <scope>runtime</scope>
