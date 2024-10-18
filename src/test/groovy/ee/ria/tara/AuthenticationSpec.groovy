@@ -50,6 +50,27 @@ class AuthenticationSpec extends TaraSpecification {
     }
 
     @Feature("AUTHENTICATION")
+    def "Request authentication with Smart-ID: #certificate certificate chain"() {
+        given:
+        Steps.startAuthenticationInTara(flow)
+        Response midAuthResponse = Steps.authenticateWithSid(flow, idCode)
+        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
+
+        when:
+        Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
+        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.jsonPath().get("id_token")).JWTClaimsSet
+
+        then:
+        assertThat("Correct audience", claims.audience[0], is(flow.oidcClientPublic.clientId))
+        assertThat("Correct subject", claims.subject, is(subject))
+
+        where:
+        certificate                           | idCode        || subject
+        "TEST of EID-SK 2016"                 | "30303039914" || "EE" + idCode
+        "TEST of SK ID Solutions EID-Q 2024E" | "40504040001" || "EE" + idCode
+    }
+
+    @Feature("AUTHENTICATION")
     @Feature("MID_AUTH_INIT_REQUEST")
     def "Authenticate with Mobile-ID with custom relying party name and UUID"() {
         given:
