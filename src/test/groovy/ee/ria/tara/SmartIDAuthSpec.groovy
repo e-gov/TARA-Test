@@ -134,12 +134,12 @@ class SmartIDAuthSpec extends TaraSpecification {
 
         where:
         params                                                                 | label                        || errorMessage
-        [idCode: "60001019938"]                                                | "invalid idCode checksum"    || "Isikukood ei ole korrektne."
-        [:]                                                                    | "missing idCode"             || "Isikukood ei ole korrektne."
-        [idCode: "600010199399"]                                               | "too long idCode"            || "Isikukood ei ole korrektne."
-        [idCode: "60001329939"]                                                | "wrong date inside idCode"   || "Isikukood ei ole korrektne."
-        [idCode: "6000"]                                                       | "too short idCode"           || "Isikukood ei ole korrektne."
-        [idCode: "38500030556"]                                                | "invalid month in idCode"    || "Isikukood ei ole korrektne."
+        [idCode: "60001019938"]                                                | "invalid idCode checksum"    || MESSAGE_INCORRECT_ID_CODE
+        [:]                                                                    | "missing idCode"             || MESSAGE_INCORRECT_ID_CODE
+        [idCode: "600010199399"]                                               | "too long idCode"            || MESSAGE_INCORRECT_ID_CODE
+        [idCode: "60001329939"]                                                | "wrong date inside idCode"   || MESSAGE_INCORRECT_ID_CODE
+        [idCode: "6000"]                                                       | "too short idCode"           || MESSAGE_INCORRECT_ID_CODE
+        [idCode: "38500030556"]                                                | "invalid month in idCode"    || MESSAGE_INCORRECT_ID_CODE
         [idCode: ["60001017716", "60001017727"]]                               | "multiple idCode parameters" || MESSAGE_DUPLICATE_PARAMETERS
         [idCode: "60001017716", _csrf: "d7860443-a0cc-45db-ad68-3c9300c0b3bb"] | "multiple _csrf parameters"  || MESSAGE_DUPLICATE_PARAMETERS
     }

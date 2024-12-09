@@ -41,6 +41,7 @@ class TaraSpecification extends Specification {
     static final MESSAGE_INTERNAL_ERROR = "Autentimine ebaõnnestus teenuse tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti."
     static final MESSAGE_DUPLICATE_PARAMETERS = "Multiple request parameters with the same name not allowed"
     static final MESSAGE_INCORRECT_REQUEST = "Ebakorrektne päring."
+    static final MESSAGE_INCORRECT_ID_CODE = "Teie poolt sisestatud isikukood ei olnud korrektne. Palun pöörduge tagasi autentimismeetodite valiku juurde ja veenduge, et sisestate korrektse isikukoodi."
 
     def setupSpec() {
         InitializationService.initialize()
@@ -67,24 +68,24 @@ class TaraSpecification extends Specification {
     }
 
     protected static Boolean isEidasPresent(Response response) {
-        return response.htmlPath().getInt("**.findAll { it.'@data-tab' == 'eu-citizen' }.size()") > 0;
+        return response.htmlPath().getInt("**.findAll { it.'@data-tab' == 'eu-citizen' }.size()") > 0
     }
 
     protected static Boolean isMidPresent(Response response) {
-        return response.htmlPath().getInt("**.findAll { it.'@data-tab' == 'mobile-id' }.size()") > 0;
+        return response.htmlPath().getInt("**.findAll { it.'@data-tab' == 'mobile-id' }.size()") > 0
     }
 
     protected static Boolean isIdCardPresent(Response response) {
-        return response.htmlPath().getInt("**.findAll { it.'@data-tab' == 'id-card' }.size()") > 0;
+        return response.htmlPath().getInt("**.findAll { it.'@data-tab' == 'id-card' }.size()") > 0
     }
 
     protected static Boolean isEidasOnlyPresent(Response response) {
         // TODO
-        return false;
+        return false
     }
 
     protected static Boolean isSmartIdPresent(Response response) {
-        return response.htmlPath().getInt("**.findAll { it.'@data-tab' == 'smart-id' }.size()") > 0;
+        return response.htmlPath().getInt("**.findAll { it.'@data-tab' == 'smart-id' }.size()") > 0
     }
 
 

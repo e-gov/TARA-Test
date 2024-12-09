@@ -109,16 +109,16 @@ class MobileIDAuthSpec extends TaraSpecification {
 
         where:
         params                                                                              | label                                 || errorMessage
-        [telephoneNumber: "00000266", idCode: "60001019938"]                                | "invalid idCode checksum"             || "Isikukood ei ole korrektne."
+        [telephoneNumber: "00000266", idCode: "60001019938"]                                | "invalid idCode checksum"             || MESSAGE_INCORRECT_ID_CODE
         [telephoneNumber: "+37200000266", idCode: "60001019939"]                            | "invalid telephone number"            || "Telefoninumber ei ole korrektne."
-        [:]                                                                                 | "missing telephone number and idCode" || "Isikukood ei ole korrektne.; Telefoninumber ei ole korrektne."
-        [telephoneNumber: "00000266"]                                                       | "missing idCode"                      || "Isikukood ei ole korrektne."
+        [:]                                                                                 | "missing telephone number and idCode" || MESSAGE_INCORRECT_ID_CODE + "; Telefoninumber ei ole korrektne."
+        [telephoneNumber: "00000266"]                                                       | "missing idCode"                      || MESSAGE_INCORRECT_ID_CODE
         [idCode: "60001019939"]                                                             | "missing telephone number"            || "Telefoninumber ei ole korrektne."
-        [telephoneNumber: "00000266", idCode: "600010199399"]                               | "too long idCode"                     || "Isikukood ei ole korrektne."
-        [telephoneNumber: "00000266", idCode: "60001329939"]                                | "wrong date inside idCode"            || "Isikukood ei ole korrektne."
-        [telephoneNumber: "00000266", idCode: "6000"]                                       | "too short idCode"                    || "Isikukood ei ole korrektne."
-        [telephoneNumber: "abcd", idCode: "ABCD"]                                           | "invalid telephone number and idCode" || "Isikukood ei ole korrektne.; Telefoninumber ei ole korrektne."
-        [telephoneNumber: "00000266", idCode: "38500030556"]                                | "invalid month in idCode"             || "Isikukood ei ole korrektne."
+        [telephoneNumber: "00000266", idCode: "600010199399"]                               | "too long idCode"                     || MESSAGE_INCORRECT_ID_CODE
+        [telephoneNumber: "00000266", idCode: "60001329939"]                                | "wrong date inside idCode"            || MESSAGE_INCORRECT_ID_CODE
+        [telephoneNumber: "00000266", idCode: "6000"]                                       | "too short idCode"                    || MESSAGE_INCORRECT_ID_CODE
+        [telephoneNumber: "abcd", idCode: "ABCD"]                                           | "invalid telephone number and idCode" || MESSAGE_INCORRECT_ID_CODE + "; Telefoninumber ei ole korrektne."
+        [telephoneNumber: "00000266", idCode: "38500030556"]                                | "invalid month in idCode"             || MESSAGE_INCORRECT_ID_CODE
         [telephoneNumber: "45", idCode: "60001019939"]                                      | "too short telephone number"          || "Telefoninumber ei ole korrektne."
         [telephoneNumber: RandomStringUtils.random(16, false, true), idCode: "60001019939"] | "too long telephone number"           || "Telefoninumber ei ole korrektne."
         [telephoneNumber: "69100366", idCode: ["60001017716", "60001017727"]]               | "multiple idCode parameters"          || MESSAGE_DUPLICATE_PARAMETERS
