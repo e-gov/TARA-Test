@@ -6,7 +6,6 @@ import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import org.apache.commons.lang3.RandomStringUtils
-import spock.lang.Ignore
 
 import static io.restassured.RestAssured.given
 import static org.hamcrest.MatcherAssert.assertThat
@@ -21,7 +20,6 @@ class LegalPersonAuthConfirmSpec extends TaraSpecification {
         flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.oidcService.fullJwksUrl))
     }
 
-    @Ignore("AUT-1178")
     @Feature("LEGAL_PERSON_SELECTION_ENDPOINT")
     @Feature("UI_CONSENT_VIEW")
     @Feature("OIDC_ID_TOKEN")
@@ -48,7 +46,6 @@ class LegalPersonAuthConfirmSpec extends TaraSpecification {
         assertThat("Correct legal name", claims.getJSONObjectClaim("profile_attributes")["represents_legal_person"]["name"], is(legalName))
     }
 
-    @Ignore("AUT-1178")
     @Feature("DISALLOW_IFRAMES")
     @Feature("CSP_ENABLED")
     @Feature("HSTS_ENABLED")
@@ -71,7 +68,6 @@ class LegalPersonAuthConfirmSpec extends TaraSpecification {
     }
 
     //TODO: AUT-630
-    @Ignore("AUT-1178")
     @Feature("LEGAL_PERSON_SELECTION_ENDPOINT")
     def "Legal person selection request with unsupported method should fail: #requestType "() {
         given:
@@ -129,7 +125,6 @@ class LegalPersonAuthConfirmSpec extends TaraSpecification {
         ["__Host-SESSION": "1234567"] | "incorrect cookie value"
     }
 
-    @Ignore("AUT-1178")
     @Feature("LEGAL_PERSON_SELECTION_ENDPOINT")
     def "Legal person selection request with invalid parameter value should fail: #label"() {
         given:
