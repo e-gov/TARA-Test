@@ -306,7 +306,7 @@ class MobileIDAuthSpec extends TaraSpecification {
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(302))
-        assertThat("Correct location header", response.header("location"), is(flow.loginService.initUrl + "?login_challenge=" + flow.loginChallenge))
+        assertThat("Correct location header", response.header("location"), is(flow.loginService.initUrl + "?login_challenge=" + flow.loginChallenge + "&lang=et"))
     }
 
     @Feature("DISALLOW_IFRAMES")
