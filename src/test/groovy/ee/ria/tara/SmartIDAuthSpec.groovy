@@ -41,7 +41,7 @@ class SmartIDAuthSpec extends TaraSpecification {
 
         where:
         idCode        || givenName      | familyName   | dateOfBirth  | label
-        "50701019992" || "MINOR"        | "TESTNUMBER" | "2007-01-01" | "User age is under 18"
+        "61101012257" || "MINOR"        | "TESTNUMBER" | "2007-01-01" | "User age is under 18"
         "30303039903" || "QUALIFIED OK" | "TESTNUMBER" | "1903-03-03" | "No numbers in names"
         "30303039816" || "MULTIPLE OK"  | "TESTNUMBER" | "1903-03-03" | "User has other active account"
     }
