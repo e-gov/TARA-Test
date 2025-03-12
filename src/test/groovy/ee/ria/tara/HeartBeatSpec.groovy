@@ -7,6 +7,9 @@ import io.restassured.response.Response
 import java.time.Duration
 
 import static org.hamcrest.MatcherAssert.assertThat
+import static org.hamcrest.Matchers.arrayContaining
+import static org.hamcrest.Matchers.containsInAnyOrder
+import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.Matchers.greaterThan
 import static org.hamcrest.Matchers.hasEntry
 import static org.hamcrest.Matchers.notNullValue
@@ -37,12 +40,9 @@ class HeartBeatSpec extends TaraSpecification {
                 "startTime", notNullValue(),
                 "currentTime", notNullValue(),
                 "upTime", notNullValue(),
-                "dependencies[0]", hasEntry("name", "ignite"),
-                "dependencies[0]", hasEntry("status", "UP"),
-                "dependencies[1]", hasEntry("name", "oidcServer"),
-                "dependencies[1]", hasEntry("status", "UP"),
-                "dependencies[2]", hasEntry("name", "truststore"),
-                "dependencies[2]", hasEntry("status", "UP"))
+                "dependencies.find { it.name == 'ignite' }.status", equalTo("UP"),
+                "dependencies.find { it.name == 'oidcServer' }.status", equalTo("UP"),
+                "dependencies.find { it.name == 'truststore' }.status", equalTo("UP"))
                 .contentType("application/json")
         String duration = heartBeat.jsonPath().get("upTime")
         Duration upTime = Duration.parse(duration)
