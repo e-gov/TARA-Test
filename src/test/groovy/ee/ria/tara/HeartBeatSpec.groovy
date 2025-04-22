@@ -42,7 +42,7 @@ class HeartBeatSpec extends TaraSpecification {
                 "upTime", notNullValue(),
                 "dependencies.find { it.name == 'ignite' }.status", equalTo("UP"),
                 "dependencies.find { it.name == 'oidcServer' }.status", equalTo("UP"),
-                "dependencies.find { it.name == 'truststore' }.status", equalTo("UNKNOWN"))
+                "dependencies.find { it.name == 'truststore' }.status", equalTo("UP"))
                 .contentType("application/json")
         String duration = heartBeat.jsonPath().get("upTime")
         Duration upTime = Duration.parse(duration)
