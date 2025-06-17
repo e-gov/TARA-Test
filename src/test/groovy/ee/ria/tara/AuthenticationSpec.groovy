@@ -143,9 +143,9 @@ class AuthenticationSpec extends TaraSpecification {
         assertThat("Correct subject", claims.subject, is("CA12345"))
 
         where:
-        eidasLoa              || acr
-        EIDASLOA_HIGH         || "high"
-        EIDASLOA_NOT_NOTIFIED || "low"
+        eidasLoa      || acr
+        EIDASLOA_HIGH || "high"
+        EIDASLOA_LOW  || "low"
     }
 
     @Feature("AUTHENTICATION")
