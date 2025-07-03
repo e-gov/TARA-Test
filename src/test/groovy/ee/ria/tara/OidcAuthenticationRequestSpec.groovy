@@ -12,7 +12,6 @@ import static org.hamcrest.Matchers.endsWith
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.startsWith
 
-
 class OidcAuthenticationRequestSpec extends TaraSpecification {
 
     def setup() {
@@ -98,23 +97,6 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(302))
         assertThat("Correct location header", response.header("location"), endsWith("?login_challenge=" + flow.loginChallenge))
-    }
-
-    @Feature("https://e-gov.github.io/TARA-Doku/TechnicalSpecification#41-authentication-request")
-    @Feature("TECHNICAL_ERRORS")
-    def "Authentication request with invalid acr_values parameter value"() {
-        given:
-        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "openid")
-        paramsMap << [acr_values: "medium"]
-        Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
-
-        when:
-        Response response = Steps.followRedirect(flow, initOIDCServiceSession)
-
-        then:
-        assertThat("Correct HTTP status code", response.statusCode, is(500))
-        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_INTERNAL_ERROR))
     }
 
     @Feature("OIDC_SCOPE_EMPTY")

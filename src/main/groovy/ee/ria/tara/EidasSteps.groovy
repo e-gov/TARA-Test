@@ -175,4 +175,15 @@ class EidasSteps {
         return Requests.postRequest(flow, flow.loginService.fullAuthAcceptUrl)
     }
 
+    @Step("Initialize Eidas authentication session, accept authorization, submit consent and get authentication finished response")
+    static Response initAuthenticationSessionGetFinishedResponse(Flow flow, String loa) {
+        initEidasAuthSession(flow, TaraSpecification.COUNTRY_CA)
+        Response colleagueResponse = continueEidasAuthenticationFlow(flow, TaraSpecification.IDP_USERNAME, TaraSpecification.IDP_PASSWORD, loa)
+        Response authorizationResponse = getAuthorizationResponseFromEidas(flow, colleagueResponse)
+        Response redirectionResponse = eidasRedirectAuthorizationResponse(flow, authorizationResponse)
+        Response acceptResponse = eidasAcceptAuthorizationResult(flow, redirectionResponse)
+        Response oidcServiceResponse = Steps.loginVerifier(flow, acceptResponse)
+        Response redirectResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
+        return Steps.submitConsentAndFollowRedirects(flow, true, redirectResponse)
+    }
 }

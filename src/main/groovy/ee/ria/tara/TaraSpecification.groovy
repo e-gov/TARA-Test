@@ -21,6 +21,7 @@ class TaraSpecification extends Specification {
     static final IDP_USERNAME = "xavi"
     static final IDP_PASSWORD = "creus"
     static final EIDASLOA_HIGH = "E"
+    static final EIDASLOA_SUBSTANTIAL = "C"
     static final EIDASLOA_LOW = "A"
     static final EIDASLOA_NOT_NOTIFIED = "http://non.eidas.eu/NotNotified/LoA/1"
     static final COUNTRY_CA = "CA"
