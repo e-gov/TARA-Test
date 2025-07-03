@@ -10,49 +10,38 @@
 
     <!-- Configurable properties -->
     <properties>
+        <maven.compiler.release>21</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.encoding>UTF-8</project.encoding>
+
         <!-- Dependency versions -->
-        <groovy.version>4.0.22</groovy.version>
-        <spock.version>2.4-M4-groovy-4.0</spock.version>
-        <allure.version>2.29.0</allure.version>
+        <groovy.version>4.0.27</groovy.version>
+        <spock.version>2.4-M6-groovy-4.0</spock.version>
+        <allure.version>2.29.1</allure.version>
         <opensaml.version>4.0.1</opensaml.version>
-        <rest-assured.version>5.5.0</rest-assured.version>
-        <commons-validator.version>1.7</commons-validator.version>
-        <nimbus-jose-jwt.version>9.25</nimbus-jose-jwt.version>
-        <com.fasterxml.jackson.core.version>2.13.4</com.fasterxml.jackson.core.version>
-        <hamcrest.version>2.2</hamcrest.version>
-        <junite.jupiter.version>5.9.0</junite.jupiter.version>
-        <json.version>20220924</json.version>
+        <rest-assured.version>5.5.5</rest-assured.version>
+        <commons-validator.version>1.9.0</commons-validator.version>
+        <nimbus-jose-jwt.version>10.3</nimbus-jose-jwt.version>
+        <com.fasterxml.jackson.core.version>2.19.1</com.fasterxml.jackson.core.version>
+        <json.version>20250517</json.version>
 
         <!-- Plugin versions -->
-        <maven.surefire.plugin.version>3.4.0</maven.surefire.plugin.version>
-        <gmavenplus.plugin.version>3.0.2</gmavenplus.plugin.version>
-        <build.helper.plugin.version>3.6.0</build.helper.plugin.version>
-        <aspectj.version>1.9.22.1</aspectj.version>
-        <allure-maven.version>2.13.0</allure-maven.version>
-        <maven.compiler.plugin.version>3.10.1</maven.compiler.plugin.version>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.surefire.plugin.version>3.5.3</maven.surefire.plugin.version>
+        <gmavenplus.plugin.version>4.2.0</gmavenplus.plugin.version>
+        <build.helper.plugin.version>3.6.1</build.helper.plugin.version>
+        <aspectj.version>1.9.24</aspectj.version>
+        <allure-maven.version>2.15.2</allure-maven.version>
     </properties>
+
     <dependencies>
 
+        <!-- Testframe dependencies -->
         <!-- Groovy -->
         <dependency>
             <groupId>org.apache.groovy</groupId>
             <artifactId>groovy-all</artifactId>
             <version>${groovy.version}</version>
             <type>pom</type>
-            <exclusions>
-                <exclusion>
-                    <artifactId>junit</artifactId>
-                    <groupId>junit</groupId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <!-- https://mvnrepository.com/artifact/org.hamcrest/hamcrest -->
-        <dependency>
-            <groupId>org.hamcrest</groupId>
-            <artifactId>hamcrest</artifactId>
-            <version>${hamcrest.version}</version>
         </dependency>
 
         <!-- Spock -->
@@ -60,23 +49,6 @@
             <groupId>org.spockframework</groupId>
             <artifactId>spock-core</artifactId>
             <version>${spock.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.codehaus.groovy</groupId>
-                    <artifactId>groovy-all</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.hamcrest</groupId>
-                    <artifactId>hamcrest-core</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <!-- JSON -->
-        <dependency>
-            <groupId>org.json</groupId>
-            <artifactId>json</artifactId>
-            <version>${json.version}</version>
         </dependency>
 
         <!-- Allure -->
@@ -84,13 +56,8 @@
             <groupId>io.qameta.allure</groupId>
             <artifactId>allure-spock2</artifactId>
             <version>${allure.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>junit</groupId>
-                    <artifactId>junit</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
+
         <dependency>
             <groupId>io.qameta.allure</groupId>
             <artifactId>allure-rest-assured</artifactId>
@@ -103,7 +70,15 @@
             <artifactId>rest-assured</artifactId>
             <version>${rest-assured.version}</version>
         </dependency>
-        <!-- Utils -->
+        <!-- End testframe dependencies -->
+
+        <!-- Project specific dependencies -->
+        <!-- JSON -->
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>${json.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>org.opensaml</groupId>
@@ -138,6 +113,7 @@
             <version>${com.fasterxml.jackson.core.version}</version>
         </dependency>
     </dependencies>
+
     <build>
         <plugins>
             <plugin>
@@ -154,21 +130,6 @@
                         </goals>
                     </execution>
                 </executions>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.apache.groovy</groupId>
-                        <artifactId>groovy-all</artifactId>
-                        <version>${groovy.version}</version>
-                        <scope>runtime</scope>
-                        <type>pom</type>
-                        <exclusions>
-                            <exclusion>
-                                <artifactId>junit</artifactId>
-                                <groupId>junit</groupId>
-                            </exclusion>
-                        </exclusions>
-                    </dependency>
-                </dependencies>
             </plugin>
 
             <!--
@@ -218,31 +179,23 @@
                         <include>**/*.java</include>
                     </includes>
                     <argLine>
-                        -javaagent:"${settings.localRepository}/org/aspectj/aspectjweaver/${aspectj.version}/aspectjweaver-${aspectj.version}.jar" --illegal-access=permit
+                        -javaagent:"${settings.localRepository}/org/aspectj/aspectjweaver/${aspectj.version}/aspectjweaver-${aspectj.version}.jar"
                     </argLine>
                     <properties>
                         <property>
                             <name>listener</name>
-                            <value>io.qameta.allure.junit5.AllureJunit5</value>
+                            <value>io.qameta.allure.spock2.AllureSpock2</value>
                         </property>
                     </properties>
-                    <systemProperties>
-                        <property>
-                            <name>allure.results.directory</name>
-                            <value>${project.build.directory}/allure-results</value>
-                        </property>
-                    </systemProperties>
+                    <systemPropertyVariables>
+                        <allure.results.directory>${project.build.directory}/allure-results</allure.results.directory>
+                    </systemPropertyVariables>
                 </configuration>
                 <dependencies>
                     <dependency>
                         <groupId>org.aspectj</groupId>
                         <artifactId>aspectjweaver</artifactId>
                         <version>${aspectj.version}</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.junit.jupiter</groupId>
-                        <artifactId>junit-jupiter-api</artifactId>
-                        <version>${junite.jupiter.version}</version>
                     </dependency>
                 </dependencies>
             </plugin>
@@ -252,15 +205,6 @@
                 <version>${allure-maven.version}</version>
                 <configuration>
                     <reportVersion>${allure-maven.version}</reportVersion>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>${maven.compiler.plugin.version}</version>
-                <configuration>
-                    <source>11</source>
-                    <target>11</target>
                 </configuration>
             </plugin>
         </plugins>

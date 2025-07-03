@@ -6,16 +6,12 @@ Tests for TARA (both Hydra OIDC and Estonian specific login service component)
 
 ## Prerequisites
 
-1. SUT (TARA) must be deployed in the cluster. The deployment can be done in two different setups:
-
-a) General - deployment of TARA service as Estonian domestic authentication service.
-
-b) idp - deployment of TARA service as identity provider for eIDAS Proxy service.
-
-The configuration changes made in these setups may result test failures if the tests are not kept in sync.
-
-2. Fetch the tests:
-
+* Java 21 JDK
+* SUT (TARA) must be deployed in the cluster. The deployment can be done in two different setups:
+  * General - deployment of TARA service as Estonian domestic authentication service. 
+  * idp - deployment of TARA service as identity provider for eIDAS Proxy service.
+* The configuration changes made in these setups may result test failures if the tests are not kept in sync. 
+* Fetch the tests:
 `git clone https://github.com/e-gov/TARA-Test`
 
 ## Configuring the test
