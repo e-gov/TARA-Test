@@ -14,7 +14,6 @@ import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.lessThan
 
 class ServiceErrorsSpec extends TaraSpecification {
-    Flow flow = new Flow(props)
 
     def setup() {
         flow.cookieFilter = new CookieFilter()
@@ -62,7 +61,6 @@ class ServiceErrorsSpec extends TaraSpecification {
     def "Verify error response html: general error"() {
         when:
         Response response = given()
-                .relaxedHTTPSValidation()
                 .params(["error": ERROR_SERVICE])
                 .headers(["Accept": "text/html"])
                 .get(flow.loginService.fullErrorUrl)
@@ -83,7 +81,6 @@ class ServiceErrorsSpec extends TaraSpecification {
     def "Verify error response html: invalid client"() {
         when:
         Response response = given()
-                .relaxedHTTPSValidation()
                 .params(["error": ERROR_CLIENT])
                 .headers(["Accept": "text/html"])
                 .get(flow.loginService.fullErrorUrl)

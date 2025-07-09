@@ -14,7 +14,6 @@ import static org.hamcrest.Matchers.hasLength
 import static org.hamcrest.Matchers.is
 
 class EidasAuthSpec extends TaraSpecification {
-    Flow flow = new Flow(props)
 
     def setup() {
         flow.cookieFilter = new CookieFilter()
@@ -54,7 +53,7 @@ class EidasAuthSpec extends TaraSpecification {
 
         where:
         country | label
-        null    | "missing country parameter"
+        ""      | "missing country parameter"
         "bg"    | "country code is not in list"
         "BG"    | "capitalized country code is not in list"
         "ca"    | "country code must be capitalized"
@@ -81,7 +80,6 @@ class EidasAuthSpec extends TaraSpecification {
 
         when: "Initialize eIDAS authentication with invalid method"
         Response response = given()
-                .relaxedHTTPSValidation()
                 .cookies("__Host-SESSION": flow.sessionId)
                 .params([country: COUNTRY_CA,
                          _csrf  : flow.csrf])

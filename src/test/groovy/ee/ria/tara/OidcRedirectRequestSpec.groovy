@@ -11,7 +11,6 @@ import static org.hamcrest.Matchers.greaterThan
 import static org.hamcrest.Matchers.startsWith
 
 class OidcRedirectRequestSpec extends TaraSpecification {
-    Flow flow = new Flow(props)
 
     def setup() {
         flow.cookieFilter = new CookieFilter()

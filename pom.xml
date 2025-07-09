@@ -24,6 +24,8 @@
         <nimbus-jose-jwt.version>10.3</nimbus-jose-jwt.version>
         <com.fasterxml.jackson.core.version>2.19.1</com.fasterxml.jackson.core.version>
         <json.version>20250517</json.version>
+        <aeonbits.owner.version>1.0.12</aeonbits.owner.version>
+        <slf4j.version>2.0.17</slf4j.version>
 
         <!-- Plugin versions -->
         <maven.surefire.plugin.version>3.5.3</maven.surefire.plugin.version>
@@ -69,6 +71,27 @@
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
             <version>${rest-assured.version}</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.aeonbits.owner/owner -->
+        <dependency>
+            <groupId>org.aeonbits.owner</groupId>
+            <artifactId>owner</artifactId>
+            <version>${aeonbits.owner.version}</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-api -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-simple -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>${slf4j.version}</version>
         </dependency>
         <!-- End testframe dependencies -->
 

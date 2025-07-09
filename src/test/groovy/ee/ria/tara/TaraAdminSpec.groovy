@@ -11,7 +11,6 @@ import static org.hamcrest.Matchers.is
 // TODO: AUT-1186
 @Ignore
 class TaraAdminSpec extends TaraSpecification {
-    Flow flow = new Flow(props)
 
     def setup() {
         flow.cookieFilter = new CookieFilter()

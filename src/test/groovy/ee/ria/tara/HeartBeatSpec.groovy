@@ -7,16 +7,12 @@ import io.restassured.response.Response
 import java.time.Duration
 
 import static org.hamcrest.MatcherAssert.assertThat
-import static org.hamcrest.Matchers.arrayContaining
-import static org.hamcrest.Matchers.containsInAnyOrder
 import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.Matchers.greaterThan
-import static org.hamcrest.Matchers.hasEntry
 import static org.hamcrest.Matchers.notNullValue
 import static org.hamcrest.Matchers.is
 
 class HeartBeatSpec extends TaraSpecification {
-    Flow flow = new Flow(props)
 
     def setup() {
         flow.cookieFilter = new CookieFilter()

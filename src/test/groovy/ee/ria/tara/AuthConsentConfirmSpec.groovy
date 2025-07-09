@@ -14,7 +14,6 @@ import static org.hamcrest.Matchers.startsWith
 import static org.hamcrest.Matchers.emptyString
 
 class AuthConsentConfirmSpec extends TaraSpecification {
-    Flow flow = new Flow(props)
 
     def setup() {
         flow.cookieFilter = new CookieFilter()
@@ -48,7 +47,6 @@ class AuthConsentConfirmSpec extends TaraSpecification {
 
         when: "Consent request with #reason"
         Response response = given()
-                .relaxedHTTPSValidation()
                 .cookies(cookie)
                 .get(loginVerifier.getHeader("location"))
 
@@ -72,7 +70,6 @@ class AuthConsentConfirmSpec extends TaraSpecification {
 
         when: "Consent request with invalid request type: #requestType"
         Response response = given()
-                .relaxedHTTPSValidation()
                 .cookie("__Host-SESSION", flow.sessionId)
                 .params("_csrf", flow.csrf)
                 .request(requestType, loginVerifier.header("location"))
@@ -152,7 +149,6 @@ class AuthConsentConfirmSpec extends TaraSpecification {
 
         when: "Consent confirmation request with invalid request type"
         Response response = given()
-                .relaxedHTTPSValidation()
                 .filter(flow.cookieFilter)
                 .params([_csrf        : flow.csrf,
                          consent_given: true])
@@ -178,7 +174,6 @@ class AuthConsentConfirmSpec extends TaraSpecification {
 
         when: "Submit consent confirmation with incorrect session cookie"
         Response response = given()
-                .relaxedHTTPSValidation()
                 .cookies(cookie)
                 .formParams(["consent_given": true,
                              "_csrf"        : flow.csrf])

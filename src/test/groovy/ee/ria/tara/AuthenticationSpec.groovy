@@ -19,8 +19,6 @@ import static org.hamcrest.Matchers.containsString
 
 class AuthenticationSpec extends TaraSpecification {
 
-    Flow flow = new Flow(props)
-
     def setup() {
         flow.cookieFilter = new CookieFilter()
         flow.openIdServiceConfiguration = Requests.getOpenidConfiguration(flow.oidcService.fullConfigurationUrl)
@@ -270,7 +268,6 @@ class AuthenticationSpec extends TaraSpecification {
 
         when: "request accept authentication with invalid method"
         Response response = given()
-                .relaxedHTTPSValidation()
                 .cookies("__Host-SESSION": flow.sessionId)
                 .params([_csrf: flow.csrf])
                 .request(requestType, flow.loginService.fullAuthAcceptUrl)
@@ -295,7 +292,6 @@ class AuthenticationSpec extends TaraSpecification {
 
         when: "request accept authentication with invalid session cookie"
         Response response = given()
-                .relaxedHTTPSValidation()
                 .cookies(cookie)
                 .post(flow.loginService.fullAuthAcceptUrl)
 
@@ -367,7 +363,6 @@ class AuthenticationSpec extends TaraSpecification {
 
         when: "reject authentication with invalid session cookie"
         Response response = given()
-                .relaxedHTTPSValidation()
                 .cookies(cookie)
                 .param("error_code", REJECT_ERROR_CODE)
                 .get(flow.loginService.fullAuthRejectUrl)
@@ -391,7 +386,6 @@ class AuthenticationSpec extends TaraSpecification {
 
         when: "reject authentication with invalid request type"
         Response response = given()
-                .relaxedHTTPSValidation()
                 .cookies("__Host-SESSION": flow.sessionId)
                 .params([error_code: REJECT_ERROR_CODE,
                          _csrf     : flow.csrf])
@@ -417,7 +411,6 @@ class AuthenticationSpec extends TaraSpecification {
 
         when: "Reject authentication with multiple error_code values"
         Response response = given()
-                .relaxedHTTPSValidation()
                 .cookies(["__Host-SESSION": flow.sessionId])
                 .params(error_code: ["ERROR12345", "user_cancel"])
                 .get(flow.loginService.fullAuthRejectUrl)

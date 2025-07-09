@@ -12,7 +12,6 @@ import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.is
 
 class LegalPersonAuthConfirmSpec extends TaraSpecification {
-    Flow flow = new Flow(props)
 
     def setup() {
         flow.cookieFilter = new CookieFilter()
@@ -78,7 +77,6 @@ class LegalPersonAuthConfirmSpec extends TaraSpecification {
 
         when: "Legal person selection request with unsupported method"
         Response response = given()
-                .relaxedHTTPSValidation()
                 .cookies(["__Host-SESSION": flow.sessionId])
                 .params([legal_person_identifier: legalPersonIdentifier,
                          _csrf                  : flow.csrf])
@@ -106,7 +104,6 @@ class LegalPersonAuthConfirmSpec extends TaraSpecification {
 
         when: "legal person selection request with invalid session cookie"
         Response response = given()
-                .relaxedHTTPSValidation()
                 .cookies(cookie)
                 .params([legal_person_identifier: "123456789",
                          _csrf                  : flow.csrf])

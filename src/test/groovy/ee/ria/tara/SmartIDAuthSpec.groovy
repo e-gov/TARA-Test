@@ -13,7 +13,6 @@ import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.MatcherAssert.assertThat
 
 class SmartIDAuthSpec extends TaraSpecification {
-    Flow flow = new Flow(props)
 
     def setup() {
         flow.cookieFilter = new CookieFilter()
@@ -68,7 +67,6 @@ class SmartIDAuthSpec extends TaraSpecification {
 
         when: "initialize Smart-ID authentication with invalid session cookie"
         Response response = given()
-                .relaxedHTTPSValidation()
                 .params([idCode: "40404049996",
                          _csrf : flow.csrf])
                 .cookies(cookie)
@@ -94,7 +92,6 @@ class SmartIDAuthSpec extends TaraSpecification {
 
         when: "initialize Smart-ID authentication with invalid method"
         Response response = given()
-                .relaxedHTTPSValidation()
                 .params([idCode: "40404049996",
                          _csrf : flow.csrf])
                 .cookies(["__Host-SESSION": flow.sessionId])
@@ -120,7 +117,6 @@ class SmartIDAuthSpec extends TaraSpecification {
 
         when:
         Response response = given()
-                .relaxedHTTPSValidation()
                 .params(_csrf: flow.csrf)
                 .params(params)
                 .cookies("__Host-SESSION": flow.sessionId)
@@ -307,7 +303,6 @@ class SmartIDAuthSpec extends TaraSpecification {
 
         when: "request polling with invalid session cookie"
         Response response = given()
-                .relaxedHTTPSValidation()
                 .cookies(cookie)
                 .get(flow.loginService.fullSidPollUrl)
         then:
@@ -332,7 +327,6 @@ class SmartIDAuthSpec extends TaraSpecification {
 
         when: "request Smart-ID polling with invalid request type"
         Response response = given()
-                .relaxedHTTPSValidation()
                 .cookies("__Host-SESSION": flow.sessionId)
                 .params([_csrf: flow.csrf])
                 .request(requestType, flow.loginService.fullSidPollUrl)
@@ -392,7 +386,6 @@ class SmartIDAuthSpec extends TaraSpecification {
 
         when: "Cancel Smart-ID authentication with invalid session cookie"
         Response response = given()
-                .relaxedHTTPSValidation()
                 .cookies(cookie)
                 .post(flow.loginService.fullSidCancelUrl)
 
@@ -418,7 +411,6 @@ class SmartIDAuthSpec extends TaraSpecification {
 
         when: "Cancel authentication with invalid method"
         Response response = given()
-                .relaxedHTTPSValidation()
                 .params([_csrf: flow.csrf])
                 .cookies(["__Host-SESSION": flow.sessionId])
                 .request(requestType, flow.loginService.fullSidCancelUrl)

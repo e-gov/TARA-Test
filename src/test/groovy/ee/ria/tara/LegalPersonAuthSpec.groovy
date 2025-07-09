@@ -13,8 +13,6 @@ import static org.hamcrest.Matchers.not
 
 class LegalPersonAuthSpec extends TaraSpecification {
 
-    Flow flow = new Flow(props)
-
     def setup() {
         flow.cookieFilter = new CookieFilter()
         flow.openIdServiceConfiguration = Requests.getOpenidConfiguration(flow.oidcService.fullConfigurationUrl)
@@ -65,7 +63,6 @@ class LegalPersonAuthSpec extends TaraSpecification {
 
         when: "Request legal person authentication with invalid session cookie"
         Response response = given()
-                .relaxedHTTPSValidation()
                 .cookies(cookie)
                 .get(flow.loginService.fullAuthLegalPersonUrl)
 
@@ -94,7 +91,6 @@ class LegalPersonAuthSpec extends TaraSpecification {
 
         when: "legal persons authentication request with invalid method"
         Response response = given()
-                .relaxedHTTPSValidation()
                 .cookies(["__Host-SESSION": flow.sessionId])
                 .params(["_csrf": flow.csrf])
                 .request(requestType, flow.loginService.fullAuthLegalPersonUrl)

@@ -18,7 +18,6 @@ import static org.hamcrest.Matchers.allOf
 import static org.hamcrest.Matchers.startsWith
 
 class OidcIdentityTokenRequestSpec extends TaraSpecification {
-    Flow flow = new Flow(props)
 
     def setup() {
         flow.cookieFilter = new CookieFilter()
@@ -234,12 +233,10 @@ class OidcIdentityTokenRequestSpec extends TaraSpecification {
 
         when: "Request token"
         Response tokenResponse = given()
-                .filter(new AllureRestAssured())
                 .params([grant_type  : "authorization_code",
                          code        : authorizationCode,
                          redirect_uri: flow.redirectUri])
                 .auth().preemptive().basic("tara-client", "secret")
-                .relaxedHTTPSValidation()
                 .post(flow.openIdServiceConfiguration.getString("token_endpoint"))
 
         then:
@@ -260,13 +257,11 @@ class OidcIdentityTokenRequestSpec extends TaraSpecification {
 
         when: "Request token with incorrect HTTP method: #method"
         Response tokenResponse = given()
-                .filter(new AllureRestAssured())
                 .params([grant_type  : "authorization_code",
                          code        : authorizationCode,
                          redirect_uri: flow.redirectUri])
                 .auth().preemptive().basic(flow.clientId, flow.clientSecret)
                 .urlEncodingEnabled(true)
-                .relaxedHTTPSValidation()
                 .request(method, flow.openIdServiceConfiguration.getString("token_endpoint"))
 
         then:

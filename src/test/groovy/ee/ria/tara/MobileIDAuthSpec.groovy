@@ -11,7 +11,6 @@ import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.startsWith
 
 class MobileIDAuthSpec extends TaraSpecification {
-    Flow flow = new Flow(props)
 
     def setup() {
         flow.cookieFilter = new CookieFilter()
@@ -39,7 +38,6 @@ class MobileIDAuthSpec extends TaraSpecification {
 
         when: "initialize Mobile-ID authentication with invalid session cookie"
         Response response = given()
-                .relaxedHTTPSValidation()
                 .params([idCode: "40404049996",
                          _csrf : flow.csrf])
                 .cookies(cookie)
@@ -66,7 +64,6 @@ class MobileIDAuthSpec extends TaraSpecification {
 
         when: "initialize mobile-ID authentication with invalid method"
         Response response = given()
-                .relaxedHTTPSValidation()
                 .params([idCode         : "60001017716",
                          telephoneNumber: "69100366",
                          _csrf          : flow.csrf])
@@ -96,7 +93,6 @@ class MobileIDAuthSpec extends TaraSpecification {
 
         when: "Request MID authentication with invalid parameters"
         Response response = given()
-                .relaxedHTTPSValidation()
                 .params(params)
                 .params(_csrf: flow.csrf)
                 .cookies(["__Host-SESSION": flow.sessionId])
@@ -251,7 +247,6 @@ class MobileIDAuthSpec extends TaraSpecification {
 
         when: "request polling with invalid session cookie"
         Response response = given()
-                .relaxedHTTPSValidation()
                 .cookies(cookie)
                 .get(flow.loginService.fullMidPollUrl)
 
@@ -276,7 +271,6 @@ class MobileIDAuthSpec extends TaraSpecification {
 
         when: "request MID polling with invalid request type"
         Response response = given()
-                .relaxedHTTPSValidation()
                 .cookies("__Host-SESSION": flow.sessionId)
                 .params([_csrf: flow.csrf])
                 .request(requestType, flow.loginService.fullMidPollUrl)
@@ -336,7 +330,6 @@ class MobileIDAuthSpec extends TaraSpecification {
 
         when: "Cancel MID authentication with invalid session cookie"
         Response response = given()
-                .relaxedHTTPSValidation()
                 .cookies(cookie)
                 .post(flow.loginService.fullMidCancelUrl)
 
@@ -362,7 +355,6 @@ class MobileIDAuthSpec extends TaraSpecification {
 
         when: "Cancel authentication with invalid method"
         Response response = given()
-                .relaxedHTTPSValidation()
                 .params([_csrf: flow.csrf])
                 .cookies(["__Host-SESSION": flow.sessionId])
                 .request(requestType, flow.loginService.fullMidCancelUrl)

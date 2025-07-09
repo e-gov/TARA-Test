@@ -10,7 +10,6 @@ import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.is
 
 class LegalPersonAutInitSpec extends TaraSpecification {
-    Flow flow = new Flow(props)
 
     def setup() {
         flow.cookieFilter = new CookieFilter()
@@ -64,7 +63,6 @@ class LegalPersonAutInitSpec extends TaraSpecification {
 
         when: "request authentication with invalid session cookie"
         Response response = given()
-                .relaxedHTTPSValidation()
                 .cookies(cookie)
                 .get(flow.loginService.fullAuthLegalInitUrl)
 

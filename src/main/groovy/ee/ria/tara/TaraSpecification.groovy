@@ -11,8 +11,9 @@ import spock.lang.Specification
 import java.nio.file.Paths
 
 class TaraSpecification extends Specification {
-    @Shared
-    Properties props = new Properties()
+    static BeforeAll beforeAll = new BeforeAll()
+
+    Flow flow = new Flow()
 
     static final REQUEST_TYPE_POST = "post"
     static final REQUEST_TYPE_GET = "get"
@@ -45,26 +46,6 @@ class TaraSpecification extends Specification {
 
     def setupSpec() {
         InitializationService.initialize()
-
-        URL envFile = this.getClass().getResource('/.env')
-        Properties envProperties = new Properties()
-        if (envFile) {
-            envFile.withInputStream {
-                envProperties.load(it)
-            }
-            Paths.get(envProperties.getProperty("configuration_base_path"), envProperties.getProperty("configuration_path"), "application.properties").withInputStream {
-                props.load(it)
-            }
-
-            //Log all requests and responses for debugging
-            if (envProperties."log_all" && envProperties."log_all" != "false") {
-                RestAssured.filters(new RequestLoggingFilter(), new ResponseLoggingFilter())
-            }
-        } else {
-            this.getClass().getResource('/application.properties').withInputStream {
-                props.load(it)
-            }
-        }
     }
 
     protected static Boolean isEidasPresent(Response response) {

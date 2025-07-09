@@ -42,7 +42,7 @@ class Steps {
         flow.setSessionId(initLogin.getCookie("__Host-SESSION"))
         flow.setLocale(initLogin.getCookie("__Host-LOCALE"))
         // TODO initLogin.body("input", contains("_csrf"))
-        if (initLogin.body.prettyPrint().contains("_csrf")) { // TARA2-121
+        if (initLogin.body.asString().contains("_csrf")) { // TARA2-121
             flow.setCsrf(initLogin.htmlPath().get("**.find {it.@name == '_csrf'}.@value"))
         }
         return initLogin

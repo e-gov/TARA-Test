@@ -15,8 +15,6 @@ import static org.hamcrest.Matchers.is
 
 class OidcMetadataSpec extends TaraSpecification {
 
-    Flow flow = new Flow(props)
-
     def setup() {
         flow.cookieFilter = new CookieFilter()
     }

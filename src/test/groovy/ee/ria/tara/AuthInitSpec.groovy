@@ -12,7 +12,6 @@ import static org.hamcrest.Matchers.allOf
 import static org.hamcrest.Matchers.is
 
 class AuthInitSpec extends TaraSpecification {
-    Flow flow = new Flow(props)
 
     def setup() {
         flow.cookieFilter = new CookieFilter()

@@ -14,7 +14,6 @@ import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.notNullValue
 
 class WebEidAuthSpec extends TaraSpecification {
-    Flow flow = new Flow(props)
 
     def setup() {
         flow.cookieFilter = new CookieFilter()
