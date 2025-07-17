@@ -5,12 +5,10 @@ import com.nimbusds.jwt.JWTClaimsSet
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
+import org.apache.http.HttpStatus
 
 import static org.hamcrest.MatcherAssert.assertThat
-import static org.hamcrest.Matchers.allOf
-import static org.hamcrest.Matchers.endsWith
-import static org.hamcrest.Matchers.is
-import static org.hamcrest.Matchers.startsWith
+import static org.hamcrest.Matchers.*
 
 class OidcAuthenticationRequestSpec extends TaraSpecification {
 
@@ -117,6 +115,7 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
     @Feature("OIDC_SCOPE_IDCARD")
     @Feature("OIDC_SCOPE_MID")
     @Feature("OIDC_SCOPE_SMARTID")
+    @Feature("OIDC_SCOPE_EIDAS")
     def "Authentication request with different scopes: #label"() {
         given:
         Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "openid " + scopes)
@@ -125,18 +124,24 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
         when:
         Response response = Steps.followRedirect(flow, initOIDCServiceSession)
 
+        def path = { val -> "**.findAll { it.'@data-tab' == '${val}' }.size()" }
+
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(200))
-        assertThat("Correct ID-Card scope value", isIdCardPresent(response), is(idCard))
-        assertThat("Correct MID scope value", isMidPresent(response), is(mID))
-        assertThat("Correct Smart-ID scope value", isSmartIdPresent(response), is(smartID))
+        response.then()
+                .statusCode(HttpStatus.SC_OK)
+                .body(
+                        path('smart-id'), smartID ? greaterThan(0) : equalTo(0),
+                        path('id-card'), idCard ? greaterThan(0) : equalTo(0),
+                        path('mobile-id'), mID ? greaterThan(0) : equalTo(0),
+                        path('eu-citizen'), eidas ? greaterThan(0) : equalTo(0)
+                )
 
         where:
-        scopes    | label          || idCard | mID   | smartID
-        "idcard"  | "with idcard"  || true   | false | false
-        "mid"     | "with mid"     || false  | true  | false
-        "smartid" | "with smartid" || false  | false | true
-
+        scopes    | label          || idCard | mID   | smartID | eidas
+        "idcard"  | "with idcard"  || true   | false | false   | false
+        "mid"     | "with mid"     || false  | true  | false   | false
+        "smartid" | "with smartid" || false  | false | true    | false
+        "eidas"   | "with eidas"   || false  | false | false   | true
     }
 
     @Feature("OIDC_SCOPE_EMAIL")

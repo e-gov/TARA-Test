@@ -1,17 +1,13 @@
 package ee.ria.tara
 
-import io.restassured.RestAssured
-import io.restassured.filter.log.RequestLoggingFilter
-import io.restassured.filter.log.ResponseLoggingFilter
-import io.restassured.response.Response
+
 import org.opensaml.core.config.InitializationService
-import spock.lang.Shared
 import spock.lang.Specification
 
-import java.nio.file.Paths
-
 class TaraSpecification extends Specification {
-    static BeforeAll beforeAll = new BeforeAll()
+    static {
+        new BeforeAll()
+    }
 
     Flow flow = new Flow()
 
@@ -48,27 +44,4 @@ class TaraSpecification extends Specification {
     def setupSpec() {
         InitializationService.initialize()
     }
-
-    protected static Boolean isEidasPresent(Response response) {
-        return response.htmlPath().getInt("**.findAll { it.'@data-tab' == 'eu-citizen' }.size()") > 0
-    }
-
-    protected static Boolean isMidPresent(Response response) {
-        return response.htmlPath().getInt("**.findAll { it.'@data-tab' == 'mobile-id' }.size()") > 0
-    }
-
-    protected static Boolean isIdCardPresent(Response response) {
-        return response.htmlPath().getInt("**.findAll { it.'@data-tab' == 'id-card' }.size()") > 0
-    }
-
-    protected static Boolean isEidasOnlyPresent(Response response) {
-        // TODO
-        return false
-    }
-
-    protected static Boolean isSmartIdPresent(Response response) {
-        return response.htmlPath().getInt("**.findAll { it.'@data-tab' == 'smart-id' }.size()") > 0
-    }
-
-
 }

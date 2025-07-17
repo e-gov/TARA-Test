@@ -7,6 +7,8 @@ interface OidcServiceConf extends Config {
 
     String host()
 
+    String port()
+
     String authenticationRequestUrl()
 
     String authorizationUrl()

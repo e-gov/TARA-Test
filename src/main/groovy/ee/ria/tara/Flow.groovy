@@ -18,7 +18,7 @@ class Flow {
     ForeignIdpProvider foreignIdpProvider
     ForeignProxyService foreignProxyService
     TaraAdminService taraAdminService
- 
+
     CookieFilter cookieFilter
     String clientId
     String clientSecret
@@ -55,10 +55,7 @@ class Flow {
 }
 
 @Canonical
-class LoginService {
-    String host
-    String port
-    String protocol
+class LoginService extends BaseService{
     String nodeHost
     String nodePort
     String nodeProtocol
@@ -85,9 +82,6 @@ class LoginService {
     String idCardEndpointUsername
     String idCardEndpointPassword
 
-    @Lazy baseUrl = "${protocol}://${host}"
-    @Lazy fullBaseUrl = "${baseUrl}${Utils.portCheck(port)}"
-
     @Lazy fullWebEidInitUrl = "${baseUrl}${webEidInitUrl}"
     @Lazy fullWebEidLoginUrl = "${baseUrl}${webEidLoginUrl}"
 
@@ -111,8 +105,7 @@ class LoginService {
     @Lazy fullHeartbeatUrl = "${nodeProtocol}://${nodeHost}${Utils.portCheck(nodePort)}${heartbeatUrl}"
 
     LoginService(LoginServiceConf conf) {
-        this.host = conf.host()
-        this.port = conf.port()
+        super(conf)
         this.protocol = conf.protocol()
         this.nodeHost = conf.nodeHost()
         this.nodePort = conf.nodePort()
@@ -143,126 +136,109 @@ class LoginService {
 }
 
 @Canonical
-class OidcService {
-    String host
-    String protocol
+class OidcService extends BaseService{
     String authorizationUrl
     String jwksUrl
     String configurationUrl
-    Map cookies
-
-    @Lazy baseUrl = "${protocol}://${host}"
+    Map cookies = [:]
 
     @Lazy fullAuthorizationUrl = "${baseUrl}${authorizationUrl}"
     @Lazy fullJwksUrl = "${baseUrl}${jwksUrl}"
     @Lazy fullConfigurationUrl = "${baseUrl}${configurationUrl}"
 
     OidcService(OidcServiceConf conf) {
-        this.host = conf.host()
-        this.protocol = conf.protocol()
+        super(conf)
         this.authorizationUrl = conf.authorizationUrl()
         this.jwksUrl = conf.jwksUrl()
         this.configurationUrl = conf.configurationUrl()
-        this.cookies = new HashMap()
     }
 }
 
 @Canonical
-class OidcClient {
-    String host
-    String port
-    String protocol
+class OidcClient extends BaseService{
     String responseUrl
     String clientId
     String clientSecret
-    Map cookies
+    Map cookies = [:]
 
-    @Lazy fullResponseUrl = "${protocol}://${host}${Utils.portCheck(port)}${responseUrl}"
+    @Lazy fullResponseUrl = "${fullBaseUrl}${responseUrl}"
 
     OidcClient(OidcClientConf conf) {
-        this.host = conf.host()
-        this.port = conf.port()
-        this.protocol = conf.protocol()
+        super(conf)
         this.responseUrl = conf.responseUrl()
         this.clientId = conf.clientId()
         this.clientSecret = conf.secret()
-        this.cookies = new HashMap()
     }
 }
 
 @Canonical
-class SpecificProxyService {
-    String host
-    String port
-    String protocol
+class SpecificProxyService extends BaseService{
     String responseUrl
     String clientId
     String clientSecret
-    Map cookies
+    Map cookies = [:]
 
-    @Lazy fullResponseUrl = "${protocol}://${host}${Utils.portCheck(port)}${responseUrl}"
+    @Lazy fullResponseUrl = "${fullBaseUrl}${responseUrl}"
 
     SpecificProxyService(SpecificProxyServiceConf conf) {
-        this.host = conf.host()
-        this.port = conf.port()
-        this.protocol = conf.protocol()
+        super(conf)
         this.responseUrl = conf.responseUrl()
         this.clientId = conf.clientId()
         this.clientSecret = conf.secret()
-        this.cookies = new HashMap()
     }
 }
 
 @Canonical
-class ForeignIdpProvider {
-    String host
-    String port
-    String protocol
+class ForeignIdpProvider extends BaseService{
     String responseUrl
-    @Lazy fullResponseUrl = "${protocol}://${host}${Utils.portCheck(port)}${responseUrl}"
+
+    @Lazy fullResponseUrl = "${fullBaseUrl}${responseUrl}"
 
     ForeignIdpProvider(ForeignIdpConf conf) {
-        this.host = conf.host()
-        this.port = conf.port()
-        this.protocol = conf.protocol()
+        super(conf)
         this.responseUrl = conf.responseUrl()
     }
 }
 
 @Canonical
-class ForeignProxyService {
-    String host
-    String port
-    String protocol
+class ForeignProxyService extends BaseService{
     String consentUrl
 
-    @Lazy fullConsentUrl = "${protocol}://${host}${Utils.portCheck(port)}${consentUrl}"
+    @Lazy fullConsentUrl = "${fullBaseUrl}${consentUrl}"
 
     ForeignProxyService(CaProxyServiceConf conf) {
-        this.host = conf.host()
-        this.port = conf.port()
-        this.protocol = conf.protocol()
+        super(conf)
         this.consentUrl = conf.consentUrl()
     }
 }
 
 @Canonical
-class TaraAdminService {
-    String host
-    String port
-    String protocol
+class TaraAdminService extends BaseService{
     String username
     String password
     String xsrfToken
     String jsessionId
 
-    @Lazy fullBaseUrl = "${protocol}://${host}${Utils.portCheck(port)}"
-
     TaraAdminService(AdminServiceConf conf) {
-        this.host = conf.host()
-        this.port = conf.port()
-        this.protocol = conf.protocol()
+        super(conf)
         this.username = conf.username()
         this.password = conf.password()
     }
 }
+
+@Canonical
+abstract class BaseService {
+    String protocol
+    String host
+    String port
+
+    @Lazy baseUrl = "${protocol}://${host}"
+    @Lazy fullBaseUrl = "${baseUrl}${Utils.portCheck(port)}"
+
+    BaseService(conf) {
+        this.protocol = conf.protocol()
+        this.host = conf.host()
+        this.port = conf.port()
+    }
+}
+
