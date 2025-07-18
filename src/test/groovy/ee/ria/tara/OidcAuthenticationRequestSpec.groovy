@@ -2,6 +2,8 @@ package ee.ria.tara
 
 import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jwt.JWTClaimsSet
+import ee.ria.tara.model.ErrorMessage
+import ee.ria.tara.util.ErrorValidator
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
@@ -107,9 +109,7 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
         Response response = Steps.followRedirect(flow, initOIDCServiceSession)
 
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(400))
-        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct message", response.jsonPath().getString("message"), is("Päringus puudub scope parameeter."))
+        ErrorValidator.validate(response, ErrorMessage.MISSING_SCOPE)
     }
 
     @Feature("OIDC_SCOPE_IDCARD")

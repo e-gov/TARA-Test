@@ -1,11 +1,16 @@
 package ee.ria.tara
 
 import com.nimbusds.jose.jwk.JWKSet
+import ee.ria.tara.model.ErrorMessage
+import ee.ria.tara.util.ErrorValidator
 import io.qameta.allure.Feature
+import io.qameta.allure.Issue
 import io.qameta.allure.Step
 import io.restassured.filter.cookie.CookieFilter
+import io.restassured.http.Method
 import io.restassured.response.Response
 import org.apache.commons.lang3.RandomStringUtils
+import org.apache.http.HttpStatus
 
 import static io.restassured.RestAssured.given
 import static org.hamcrest.MatcherAssert.assertThat
@@ -46,10 +51,12 @@ class EidasAuthSpec extends TaraSpecification {
         Response response = EidasSteps.initEidasAuthSession(flow, country)
 
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(400))
-        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct message", response.jsonPath().getString('message'), is("Antud riigikood ei ole lubatud. Lubatud riigikoodid on:<span translate=\"no\"> CA, DE</span>"))
-        assertThat("Incident number is present", response.jsonPath().getString("incident_nr"), hasLength(32))
+        ErrorValidator.validate(
+                response,
+                ErrorMessage.EIDAS_NOT_ALLOWED_COUNTRY.type,
+                ErrorMessage.EIDAS_NOT_ALLOWED_COUNTRY.getMessage("CA, DE")
+        )
+        response.then().body("incident_nr", hasLength(32))
 
         where:
         country | label
@@ -67,12 +74,10 @@ class EidasAuthSpec extends TaraSpecification {
         Response response = Requests.postRequestWithParams(flow, flow.loginService.fullEidasInitUrl, [country: COUNTRY_CA])
 
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(403))
-        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct error message", response.jsonPath().getString("message"), is(MESSAGE_FORBIDDEN_REQUEST))
+        ErrorValidator.validate(response, ErrorMessage.INVALID_CSRF_TOKEN)
     }
 
-    //TODO: AUT-630
+    @Issue("AUT-630")
     @Feature("EIDAS_AUTH_INIT_ENDPOINT")
     def "Initialize eIDAS authentication with invalid method: requestType"() {
         given:
@@ -86,16 +91,14 @@ class EidasAuthSpec extends TaraSpecification {
                 .request(requestType, flow.loginService.fullEidasInitUrl)
 
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(500))
-        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct error message", response.jsonPath().getString("message"), is(MESSAGE_INTERNAL_ERROR))
+        ErrorValidator.validate(response, ErrorMessage.INTERNAL_ERROR)
 
         where:
-        requestType | _
-        "GET"       | _
-        "PUT"       | _
-        "PATCH"     | _
-        "DELETE"    | _
+        requestType   | _
+        Method.GET    | _
+        Method.PUT    | _
+        Method.PATCH  | _
+        Method.DELETE | _
     }
 
     @Feature("EIDAS_AUTH_INIT_ENDPOINT")
@@ -107,9 +110,7 @@ class EidasAuthSpec extends TaraSpecification {
         Response response = Requests.postRequestWithParams(flow, flow.loginService.fullEidasInitUrl, [_csrf: flow.csrf, country: ["CA", "CA"]])
 
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(400))
-        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct error message", response.jsonPath().getString("message"), is(MESSAGE_DUPLICATE_PARAMETERS))
+        ErrorValidator.validate(response, ErrorMessage.DUPLICATE_PARAMETERS)
     }
 
     @Feature("AUTH_INIT_WITH_EIDASONLY_AND_COUNTRY")
@@ -159,10 +160,7 @@ class EidasAuthSpec extends TaraSpecification {
         Response secondCallback = EidasSteps.eidasRedirectAuthorizationResponse(flow, authorizationResponse, false)
 
         then:
-        assertThat("Correct HTTP status code", secondCallback.statusCode, is(400))
-        assertThat("Correct Content-Type", secondCallback.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct error", secondCallback.jsonPath().getString("error"), is(ERROR_BAD_REQUEST))
-        assertThat('Correct message', secondCallback.jsonPath().getString("message"), is(MESSAGE_INCORRECT_REQUEST))
+        ErrorValidator.validate(secondCallback, ErrorMessage.INVALID_REQUEST)
     }
 
     @Feature("EIDAS_AUTH_CALLBACK_ENDPOINT")
@@ -181,11 +179,8 @@ class EidasAuthSpec extends TaraSpecification {
         Response redirectionResponse = Requests.postRequestWithParams(flow, flow.nextEndpoint, paramsMap)
 
         then:
-        assertThat("Correct HTTP status code", redirectionResponse.statusCode, is(400))
-        assertThat("Correct Content-Type", redirectionResponse.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct error", redirectionResponse.jsonPath().getString("error"), is(ERROR_BAD_REQUEST))
-        assertThat("Correct message", redirectionResponse.jsonPath().getString("message"), is(MESSAGE_DUPLICATE_PARAMETERS))
-        assertThat("Correct path", redirectionResponse.jsonPath().getString('path'), is(flow.loginService.eidasCallbackUrl))
+        ErrorValidator.validate(redirectionResponse, ErrorMessage.DUPLICATE_PARAMETERS)
+        redirectionResponse.then().body('path', is(flow.loginService.eidasCallbackUrl))
 
         where:
         parameters                           || label
@@ -209,11 +204,8 @@ class EidasAuthSpec extends TaraSpecification {
         Response redirectionResponse = Requests.postRequestWithParams(flow, flow.nextEndpoint, paramsMap)
 
         then:
-        assertThat("Correct HTTP status code", redirectionResponse.statusCode, is(400))
-        assertThat("Correct Content-Type", redirectionResponse.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct error", redirectionResponse.jsonPath().getString("error"), is(ERROR_BAD_REQUEST))
-        assertThat("Correct message", redirectionResponse.jsonPath().getString("message"), is(errorMessage))
-        assertThat("Correct path", redirectionResponse.jsonPath().getString('path'), is(flow.loginService.eidasCallbackUrl))
+        ErrorValidator.validate(redirectionResponse, HttpStatus.SC_BAD_REQUEST, errorMessage)
+        redirectionResponse.then().body('path', is(flow.loginService.eidasCallbackUrl))
 
         where:
         paramName      || errorMessage
@@ -237,9 +229,7 @@ class EidasAuthSpec extends TaraSpecification {
         Response redirectionResponse = EidasSteps.eidasRedirectAuthorizationResponse(flow, authorizationResponse2, false)
 
         then:
-        assertThat("Correct HTTP status code", redirectionResponse.statusCode, is(400))
-        assertThat("Correct Content-Type", redirectionResponse.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct message", redirectionResponse.jsonPath().getString("message"), is("eIDAS autentimine ebaõnnestus."))
+        ErrorValidator.validate(redirectionResponse, ErrorMessage.EIDAS_AUTHENTICATION_FAILED)
     }
 
     @Feature("EIDAS_AUTH_CALLBACK_ENDPOINT")
@@ -258,16 +248,14 @@ class EidasAuthSpec extends TaraSpecification {
         Response redirectionResponse = Requests.postRequestWithParams(flow, flow.nextEndpoint, paramsMap)
 
         then:
-        assertThat("Correct HTTP status code", redirectionResponse.statusCode, is(statusCode))
-        assertThat("Correct Content-Type", redirectionResponse.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct error", redirectionResponse.jsonPath().getString("error"), is(error))
-        assertThat("Correct message", redirectionResponse.jsonPath().getString("message"), is(errorMessage))
+        ErrorValidator.validate(redirectionResponse, errorMessage)
 
         where:
-        parameter                                                   || statusCode | error             | label                      | errorMessage
-        [SAMLResponse: "AB-"]                                       || 502        | "Bad Gateway"     | "SAMLResponse short value" | "eIDAS teenuses esinevad tehnilised tõrked. Palun proovige mõne aja pärast uuesti."
-        [SAMLResponse: RandomStringUtils.random(11000, true, true)] || 502        | "Bad Gateway"     | "SAMLResponse long value"  | "eIDAS teenuses esinevad tehnilised tõrked. Palun proovige mõne aja pärast uuesti."
-        [RelayState: "DC@"]                                         || 400        | ERROR_BAD_REQUEST | "RelayState short value"   | MESSAGE_INCORRECT_REQUEST
+        parameter                                                   || label                      | errorMessage
+        [SAMLResponse: "AB-"]                                       || "SAMLResponse short value" | ErrorMessage.EIDAS_INTERNAL_ERROR
+        [SAMLResponse: RandomStringUtils.random(11000, true, true)] || "SAMLResponse long value"  | ErrorMessage.EIDAS_INTERNAL_ERROR
+        [RelayState: "DC@"]                                         || "RelayState short value"   | ErrorMessage.INVALID_REQUEST
+
     }
 
     @Step("Authentication flow up to eIDAS authorization request")

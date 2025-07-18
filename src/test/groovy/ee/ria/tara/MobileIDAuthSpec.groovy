@@ -1,14 +1,18 @@
 package ee.ria.tara
 
+import ee.ria.tara.model.ErrorMessage
+import ee.ria.tara.util.ErrorValidator
 import io.qameta.allure.Feature
+import io.qameta.allure.Issue
 import io.restassured.filter.cookie.CookieFilter
+import io.restassured.http.Method
 import io.restassured.response.Response
 import org.apache.commons.lang3.RandomStringUtils
+import org.apache.http.HttpStatus
 
 import static io.restassured.RestAssured.given
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.is
-import static org.hamcrest.Matchers.startsWith
 
 class MobileIDAuthSpec extends TaraSpecification {
 
@@ -44,10 +48,7 @@ class MobileIDAuthSpec extends TaraSpecification {
                 .post(flow.loginService.fullMidInitUrl)
 
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(403))
-        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct error", response.jsonPath().getString("error"), is(ERROR_FORBIDDEN))
-        assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_FORBIDDEN_REQUEST))
+        ErrorValidator.validate(response, ErrorMessage.INVALID_CSRF_TOKEN)
 
         where:
         cookie                        | reason
@@ -56,7 +57,7 @@ class MobileIDAuthSpec extends TaraSpecification {
         ["__Host-SESSION": "1234567"] | "incorrect cookie value"
     }
 
-    //TODO: AUT-630
+    @Issue("AUT-630")
     @Feature("MID_INIT_ENDPOINT")
     def "Initialize mobile-ID authentication with invalid method: #requestType"() {
         given:
@@ -71,17 +72,14 @@ class MobileIDAuthSpec extends TaraSpecification {
                 .request(requestType, flow.loginService.fullMidInitUrl)
 
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(500))
-        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct error", response.jsonPath().getString("error"), is(ERROR_INTERNAL))
-        assertThat("Correct message", response.jsonPath().getString('message'), is(MESSAGE_INTERNAL_ERROR))
+        ErrorValidator.validate(response, ErrorMessage.INTERNAL_ERROR)
 
         where:
-        requestType | _
-        "GET"       | _
-        "PUT"       | _
-        "PATCH"     | _
-        "DELETE"    | _
+        requestType   | _
+        Method.GET    | _
+        Method.PUT    | _
+        Method.PATCH  | _
+        Method.DELETE | _
     }
 
     @Feature("MID_INIT_ENDPOINT")
@@ -99,26 +97,24 @@ class MobileIDAuthSpec extends TaraSpecification {
                 .post(flow.loginService.fullMidInitUrl)
 
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(400))
-        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct message", response.jsonPath().getString("message"), is(errorMessage))
+        ErrorValidator.validate(response, HttpStatus.SC_BAD_REQUEST, *errorMessage)
 
         where:
         params                                                                              | label                                 || errorMessage
-        [telephoneNumber: "00000266", idCode: "60001019938"]                                | "invalid idCode checksum"             || MESSAGE_INCORRECT_ID_CODE
-        [telephoneNumber: "+37200000266", idCode: "60001019939"]                            | "invalid telephone number"            || "Telefoninumber ei ole korrektne."
-        [:]                                                                                 | "missing telephone number and idCode" || MESSAGE_INCORRECT_ID_CODE + "; Telefoninumber ei ole korrektne."
-        [telephoneNumber: "00000266"]                                                       | "missing idCode"                      || MESSAGE_INCORRECT_ID_CODE
-        [idCode: "60001019939"]                                                             | "missing telephone number"            || "Telefoninumber ei ole korrektne."
-        [telephoneNumber: "00000266", idCode: "600010199399"]                               | "too long idCode"                     || MESSAGE_INCORRECT_ID_CODE
-        [telephoneNumber: "00000266", idCode: "60001329939"]                                | "wrong date inside idCode"            || MESSAGE_INCORRECT_ID_CODE
-        [telephoneNumber: "00000266", idCode: "6000"]                                       | "too short idCode"                    || MESSAGE_INCORRECT_ID_CODE
-        [telephoneNumber: "abcd", idCode: "ABCD"]                                           | "invalid telephone number and idCode" || MESSAGE_INCORRECT_ID_CODE + "; Telefoninumber ei ole korrektne."
-        [telephoneNumber: "00000266", idCode: "38500030556"]                                | "invalid month in idCode"             || MESSAGE_INCORRECT_ID_CODE
-        [telephoneNumber: "45", idCode: "60001019939"]                                      | "too short telephone number"          || "Telefoninumber ei ole korrektne."
-        [telephoneNumber: RandomStringUtils.random(16, false, true), idCode: "60001019939"] | "too long telephone number"           || "Telefoninumber ei ole korrektne."
-        [telephoneNumber: "69100366", idCode: ["60001017716", "60001017727"]]               | "multiple idCode parameters"          || MESSAGE_DUPLICATE_PARAMETERS
-        [telephoneNumber: ["69100366", "00000766"], idCode: "60001017716"]                  | "multiple telephoneNumber parameters" || MESSAGE_DUPLICATE_PARAMETERS
+        [telephoneNumber: "00000266", idCode: "60001019938"]                                | "invalid idCode checksum"             || [ErrorMessage.MID_INVALID_IDENTITY_CODE]
+        [telephoneNumber: "+37200000266", idCode: "60001019939"]                            | "invalid telephone number"            || [ErrorMessage.MID_INVALID_PHONE_NUMBER]
+        [:]                                                                                 | "missing telephone number and idCode" || [ErrorMessage.MID_INVALID_IDENTITY_CODE, ErrorMessage.MID_INVALID_PHONE_NUMBER]
+        [telephoneNumber: "00000266"]                                                       | "missing idCode"                      || [ErrorMessage.MID_INVALID_IDENTITY_CODE]
+        [idCode: "60001019939"]                                                             | "missing telephone number"            || [ErrorMessage.MID_INVALID_PHONE_NUMBER]
+        [telephoneNumber: "00000266", idCode: "600010199399"]                               | "too long idCode"                     || [ErrorMessage.MID_INVALID_IDENTITY_CODE]
+        [telephoneNumber: "00000266", idCode: "60001329939"]                                | "wrong date inside idCode"            || [ErrorMessage.MID_INVALID_IDENTITY_CODE]
+        [telephoneNumber: "00000266", idCode: "6000"]                                       | "too short idCode"                    || [ErrorMessage.MID_INVALID_IDENTITY_CODE]
+        [telephoneNumber: "abcd", idCode: "ABCD"]                                           | "invalid telephone number and idCode" || [ErrorMessage.MID_INVALID_IDENTITY_CODE, ErrorMessage.MID_INVALID_PHONE_NUMBER]
+        [telephoneNumber: "00000266", idCode: "38500030556"]                                | "invalid month in idCode"             || [ErrorMessage.MID_INVALID_IDENTITY_CODE]
+        [telephoneNumber: "45", idCode: "60001019939"]                                      | "too short telephone number"          || [ErrorMessage.MID_INVALID_PHONE_NUMBER]
+        [telephoneNumber: RandomStringUtils.random(16, false, true), idCode: "60001019939"] | "too long telephone number"           || [ErrorMessage.MID_INVALID_PHONE_NUMBER]
+        [telephoneNumber: "69100366", idCode: ["60001017716", "60001017727"]]               | "multiple idCode parameters"          || [ErrorMessage.DUPLICATE_PARAMETERS]
+        [telephoneNumber: ["69100366", "00000766"], idCode: "60001017716"]                  | "multiple telephoneNumber parameters" || [ErrorMessage.DUPLICATE_PARAMETERS]
     }
 
     @Feature("MID_AUTH_POLL_RESPONSE_COMPLETE")
@@ -133,21 +129,19 @@ class MobileIDAuthSpec extends TaraSpecification {
         Response response = Steps.pollMidResponse(flow, 3000L)
 
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(400))
-        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct message", response.jsonPath().getString("message"), startsWith(errorMessage))
-        assertThat("Correct reportable value", response.jsonPath().getBoolean("reportable"), is(reportable))
+        ErrorValidator.validate(response, errorMessage)
+        response.then().body("reportable", is(reportable))
 
         where:
         phoneNo                                   | idCode        | reportable | label                                            || errorMessage
-        "00000266"                                | "60001019939" | false      | "Mobile-ID user has no active certificates"      || "Kasutajal pole telefoninumbril Mobiil-ID lepingut."
-        "07110066"                                | "60001019947" | false      | "Sending authentication request to phone failed" || "Kasutaja mobiiltelefoni ei saa Mobiil-ID autentimise sõnumeid saata."
-        "01100266"                                | "60001019950" | false      | "User cancelled authentication"                  || "Kasutaja katkestas mobiiltelefonil Mobiil-ID autentimise."
-        "00000666"                                | "60001019961" | true       | "Created signature is not valid"                 || "Autentimine Mobiil-ID-ga ei õnnestunud."
-        "01200266"                                | "60001019972" | false      | "Phone cannot receive Mobile-ID auth messages"   || "Kasutaja mobiiltelefoni ei saa Mobiil-ID autentimise sõnumeid saata."
-        "13100266"                                | "60001019983" | false      | "Phone is not in coverage area"                  || "Kasutaja mobiiltelefon on levialast väljas."
-        "66000266"                                | "50001018908" | false      | "User timeout"                                   || "Kasutaja ei autentinud mobiiltelefonil oodatud aja jooksul. Palun proovige uuesti."
-        RandomStringUtils.random(15, false, true) | "60001019939" | false      | "Telephone number length check"                  || "Kasutajal pole telefoninumbril Mobiil-ID lepingut."
+        "00000266"                                | "60001019939" | false      | "Mobile-ID user has no active certificates"      || ErrorMessage.MID_NOT_MID_CLIENT
+        "07110066"                                | "60001019947" | false      | "Sending authentication request to phone failed" || ErrorMessage.MID_DELIVERY_ERROR
+        "01100266"                                | "60001019950" | false      | "User cancelled authentication"                  || ErrorMessage.MID_USER_CANCEL
+        "00000666"                                | "60001019961" | true       | "Created signature is not valid"                 || ErrorMessage.MID_SIGNATURE_HASH_MISMATCH
+        "01200266"                                | "60001019972" | false      | "Phone cannot receive Mobile-ID auth messages"   || ErrorMessage.MID_DELIVERY_ERROR
+        "13100266"                                | "60001019983" | false      | "Phone is not in coverage area"                  || ErrorMessage.MID_PHONE_ABSENT
+        "66000266"                                | "50001018908" | false      | "User timeout"                                   || ErrorMessage.MID_EXPIRED_TRANSACTION
+        RandomStringUtils.random(15, false, true) | "60001019939" | false      | "Telephone number length check"                  || ErrorMessage.MID_NOT_MID_CLIENT
     }
 
     @Feature("MID_AUTH_POLL_RESPONSE_COMPLETE")
@@ -162,17 +156,15 @@ class MobileIDAuthSpec extends TaraSpecification {
         Response response = Steps.pollMidResponse(flow, 3000L)
 
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(400))
-        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct message", response.jsonPath().getString("message"), startsWith(errorMessage))
-        assertThat("Correct reportable value", response.jsonPath().getBoolean("reportable"), is(reportable))
+        ErrorValidator.validate(response, HttpStatus.SC_BAD_REQUEST, errorMessage)
+        response.then().body("reportable", is(reportable))
 
         where:
         phoneNo    | idCode        | reportable | label                                            || errorMessage
-        "00000266" | "60001019939" | false      | "Mobile-ID user has no active certificates"      || "У пользователя отсутствует договор об услуге"
+        "00000266" | "60001019939" | false      | "Mobile-ID user has no active certificates"      || '''У пользователя отсутствует договор об услуге<span lang="et"> Mobiil-ID </span>для номера.'''
         "07110066" | "60001019947" | false      | "Sending authentication request to phone failed" || "На телефон пользователя нельзя отправить сообщение аутентификации<span lang=\"et\"> Mobiil-ID</span>."
         "01100266" | "60001019950" | false      | "User cancelled authentication"                  || "Пользователь отменил аутентификацию с<span lang=\"et\"> Mobiil-ID </span>на своем телефоне."
-        "00000666" | "60001019961" | true       | "Created signature is not valid"                 || "Аутентификация с помощью Вашего"
+        "00000666" | "60001019961" | true       | "Created signature is not valid"                 || '''Аутентификация с помощью Вашего<span lang="et"> Mobiil-ID </span>не удалась. Проверьте работу своего<span translate="no" lang="et"> Mobiil-ID </span>в DigiDoc4 клиент <a target="_blank" href="https://www.id.ee/ru/artikkel/vy-hotite-postavit-czifrovuyu-podpis-s-pomoshhyu-kompyutera-5/">здесь!</a>'''
         "01200266" | "60001019972" | false      | "Phone cannot receive Mobile-ID auth messages"   || "На телефон пользователя нельзя отправить сообщение аутентификации<span lang=\"et\"> Mobiil-ID</span>."
         "13100266" | "60001019983" | false      | "Phone is not in coverage area"                  || "Телефон пользователя находится вне зоны доступа."
         "66000266" | "50001018908" | false      | "User timeout"                                   || "Пользователь не прошел аутентификацию на телефоне в течение требуемого времени. Пожалуйста, попробуйте еще раз."
@@ -190,17 +182,15 @@ class MobileIDAuthSpec extends TaraSpecification {
         Response response = Steps.pollMidResponse(flow, 3000L)
 
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(400))
-        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct message", response.jsonPath().getString("message"), startsWith(errorMessage))
-        assertThat("Correct reportable value", response.jsonPath().getBoolean("reportable"), is(reportable))
+        ErrorValidator.validate(response, HttpStatus.SC_BAD_REQUEST, errorMessage)
+        response.then().body("reportable", is(reportable))
 
         where:
         phoneNo    | idCode        | reportable | label                                            || errorMessage
         "00000266" | "60001019939" | false      | "Mobile-ID user has no active certificates"      || "User has no Mobile-ID contract with this phone number."
         "07110066" | "60001019947" | false      | "Sending authentication request to phone failed" || "User's mobile phone cannot receive Mobile-ID authentication messages."
         "01100266" | "60001019950" | false      | "User cancelled authentication"                  || "User cancelled Mobile-ID authentication on mobile phone."
-        "00000666" | "60001019961" | true       | "Created signature is not valid"                 || "Authentication with Mobile-ID failed. Test your Mobile-ID with the DigiDoc4 client"
+        "00000666" | "60001019961" | true       | "Created signature is not valid"                 || '''Authentication with Mobile-ID failed. Test your Mobile-ID with the DigiDoc4 client <a target="_blank" href="https://www.id.ee/en/article/you-wish-to-add-a-digital-signature-using-a-computer-5/">here!</a>'''
         "01200266" | "60001019972" | false      | "Phone cannot receive Mobile-ID auth messages"   || "User's mobile phone cannot receive Mobile-ID authentication messages."
         "13100266" | "60001019983" | false      | "Phone is not in coverage area"                  || "User's mobile phone is out of the coverage area."
         "66000266" | "50001018908" | false      | "User timeout"                                   || "User did not authenticate on mobile phone during the required time. Please try again."
@@ -251,9 +241,7 @@ class MobileIDAuthSpec extends TaraSpecification {
                 .get(flow.loginService.fullMidPollUrl)
 
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(400))
-        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct Mobile-ID status", response.jsonPath().getString("message"), is(MESSAGE_SESSION_NOT_FOUND))
+        ErrorValidator.validate(response, ErrorMessage.SESSION_NOT_FOUND)
 
         where:
         cookie                        | reason
@@ -262,7 +250,7 @@ class MobileIDAuthSpec extends TaraSpecification {
         ["__Host-SESSION": "1234567"] | "incorrect cookie value"
     }
 
-    //TODO: AUT-630
+    @Issue("AUT-630")
     @Feature("MID_AUTH_STATUS_CHECK_ENDPOINT")
     def "Poll mobile-ID authentication with invalid method: #requestType"() {
         given:
@@ -276,16 +264,14 @@ class MobileIDAuthSpec extends TaraSpecification {
                 .request(requestType, flow.loginService.fullMidPollUrl)
 
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(500))
-        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct error message", response.jsonPath().getString("message"), is(MESSAGE_INTERNAL_ERROR))
+        ErrorValidator.validate(response, ErrorMessage.INTERNAL_ERROR)
 
         where:
-        requestType | _
-        "POST"      | _
-        "PUT"       | _
-        "PATCH"     | _
-        "DELETE"    | _
+        requestType   | _
+        Method.POST   | _
+        Method.PUT    | _
+        Method.PATCH  | _
+        Method.DELETE | _
     }
 
     @Feature("MID_AUTH_STATUS_CHECK_ENDPOINT")
@@ -334,10 +320,7 @@ class MobileIDAuthSpec extends TaraSpecification {
                 .post(flow.loginService.fullMidCancelUrl)
 
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(403))
-        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct error", response.jsonPath().getString("error"), is(ERROR_FORBIDDEN))
-        assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_FORBIDDEN_REQUEST))
+        ErrorValidator.validate(response, ErrorMessage.INVALID_CSRF_TOKEN)
 
         where:
         cookie                        | reason
@@ -346,7 +329,7 @@ class MobileIDAuthSpec extends TaraSpecification {
         ["__Host-SESSION": "1234567"] | "incorrect cookie value"
     }
 
-    //TODO: AUT-630
+    @Issue("AUT-630")
     @Feature("MID_AUTH_STATUS_CHECK_ENDPOINT")
     def "Cancel mobile-ID authentication with invalid method get"() {
         given:
@@ -360,15 +343,13 @@ class MobileIDAuthSpec extends TaraSpecification {
                 .request(requestType, flow.loginService.fullMidCancelUrl)
 
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(500))
-        assertThat("Correct error", response.jsonPath().getString("error"), is(ERROR_INTERNAL))
-        assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_INTERNAL_ERROR))
+        ErrorValidator.validate(response, ErrorMessage.INTERNAL_ERROR)
 
         where:
-        requestType | _
-        "GET"       | _
-        "PUT"       | _
-        "PATCH"     | _
-        "DELETE"    | _
+        requestType   | _
+        Method.GET    | _
+        Method.PUT    | _
+        Method.PATCH  | _
+        Method.DELETE | _
     }
 }

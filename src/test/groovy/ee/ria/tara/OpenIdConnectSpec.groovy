@@ -1,6 +1,8 @@
 package ee.ria.tara
 
 import com.nimbusds.jwt.JWTClaimsSet
+import ee.ria.tara.model.ErrorMessage
+import ee.ria.tara.util.ErrorValidator
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
@@ -47,10 +49,8 @@ class OpenIdConnectSpec extends TaraSpecification {
         Response initLoginSession = Steps.followRedirect(flow, initOIDCServiceSession)
 
         then:
-        assertThat("Correct status code", initLoginSession.statusCode, is(400))
-        assertThat("Correct error", initLoginSession.jsonPath().getString("error"), is(ERROR_BAD_REQUEST))
-        assertThat("Correct message", initLoginSession.jsonPath().getString("message"), is("Päringus puudub scope parameeter."))
-        assertThat("Correct path", initLoginSession.jsonPath().getString("path"), is("/auth/init"))
+        ErrorValidator.validate(initLoginSession, ErrorMessage.MISSING_SCOPE)
+        initLoginSession.then().body("path", is("/auth/init"))
     }
 
     @Feature("OPENID_CONNECT")

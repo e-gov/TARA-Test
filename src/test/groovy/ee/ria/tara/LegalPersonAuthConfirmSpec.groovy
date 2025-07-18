@@ -2,10 +2,15 @@ package ee.ria.tara
 
 import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jwt.JWTClaimsSet
+import ee.ria.tara.model.ErrorMessage
+import ee.ria.tara.util.ErrorValidator
 import io.qameta.allure.Feature
+import io.qameta.allure.Issue
 import io.restassured.filter.cookie.CookieFilter
+import io.restassured.http.Method
 import io.restassured.response.Response
 import org.apache.commons.lang3.RandomStringUtils
+import org.apache.http.HttpStatus
 
 import static io.restassured.RestAssured.given
 import static org.hamcrest.MatcherAssert.assertThat
@@ -66,7 +71,7 @@ class LegalPersonAuthConfirmSpec extends TaraSpecification {
         Steps.verifyResponseHeaders(response)
     }
 
-    //TODO: AUT-630
+    @Issue("AUT-630")
     @Feature("LEGAL_PERSON_SELECTION_ENDPOINT")
     def "Legal person selection request with unsupported method should fail: #requestType "() {
         given:
@@ -83,16 +88,14 @@ class LegalPersonAuthConfirmSpec extends TaraSpecification {
                 .request(requestType, flow.loginService.fullAuthLegalConfirmUrl)
 
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(500))
-        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_INTERNAL_ERROR))
+        ErrorValidator.validate(response, ErrorMessage.INTERNAL_ERROR)
 
         where:
-        requestType | _
-        "GET"       | _
-        "PUT"       | _
-        "PATCH"     | _
-        "DELETE"    | _
+        requestType   | _
+        Method.GET    | _
+        Method.PUT    | _
+        Method.PATCH  | _
+        Method.DELETE | _
     }
 
     @Feature("LEGAL_PERSON_SELECTION_ENDPOINT")
@@ -110,10 +113,7 @@ class LegalPersonAuthConfirmSpec extends TaraSpecification {
                 .post(flow.loginService.fullAuthLegalConfirmUrl)
 
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(403))
-        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct error", response.jsonPath().getString("error"), is(ERROR_FORBIDDEN))
-        assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_FORBIDDEN_REQUEST))
+        ErrorValidator.validate(response, ErrorMessage.INVALID_CSRF_TOKEN)
 
         where:
         cookie                        | reason
@@ -133,9 +133,7 @@ class LegalPersonAuthConfirmSpec extends TaraSpecification {
         Response response = Requests.postRequestWithParams(flow, flow.loginService.fullAuthLegalConfirmUrl, [legal_person_identifier: legalPersonIdentifier, _csrf: flow.csrf])
 
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(400))
-        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct message", response.jsonPath().getString("message"), is(errorMessage))
+        ErrorValidator.validate(response, HttpStatus.SC_BAD_REQUEST, errorMessage)
 
         where:
         legalPersonIdentifier                    | label                                            || errorMessage
@@ -143,6 +141,6 @@ class LegalPersonAuthConfirmSpec extends TaraSpecification {
         RandomStringUtils.random(51, true, true) | "legal person identifier is too long"            || "confirmLegalPerson.legalPersonIdentifier: size must be between 0 and 50"
         "678@123"                                | "unsupported symbols in legal person identifier" || "confirmLegalPerson.legalPersonIdentifier: invalid legal person identifier"
         RandomStringUtils.random(50, true, true) | "legal person identifier max length"             || "Antud identifikaatoriga juriidilist isikut ei leitud."
-        ["12597552", "10910878"]                 | "multiple legal person identifiers"              || MESSAGE_DUPLICATE_PARAMETERS
+        ["12597552", "10910878"]                 | "multiple legal person identifiers"              || ErrorMessage.DUPLICATE_PARAMETERS.message
     }
 }

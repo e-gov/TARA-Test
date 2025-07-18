@@ -1,10 +1,12 @@
 package ee.ria.tara
 
+import ee.ria.tara.model.ErrorMessage
+import ee.ria.tara.util.ErrorValidator
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import org.apache.commons.lang3.RandomStringUtils
-import org.hamcrest.Matchers
+import org.apache.http.HttpStatus
 
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.containsString
@@ -63,18 +65,17 @@ class AuthInitSpec extends TaraSpecification {
         Response initResponse = Requests.getRequestWithParams(flow, flow.loginService.fullInitUrl, paramsMap)
 
         then:
-        assertThat("Correct HTTP status code", initResponse.statusCode, is(400))
-        assertThat("Correct message", initResponse.jsonPath().getString("message"), Matchers.startsWith(errorMessage))
+        ErrorValidator.validate(initResponse, HttpStatus.SC_BAD_REQUEST, errorMessage)
 
         where:
         paramsMap                                                   | label                                    || errorMessage
         [lang: "zu", login_challenge: "12345"]                      | "invalid language code"                  || "authInit.language: supported values are: 'et', 'en', 'ru'"
-        [login_challenge: "12345"]                                  | "not existing login_challenge value"     || "Vigane päring. Päringu volituskood ei ole korrektne."
+        [login_challenge: "12345"]                                  | "not existing login_challenge value"     || ErrorMessage.INVALID_LOGIN_CHALLENGE.message
         [:]                                                         | "login_challenge param is missing"       || "Required request parameter 'login_challenge' for method parameter type String is not present"
         [login_challenge: null]                                     | "empty login_challenge value"            || "authInit.loginChallenge: only characters and numbers allowed"
         [login_challenge: "+372&+(aa"]                              | "invalid symbols &+( in login_challenge" || "authInit.loginChallenge: only characters and numbers allowed"
         [login_challenge: RandomStringUtils.random(51, true, true)] | "too long login_challenge"               || "authInit.loginChallenge: size must be between 0 and 50"
-        [lang: ["et", "zu"], login_challenge: "12345"]              | "multiple language codes"                || MESSAGE_DUPLICATE_PARAMETERS
-        [lang: "et", login_challenge: ["12345", "54321"]]           | "multiple login challenges"              || MESSAGE_DUPLICATE_PARAMETERS
+        [lang: ["et", "zu"], login_challenge: "12345"]              | "multiple language codes"                || ErrorMessage.DUPLICATE_PARAMETERS.message
+        [lang: "et", login_challenge: ["12345", "54321"]]           | "multiple login challenges"              || ErrorMessage.DUPLICATE_PARAMETERS.message
     }
 }

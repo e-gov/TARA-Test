@@ -1,5 +1,7 @@
 package ee.ria.tara
 
+import ee.ria.tara.model.ErrorMessage
+import ee.ria.tara.util.ErrorValidator
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
@@ -12,6 +14,7 @@ import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.lessThan
+import static org.hamcrest.Matchers.greaterThan
 
 class ServiceErrorsSpec extends TaraSpecification {
 
@@ -25,15 +28,13 @@ class ServiceErrorsSpec extends TaraSpecification {
         Response response = Requests.getRequestWithParams(flow, flow.loginService.fullErrorUrl, ["error": inputValue])
 
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(statusCode))
-        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct error", response.jsonPath().getString("message"), is(errorMessage))
+        ErrorValidator.validate(response, errorMessage)
 
         where:
-        inputValue    || statusCode | errorMessage
-        ERROR_CLIENT  || 400        | "Kliendi autentimine ebaõnnestus. Tundmatu klient."
-        ERROR_REQUEST || 400        | "Kliendi autentimine ebaõnnestus (võimalikud põhjused: tundmatu klient, kliendi autentimist pole kaasatud, või toetamata autentimismeetod)"
-        ERROR_SERVICE || 500        | MESSAGE_INTERNAL_ERROR
+        inputValue    || errorMessage
+        ERROR_CLIENT  || ErrorMessage.INVALID_OIDC_CLIENT
+        ERROR_REQUEST || ErrorMessage.INVALID_OIDC_REQUEST
+        ERROR_SERVICE || ErrorMessage.INTERNAL_ERROR
     }
 
     @Feature("ERROR_CONTENT_JSON")
@@ -42,19 +43,20 @@ class ServiceErrorsSpec extends TaraSpecification {
         Response response = Requests.getRequestWithParams(flow, flow.loginService.fullErrorUrl, ["error": ERROR_SERVICE])
 
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(500))
-        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct error message", response.jsonPath().getString("message"), is(MESSAGE_INTERNAL_ERROR))
-        assertThat("Correct error", response.jsonPath().getString("error"), is("Internal Server Error"))
-        assertThat("Correct path", response.jsonPath().getString("path"), is(flow.loginService.errorUrl))
-        assertThat("Correct HTTP status code", response.jsonPath().getInt("status"), is(500))
-        def jsonTimestamp = ZonedDateTime.parse(response.jsonPath().get("timestamp"))
-        def now = ZonedDateTime.now()
-        Duration duration = Duration.between(now, jsonTimestamp)
-        def durationInSeconds = Math.abs(duration.toSeconds())
-        assertThat("Correct timestamp", durationInSeconds.toInteger(), lessThan(10))
-        assertThat("Supported locale", response.jsonPath().getString("locale"), is("et"))
-        assertThat("Incident number is present", response.jsonPath().getString("incident_nr").size() > 15)
+        ErrorValidator.validate(response, ErrorMessage.INTERNAL_ERROR)
+
+        response.then().body(
+                "path", is(flow.loginService.errorUrl),
+                "status", is(500),
+                "locale", is("et"),
+                "incident_nr.size()", greaterThan(15)
+        )
+
+        long timestampAge = Duration.between(
+                ZonedDateTime.parse(response.jsonPath().get("timestamp")),
+                ZonedDateTime.now()
+        ).abs().seconds
+        assertThat("Timestamp should be within 10 seconds", timestampAge, lessThan(10L))
     }
 
     @Feature("USER_ERRORS")

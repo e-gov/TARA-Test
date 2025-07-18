@@ -2,9 +2,13 @@ package ee.ria.tara
 
 import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jwt.JWTClaimsSet
+import ee.ria.tara.model.ErrorMessage
+import ee.ria.tara.util.ErrorValidator
 import io.qameta.allure.Feature
+import io.qameta.allure.Issue
 import io.qameta.allure.Step
 import io.restassured.filter.cookie.CookieFilter
+import io.restassured.http.Method
 import io.restassured.response.Response
 import org.json.JSONObject
 
@@ -72,9 +76,7 @@ class WebEidAuthSpec extends TaraSpecification {
         Response initWebEid = Requests.postRequest(flow, flow.loginService.fullWebEidInitUrl)
 
         then:
-        assertThat("Correct HTTP status code", initWebEid.statusCode, is(403))
-        assertThat("Correct status", initWebEid.jsonPath().getString("error"), is(ERROR_FORBIDDEN))
-        assertThat("Correct message", initWebEid.jsonPath().getString("message"), is(MESSAGE_FORBIDDEN_REQUEST))
+        ErrorValidator.validate(initWebEid, ErrorMessage.INVALID_CSRF_TOKEN)
     }
 
     def "Init Web eID authentication with incorrect _csrf code"() {
@@ -86,12 +88,10 @@ class WebEidAuthSpec extends TaraSpecification {
         Response initWebEid = Requests.postRequest(flow, flow.loginService.fullWebEidInitUrl)
 
         then:
-        assertThat("Correct HTTP status code", initWebEid.statusCode, is(403))
-        assertThat("Correct status", initWebEid.jsonPath().getString("error"), is(ERROR_FORBIDDEN))
-        assertThat("Correct message", initWebEid.jsonPath().getString("message"), is(MESSAGE_FORBIDDEN_REQUEST))
+        ErrorValidator.validate(initWebEid, ErrorMessage.INVALID_CSRF_TOKEN)
     }
 
-    //TODO: AUT-630
+    @Issue("AUT-630")
     def "Init Web eID authentication with unsupported request type: #requestType"() {
         given:
         Steps.startAuthenticationInTara(flow)
@@ -100,16 +100,14 @@ class WebEidAuthSpec extends TaraSpecification {
         Response initWebEid = Requests.requestWithType(flow, requestType, flow.loginService.fullWebEidInitUrl)
 
         then:
-        assertThat("Correct HTTP status code", initWebEid.statusCode, is(500))
-        assertThat("Correct status", initWebEid.jsonPath().getString("error"), is(ERROR_INTERNAL))
-        assertThat("Correct message", initWebEid.jsonPath().getString("message"), is(MESSAGE_INTERNAL_ERROR))
+        ErrorValidator.validate(initWebEid, ErrorMessage.INTERNAL_ERROR)
 
         where:
-        _ | requestType
-        _ | "get"
-        _ | "put"
-        _ | "patch"
-        _ | "delete"
+        requestType   | _
+        Method.GET    | _
+        Method.PUT    | _
+        Method.PATCH  | _
+        Method.DELETE | _
     }
 
     @Feature("DISALLOW_IFRAMES")
@@ -151,9 +149,7 @@ class WebEidAuthSpec extends TaraSpecification {
         Response loginWebEid = Requests.postRequestWithJsonBody(flow, flow.loginService.fullWebEidLoginUrl, authToken)
 
         then:
-        assertThat("Correct HTTP status code", loginWebEid.statusCode, is(400))
-        assertThat("Correct status", loginWebEid.jsonPath().getString("error"), is(ERROR_BAD_REQUEST))
-        assertThat("Correct message", loginWebEid.jsonPath().getString("message"), is("Ebakorrektne päring. Vale seansi staatus."))
+        ErrorValidator.validate(loginWebEid, ErrorMessage.SESSION_STATE_INVALID)
     }
 
     def "Submit login request for Web eID authentication with invalid SESSION cookie"() {
@@ -165,9 +161,7 @@ class WebEidAuthSpec extends TaraSpecification {
         Response loginWebEid = Requests.postRequestWithJsonBody(flow, flow.loginService.fullWebEidLoginUrl, authToken)
 
         then:
-        assertThat("Correct HTTP status code", loginWebEid.statusCode, is(403))
-        assertThat("Correct status", loginWebEid.jsonPath().getString("error"), is(ERROR_FORBIDDEN))
-        assertThat("Correct message", loginWebEid.jsonPath().getString("message"), is(MESSAGE_FORBIDDEN_REQUEST))
+        ErrorValidator.validate(loginWebEid, ErrorMessage.INVALID_CSRF_TOKEN)
     }
 
     def "Submit login request for Web eID authentication with invalid _csrf code"() {
@@ -179,9 +173,7 @@ class WebEidAuthSpec extends TaraSpecification {
         Response loginWebEid = Requests.postRequestWithJsonBody(flow, flow.loginService.fullWebEidLoginUrl, authToken)
 
         then:
-        assertThat("Correct HTTP status code", loginWebEid.statusCode, is(403))
-        assertThat("Correct status", loginWebEid.jsonPath().getString("error"), is(ERROR_FORBIDDEN))
-        assertThat("Correct message", loginWebEid.jsonPath().getString("message"), is(MESSAGE_FORBIDDEN_REQUEST))
+        ErrorValidator.validate(loginWebEid, ErrorMessage.INVALID_CSRF_TOKEN)
     }
 
     def "Submit login request for Web eID authentication without init request"() {
@@ -194,9 +186,7 @@ class WebEidAuthSpec extends TaraSpecification {
         Response loginWebEid = Requests.postRequestWithJsonBody(flow, flow.loginService.fullWebEidLoginUrl, authToken)
 
         then:
-        assertThat("Correct HTTP status code", loginWebEid.statusCode, is(400))
-        assertThat("Correct status", loginWebEid.jsonPath().getString("error"), is(ERROR_BAD_REQUEST))
-        assertThat("Correct message", loginWebEid.jsonPath().getString("message"), is(MESSAGE_INCORRECT_REQUEST))
+        ErrorValidator.validate(loginWebEid, ErrorMessage.INVALID_REQUEST)
     }
 
     def "Submit login request for Web eID authentication with empty authentication token"() {
@@ -208,9 +198,7 @@ class WebEidAuthSpec extends TaraSpecification {
         Response loginWebEid = Requests.postRequestWithJsonBody(flow, flow.loginService.fullWebEidLoginUrl, authToken)
 
         then:
-        assertThat("Correct HTTP status code", loginWebEid.statusCode, is(400))
-        assertThat("Correct status", loginWebEid.jsonPath().getString("error"), is(ERROR_BAD_REQUEST))
-        assertThat("Correct message", loginWebEid.jsonPath().getString("message"), is(MESSAGE_INCORRECT_REQUEST))
+        ErrorValidator.validate(loginWebEid, ErrorMessage.INVALID_REQUEST)
     }
 
     def "Submit login request for Web eID authentication with invalid authentication token: #reason"() {
@@ -222,20 +210,18 @@ class WebEidAuthSpec extends TaraSpecification {
         Response loginWebEid = Requests.postRequestWithJsonBody(flow, flow.loginService.fullWebEidLoginUrl, authToken)
 
         then:
-        assertThat("Correct HTTP status code", loginWebEid.statusCode, is(statusCode))
-        assertThat("Correct status", loginWebEid.jsonPath().getString("error"), is(error))
-        assertThat("Correct message", loginWebEid.jsonPath().getString("message"), is(message))
+        ErrorValidator.validate(loginWebEid, message)
 
         where:
-        reason                        | key                     | value         | statusCode | error             | message
-        "incorrect format value"      | "format"                | "web-eid:666" | 400        | ERROR_BAD_REQUEST | MESSAGE_INCORRECT_REQUEST
-        "empty format value"          | "format"                | ""            | 400        | ERROR_BAD_REQUEST | MESSAGE_INCORRECT_REQUEST
-        "incorrect certificate value" | "unverifiedCertificate" | "certificate" | 400        | ERROR_BAD_REQUEST | MESSAGE_INCORRECT_REQUEST
-        "empty certificate value"     | "unverifiedCertificate" | ""            | 400        | ERROR_BAD_REQUEST | MESSAGE_INCORRECT_REQUEST
-        "incorrect signature value"   | "signature"             | "signature"   | 500        | ERROR_INTERNAL    | MESSAGE_INTERNAL_ERROR
-        "empty signature value"       | "signature"             | ""            | 400        | ERROR_BAD_REQUEST | MESSAGE_INCORRECT_REQUEST
-        "incorrect algorithm value"   | "algorithm"             | "RSA384"      | 400        | ERROR_BAD_REQUEST | MESSAGE_INCORRECT_REQUEST
-        "empty algorithm value"       | "algorithm"             | ""            | 400        | ERROR_BAD_REQUEST | MESSAGE_INCORRECT_REQUEST
+        reason                        | key                     | value         | message
+        "incorrect format value"      | "format"                | "web-eid:666" | ErrorMessage.INVALID_REQUEST
+        "empty format value"          | "format"                | ""            | ErrorMessage.INVALID_REQUEST
+        "incorrect certificate value" | "unverifiedCertificate" | "certificate" | ErrorMessage.INVALID_REQUEST
+        "empty certificate value"     | "unverifiedCertificate" | ""            | ErrorMessage.INVALID_REQUEST
+        "incorrect signature value"   | "signature"             | "signature"   | ErrorMessage.INTERNAL_ERROR // TODO: why is this different?
+        "empty signature value"       | "signature"             | ""            | ErrorMessage.INVALID_REQUEST
+        "incorrect algorithm value"   | "algorithm"             | "RSA384"      | ErrorMessage.INVALID_REQUEST
+        "empty algorithm value"       | "algorithm"             | ""            | ErrorMessage.INVALID_REQUEST
     }
 
     def "Submit login request for Web eID authentication with invalid authentication token: authToken missing #key"() {
@@ -247,10 +233,8 @@ class WebEidAuthSpec extends TaraSpecification {
         Response loginWebEid = Requests.postRequestWithJsonBody(flow, flow.loginService.fullWebEidLoginUrl, authToken)
 
         then:
-        assertThat("Correct HTTP status code", loginWebEid.statusCode, is(400))
-        assertThat("Correct error", loginWebEid.jsonPath().getString("error"), is(ERROR_BAD_REQUEST))
-        assertThat("Correct message", loginWebEid.jsonPath().getString("message"), is(MESSAGE_INCORRECT_REQUEST))
-        assertThat("Error is reportable", loginWebEid.jsonPath().get("reportable") as Boolean, is(false))
+        ErrorValidator.validate(loginWebEid, ErrorMessage.INVALID_REQUEST)
+        loginWebEid.then().body("reportable", is(false))
 
         where:
         key                     | _
@@ -270,10 +254,8 @@ class WebEidAuthSpec extends TaraSpecification {
         Response loginWebEid = Requests.postRequestWithJsonBody(flow, flow.loginService.fullWebEidLoginUrl, authToken)
 
         then:
-        assertThat("Correct HTTP status code", loginWebEid.statusCode, is(400))
-        assertThat("Correct error", loginWebEid.jsonPath().getString("error"), is(ERROR_BAD_REQUEST))
-        assertThat("Correct message", loginWebEid.jsonPath().getString("message"), is("ID-kaardi sertifikaadid ei kehti."))
-        assertThat("Error not reportable", loginWebEid.jsonPath().getBoolean("reportable"), is(false))
+        ErrorValidator.validate(loginWebEid, ErrorMessage.IDC_CERT_EXPIRED)
+        loginWebEid.then().body("reportable", is(false))
     }
 
     @Feature("REJECT_REVOKED_CERTS")
@@ -285,11 +267,8 @@ class WebEidAuthSpec extends TaraSpecification {
         Response loginWebEid = Requests.postRequestWithJsonBody(flow, flow.loginService.fullWebEidLoginUrl, authToken)
 
         then:
-        assertThat("Correct HTTP status code", loginWebEid.statusCode, is(400))
-        assertThat("Correct error", loginWebEid.jsonPath().getString("error"), is(ERROR_BAD_REQUEST))
-        assertThat("Correct message", loginWebEid.jsonPath().getString("message"), is("ID-kaardi sertifikaadid on peatatud või tühistatud. Palun pöörduge Politsei- ja Piirivalveameti teenindusse."))
-        assertThat("Error not reportable", loginWebEid.jsonPath().getBoolean("reportable"), is(false))
-
+        ErrorValidator.validate(loginWebEid, ErrorMessage.IDC_REVOKED)
+        loginWebEid.then().body("reportable", is(false))
     }
 
     @Feature("REJECT_UNKNOWN_CERTS")
@@ -301,11 +280,8 @@ class WebEidAuthSpec extends TaraSpecification {
         Response loginWebEid = Requests.postRequestWithJsonBody(flow, flow.loginService.fullWebEidLoginUrl, authToken)
 
         then:
-        assertThat("Correct HTTP status code", loginWebEid.statusCode, is(400))
-        assertThat("Correct error", loginWebEid.jsonPath().getString("error"), is(ERROR_BAD_REQUEST))
-        assertThat("Correct message", loginWebEid.jsonPath().getString("message"), is("ID-kaardi sertifikaadid on peatatud või tühistatud. Palun pöörduge Politsei- ja Piirivalveameti teenindusse."))
-        assertThat("Error not reportable", loginWebEid.jsonPath().getBoolean("reportable"), is(false))
-
+        ErrorValidator.validate(loginWebEid, ErrorMessage.IDC_REVOKED)
+        loginWebEid.then().body("reportable", is(false))
     }
 
     def "Submit login request for Web eID authentication with unsupported request type: #requestType"() {
@@ -317,16 +293,14 @@ class WebEidAuthSpec extends TaraSpecification {
         Response loginWebEid = Requests.requestWithType(flow, requestType, flow.loginService.fullWebEidLoginUrl)
 
         then:
-        assertThat("Correct HTTP status code", loginWebEid.statusCode, is(500))
-        assertThat("Correct status", loginWebEid.jsonPath().getString("error"), is(ERROR_INTERNAL))
-        assertThat("Correct message", loginWebEid.jsonPath().getString("message"), is(MESSAGE_INTERNAL_ERROR))
+        ErrorValidator.validate(loginWebEid, ErrorMessage.INTERNAL_ERROR)
 
         where:
-        _ | requestType
-        _ | "get"
-        _ | "put"
-        _ | "patch"
-        _ | "delete"
+        requestType   | _
+        Method.GET    | _
+        Method.PUT    | _
+        Method.PATCH  | _
+        Method.DELETE | _
     }
 
     @Feature("DISALLOW_IFRAMES")

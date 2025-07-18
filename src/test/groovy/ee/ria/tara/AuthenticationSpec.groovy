@@ -2,10 +2,15 @@ package ee.ria.tara
 
 import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jwt.JWTClaimsSet
+import ee.ria.tara.model.ErrorMessage
+import ee.ria.tara.util.ErrorValidator
 import io.qameta.allure.Feature
+import io.qameta.allure.Issue
 import io.qameta.allure.Step
 import io.restassured.filter.cookie.CookieFilter
+import io.restassured.http.Method
 import io.restassured.response.Response
+import org.apache.http.HttpStatus
 
 import static io.restassured.RestAssured.given
 import static org.hamcrest.MatcherAssert.assertThat
@@ -474,8 +479,7 @@ class AuthenticationSpec extends TaraSpecification {
         Response redirectionResponse = Requests.postRequestWithParams(flow, flow.nextEndpoint, [SAMLResponse: flow.responseMessage, RelayState: flow.relayState])
 
         then:
-        assertThat("Correct HTTP status code", redirectionResponse.statusCode, is(400))
-        assertThat("Correct message", redirectionResponse.jsonPath().getString("message"), is("Teie poolt valitud välisriigi autentimisvahend on teenuse poolt nõutust madalama autentimistasemega. Palun valige mõni muu autentimisvahend."))
+        ErrorValidator.validate(redirectionResponse, ErrorMessage.EIDAS_INCORRECT_LOA)
     }
 
     @Feature("DISALLOW_IFRAMES")
@@ -547,9 +551,7 @@ class AuthenticationSpec extends TaraSpecification {
                 .request(requestType, flow.loginService.fullAuthAcceptUrl)
 
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(500))
-        assertThat('Correct Content-Type', response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct message", response.jsonPath().getString('message'), is(MESSAGE_INTERNAL_ERROR))
+        ErrorValidator.validate(response, ErrorMessage.INTERNAL_ERROR)
 
         where:
         requestType | _
@@ -570,11 +572,8 @@ class AuthenticationSpec extends TaraSpecification {
                 .post(flow.loginService.fullAuthAcceptUrl)
 
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(403))
-        assertThat('Correct Content-Type', response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct error", response.jsonPath().getString("error"), is(ERROR_FORBIDDEN))
-        assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_FORBIDDEN_REQUEST))
-        assertThat("Incident number is present", response.jsonPath().getString("incident_nr"), hasLength(32))
+        ErrorValidator.validate(response, ErrorMessage.INVALID_CSRF_TOKEN)
+        response.then().body("incident_nr", hasLength(32))
 
         where:
         cookie                        | reason
@@ -624,10 +623,8 @@ class AuthenticationSpec extends TaraSpecification {
         Response response = Requests.getRequestWithParams(flow, flow.loginService.fullAuthRejectUrl, [error_code: "ERROR12345"])
 
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(400))
-        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct error message", response.jsonPath().getString("message"), is("authReject.errorCode: the only supported value is: \'user_cancel\'"))
-        assertThat("Incident number is present", response.jsonPath().getString("incident_nr"), hasLength(32))
+        ErrorValidator.validate(response, HttpStatus.SC_BAD_REQUEST, "authReject.errorCode: the only supported value is: 'user_cancel'")
+        response.then().body("incident_nr", hasLength(32))
     }
 
     @Feature("AUTH_REJECT_LOGIN_ENDPOINT")
@@ -642,9 +639,7 @@ class AuthenticationSpec extends TaraSpecification {
                 .get(flow.loginService.fullAuthRejectUrl)
 
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(400))
-        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct error message", response.jsonPath().getString("message"), is(MESSAGE_SESSION_NOT_FOUND))
+        ErrorValidator.validate(response, ErrorMessage.SESSION_NOT_FOUND)
 
         where:
         cookie                        | reason
@@ -653,7 +648,7 @@ class AuthenticationSpec extends TaraSpecification {
         ["__Host-SESSION": "1234567"] | "incorrect cookie value"
     }
 
-    //TODO: AUT-630
+    @Issue("AUT-630")
     def "Authentication rejection request with invalid request type should fail: #requestType"() {
         given:
         authenticateToPolling(flow)
@@ -666,16 +661,14 @@ class AuthenticationSpec extends TaraSpecification {
                 .request(requestType, flow.loginService.fullAuthRejectUrl)
 
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(500))
-        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct error message", response.jsonPath().getString('message'), is(MESSAGE_INTERNAL_ERROR))
+        ErrorValidator.validate(response, ErrorMessage.INTERNAL_ERROR)
 
         where:
-        requestType | _
-        "POST"      | _
-        "PUT"       | _
-        "PATCH"     | _
-        "DELETE"    | _
+        requestType   | _
+        Method.POST   | _
+        Method.PUT    | _
+        Method.PATCH  | _
+        Method.DELETE | _
     }
 
     @Feature("AUTH_REJECT_LOGIN_ENDPOINT")
@@ -690,10 +683,8 @@ class AuthenticationSpec extends TaraSpecification {
                 .get(flow.loginService.fullAuthRejectUrl)
 
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(400))
-        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct error message", response.jsonPath().getString('message'), is(MESSAGE_DUPLICATE_PARAMETERS))
-        assertThat("Incident number is present", response.jsonPath().getString("incident_nr"), hasLength(32))
+        ErrorValidator.validate(response, ErrorMessage.DUPLICATE_PARAMETERS)
+        response.then().body("incident_nr", hasLength(32))
     }
 
     @Step("Authentication flow up to Mobile-ID polling")

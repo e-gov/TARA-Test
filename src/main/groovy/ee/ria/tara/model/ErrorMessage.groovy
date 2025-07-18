@@ -56,7 +56,7 @@ enum ErrorMessage {
     EIDAS_INCORRECT_LOA(HttpStatus.SC_BAD_REQUEST, "Teie poolt valitud välisriigi autentimisvahend on teenuse poolt nõutust madalama autentimistasemega. Palun valige mõni muu autentimisvahend."),
     EIDAS_INTERNAL_ERROR(HttpStatus.SC_BAD_GATEWAY, "eIDAS teenuses esinevad tehnilised tõrked. Palun proovige mõne aja pärast uuesti."),
     EIDAS_GENERAL_ERROR(HttpStatus.SC_BAD_REQUEST, "Autentimine ebaõnnestus sisemise vea tõttu. Palun proovige mõne aja pärast uuesti."),
-    EIDAS_NOT_ALLOWED_COUNTRY(HttpStatus.SC_BAD_REQUEST, "Antud riigikood ei ole lubatud. Lubatud riigikoodid on:<span translate=\"no\"> {0}</span>"), // TODO: "Antud riigikood ei ole lubatud. Lubatud riigikoodid on:<span translate=\"no\"> {0}</span>"
+    EIDAS_NOT_ALLOWED_COUNTRY(HttpStatus.SC_BAD_REQUEST, "Antud riigikood ei ole lubatud. Lubatud riigikoodid on:<span translate=\"no\"> {0}</span>"),
 
     // Additional errors
     DUPLICATE_PARAMETERS(HttpStatus.SC_BAD_REQUEST, "Multiple request parameters with the same name not allowed"),

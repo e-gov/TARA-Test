@@ -1,10 +1,15 @@
 package ee.ria.tara
 
+import ee.ria.tara.model.ErrorMessage
+import ee.ria.tara.util.ErrorValidator
 import io.qameta.allure.Feature
+import io.qameta.allure.Issue
 import io.qameta.allure.Step
 import io.restassured.filter.cookie.CookieFilter
+import io.restassured.http.Method
 import io.restassured.response.Response
 import org.apache.commons.lang3.RandomStringUtils
+import org.apache.http.HttpStatus
 
 import static io.restassured.RestAssured.given
 import static org.hamcrest.MatcherAssert.assertThat
@@ -51,9 +56,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
                 .get(loginVerifier.getHeader("location"))
 
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(400))
-        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct error message", response.jsonPath().getString("message"), is(MESSAGE_SESSION_NOT_FOUND))
+        ErrorValidator.validate(response, ErrorMessage.SESSION_NOT_FOUND)
 
         where:
         cookie                        | reason
@@ -62,7 +65,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         ["__Host-SESSION": "1234567"] | "incorrect cookie value"
     }
 
-    //TODO: AUT-630
+    @Issue("AUT-630")
     @Feature("USER_CONSENT_ENDPOINT")
     def "Consent request with invalid request type should fail: #requestType"() {
         given:
@@ -75,16 +78,14 @@ class AuthConsentConfirmSpec extends TaraSpecification {
                 .request(requestType, loginVerifier.header("location"))
 
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(500))
-        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_INTERNAL_ERROR))
+        ErrorValidator.validate(response, ErrorMessage.INTERNAL_ERROR)
 
         where:
-        requestType | _
-        "POST"      | _
-        "PUT"       | _
-        "PATCH"     | _
-        "DELETE"    | _
+        requestType   | _
+        Method.POST   | _
+        Method.PUT    | _
+        Method.PATCH  | _
+        Method.DELETE | _
     }
 
     @Feature("USER_CONSENT_ENDPOINT")
@@ -96,9 +97,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         Response response = Requests.getRequestWithParams(flow, flow.loginService.fullConsentUrl, paramsMap)
 
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(400))
-        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct message", response.jsonPath().getString("message"), startsWith(errorMessage))
+        ErrorValidator.validate(response, HttpStatus.SC_BAD_REQUEST, errorMessage)
 
         where:
         paramsMap                                                     | label                                                      || errorMessage
@@ -106,7 +105,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         [consent_challenge: ""]                                       | "Empty parameter consent_challenge value"                  || "authConsent.consentChallenge: only characters and numbers allowed"
         [consent_challenge: RandomStringUtils.random(51, true, true)] | "Too long consent_challenge"                               || "authConsent.consentChallenge: size must be between 0 and 50"
         [consent_challenge: "342%26abz"]                              | "Invalid symbols in the consent_challenge parameter value" || "authConsent.consentChallenge: only characters and numbers allowed"
-        [consent_challenge: ["ABCD1234", "1234abc"]]                  | "Multiple consent_challenge parameters"                    || MESSAGE_DUPLICATE_PARAMETERS
+        [consent_challenge: ["ABCD1234", "1234abc"]]                  | "Multiple consent_challenge parameters"                    || ErrorMessage.DUPLICATE_PARAMETERS.message
     }
 
     @Feature("USER_CONSENT_ENDPOINT")
@@ -120,10 +119,8 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         Response response = Steps.submitConsent(flow, true)
 
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(500))
-        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_INTERNAL_ERROR))
-        assertThat("Correct path", response.jsonPath().getString("path"), is("/auth/consent/confirm"))
+        ErrorValidator.validate(response, ErrorMessage.INTERNAL_ERROR)
+        response.then().body("path", is("/auth/consent/confirm"))
     }
 
     @Feature("USER_CONSENT_CONFIRM_ENDPOINT")
@@ -155,9 +152,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
                 .request(requestType, flow.loginService.fullConsentConfirmUrl)
 
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(500))
-        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_INTERNAL_ERROR))
+        ErrorValidator.validate(response, ErrorMessage.INTERNAL_ERROR)
 
         where:
         requestType | _
@@ -180,10 +175,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
                 .post(flow.loginService.fullConsentConfirmUrl)
 
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(403))
-        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct error", response.jsonPath().getString("error"), is(ERROR_FORBIDDEN))
-        assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_FORBIDDEN_REQUEST))
+        ErrorValidator.validate(response, ErrorMessage.INVALID_CSRF_TOKEN)
 
         where:
         cookie                        | reason
@@ -204,16 +196,14 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         Response response = Requests.postRequestWithParams(flow, flow.loginService.fullConsentConfirmUrl, paramsMap)
 
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(400))
-        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct message", response.jsonPath().getString("message"), is(errorMessage))
+        ErrorValidator.validate(response, HttpStatus.SC_BAD_REQUEST, errorMessage)
 
         where:
         paramName                            | label                                 || errorMessage
         [:]                                  | "Missing parameter consent_given"     || "Required request parameter 'consent_given' for method parameter type String is not present"
         ["consent_given": ""]                | "Empty parameter consent_given value" || "authConsentConfirm.consentGiven: supported values are: 'true', 'false'"
         ["consent_given": "abc123"]          | "Invalid consent_given value"         || "authConsentConfirm.consentGiven: supported values are: 'true', 'false'"
-        ["consent_given": ["false", "true"]] | "Multiple consent_given parameters"   || MESSAGE_DUPLICATE_PARAMETERS
+        ["consent_given": ["false", "true"]] | "Multiple consent_given parameters"   || ErrorMessage.DUPLICATE_PARAMETERS.message
     }
 
     @Feature("USER_CONSENT_POST_REJECT")

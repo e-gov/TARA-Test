@@ -1,8 +1,12 @@
 package ee.ria.tara
 
 import com.nimbusds.jose.jwk.JWKSet
+import ee.ria.tara.model.ErrorMessage
+import ee.ria.tara.util.ErrorValidator
 import io.qameta.allure.Feature
+import io.qameta.allure.Issue
 import io.restassured.filter.cookie.CookieFilter
+import io.restassured.http.Method
 import io.restassured.response.Response
 
 import static io.restassured.RestAssured.given
@@ -67,10 +71,7 @@ class LegalPersonAutInitSpec extends TaraSpecification {
                 .get(flow.loginService.fullAuthLegalInitUrl)
 
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(400))
-        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct error", response.jsonPath().getString("error"), is(ERROR_BAD_REQUEST))
-        assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_SESSION_NOT_FOUND))
+        ErrorValidator.validate(response, ErrorMessage.SESSION_NOT_FOUND)
 
         where:
         cookie                        | reason
@@ -79,7 +80,7 @@ class LegalPersonAutInitSpec extends TaraSpecification {
         ["__Host-SESSION": "1234567"] | "incorrect cookie value"
     }
 
-    //TODO: AUT-630
+    @Issue("AUT-630")
     @Feature("LEGAL_PERSON_INIT_START_ENDPOINT")
     def "Request initialize legal person authentication with invalid method should fail: #requestType"() {
         given:
@@ -92,16 +93,13 @@ class LegalPersonAutInitSpec extends TaraSpecification {
         Response response = Requests.requestWithType(flow, requestType, flow.loginService.fullAuthLegalInitUrl)
 
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(500))
-        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct error", response.jsonPath().getString("error"), is(ERROR_INTERNAL))
-        assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_INTERNAL_ERROR))
+        ErrorValidator.validate(response, ErrorMessage.INTERNAL_ERROR)
 
         where:
-        requestType | _
-        "POST"      | _
-        "PUT"       | _
-        "PATCH"     | _
-        "DELETE"    | _
+        requestType   | _
+        Method.POST   | _
+        Method.PUT    | _
+        Method.PATCH  | _
+        Method.DELETE | _
     }
 }

@@ -3,6 +3,7 @@ package ee.ria.tara
 import io.qameta.allure.Step
 import io.qameta.allure.restassured.AllureRestAssured
 import io.restassured.http.ContentType
+import io.restassured.http.Method
 import io.restassured.path.json.JsonPath
 import io.restassured.response.Response
 import io.restassured.specification.RequestSpecification
@@ -102,7 +103,7 @@ class Requests {
     }
 
     @Step("{1} request with session id")
-    static Response requestWithType(Flow flow, String requestType, String location) {
+    static Response requestWithType(Flow flow, Method requestType, String location) {
         return given()
                 .filter(flow.cookieFilter)
                 .formParam("_csrf", flow.csrf)

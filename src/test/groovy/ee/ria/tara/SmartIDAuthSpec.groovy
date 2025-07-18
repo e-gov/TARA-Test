@@ -2,15 +2,19 @@ package ee.ria.tara
 
 import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jwt.JWTClaimsSet
+import ee.ria.tara.model.ErrorMessage
+import ee.ria.tara.util.ErrorValidator
 import io.qameta.allure.Feature
+import io.qameta.allure.Issue
 import io.restassured.filter.cookie.CookieFilter
+import io.restassured.http.Method
 import io.restassured.response.Response
+import org.apache.http.HttpStatus
 
 import static io.restassured.RestAssured.given
+import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.greaterThan
 import static org.hamcrest.Matchers.is
-import static org.hamcrest.Matchers.containsString
-import static org.hamcrest.MatcherAssert.assertThat
 
 class SmartIDAuthSpec extends TaraSpecification {
 
@@ -73,9 +77,7 @@ class SmartIDAuthSpec extends TaraSpecification {
                 .post(flow.loginService.fullSidInitUrl)
 
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(403))
-        assertThat("Correct error", response.jsonPath().getString("error"), is(ERROR_FORBIDDEN))
-        assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_FORBIDDEN_REQUEST))
+        ErrorValidator.validate(response, ErrorMessage.INVALID_CSRF_TOKEN)
 
         where:
         cookie                        | reason
@@ -84,7 +86,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         ["__Host-SESSION": "1234567"] | "incorrect cookie value"
     }
 
-    //TODO: AUT-630
+    @Issue("AUT-630")
     @Feature("SID_AUTH_INIT_ENDPOINT")
     def "Initialize Smart-ID authentication with invalid method: #requestType"() {
         given:
@@ -97,16 +99,14 @@ class SmartIDAuthSpec extends TaraSpecification {
                 .cookies(["__Host-SESSION": flow.sessionId])
                 .request(requestType, flow.loginService.fullSidInitUrl)
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(500))
-        assertThat("Correct error", response.jsonPath().getString("error"), is(ERROR_INTERNAL))
-        assertThat("Correct error message", response.jsonPath().getString("message"), is(MESSAGE_INTERNAL_ERROR))
+        ErrorValidator.validate(response, ErrorMessage.INTERNAL_ERROR)
 
         where:
-        requestType | _
-        "GET"       | _
-        "PUT"       | _
-        "PATCH"     | _
-        "DELETE"    | _
+        requestType   | _
+        Method.GET    | _
+        Method.PUT    | _
+        Method.PATCH  | _
+        Method.DELETE | _
     }
 
     @Feature("SID_AUTH_INIT_ENDPOINT")
@@ -123,21 +123,18 @@ class SmartIDAuthSpec extends TaraSpecification {
                 .post(flow.loginService.fullSidInitUrl)
 
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(400))
-        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct error", response.jsonPath().getString("error"), is(ERROR_BAD_REQUEST))
-        assertThat("Correct message", response.jsonPath().getString("message"), is(errorMessage))
+        ErrorValidator.validate(response, errorMessage)
 
         where:
         params                                                                 | label                        || errorMessage
-        [idCode: "60001019938"]                                                | "invalid idCode checksum"    || MESSAGE_INCORRECT_ID_CODE
-        [:]                                                                    | "missing idCode"             || MESSAGE_INCORRECT_ID_CODE
-        [idCode: "600010199399"]                                               | "too long idCode"            || MESSAGE_INCORRECT_ID_CODE
-        [idCode: "60001329939"]                                                | "wrong date inside idCode"   || MESSAGE_INCORRECT_ID_CODE
-        [idCode: "6000"]                                                       | "too short idCode"           || MESSAGE_INCORRECT_ID_CODE
-        [idCode: "38500030556"]                                                | "invalid month in idCode"    || MESSAGE_INCORRECT_ID_CODE
-        [idCode: ["60001017716", "60001017727"]]                               | "multiple idCode parameters" || MESSAGE_DUPLICATE_PARAMETERS
-        [idCode: "60001017716", _csrf: "d7860443-a0cc-45db-ad68-3c9300c0b3bb"] | "multiple _csrf parameters"  || MESSAGE_DUPLICATE_PARAMETERS
+        [idCode: "60001019938"]                                                | "invalid idCode checksum"    || ErrorMessage.MID_INVALID_IDENTITY_CODE
+        [:]                                                                    | "missing idCode"             || ErrorMessage.MID_INVALID_IDENTITY_CODE
+        [idCode: "600010199399"]                                               | "too long idCode"            || ErrorMessage.MID_INVALID_IDENTITY_CODE
+        [idCode: "60001329939"]                                                | "wrong date inside idCode"   || ErrorMessage.MID_INVALID_IDENTITY_CODE
+        [idCode: "6000"]                                                       | "too short idCode"           || ErrorMessage.MID_INVALID_IDENTITY_CODE
+        [idCode: "38500030556"]                                                | "invalid month in idCode"    || ErrorMessage.MID_INVALID_IDENTITY_CODE
+        [idCode: ["60001017716", "60001017727"]]                               | "multiple idCode parameters" || ErrorMessage.DUPLICATE_PARAMETERS
+        [idCode: "60001017716", _csrf: "d7860443-a0cc-45db-ad68-3c9300c0b3bb"] | "multiple _csrf parameters"  || ErrorMessage.DUPLICATE_PARAMETERS
     }
 
     @Feature("SID_AUTH_INIT_ENDPOINT")
@@ -150,14 +147,12 @@ class SmartIDAuthSpec extends TaraSpecification {
         Response pollResponse = Steps.pollSidResponse(flow, 1000L)
 
         then:
-        assertThat("Correct HTTP status code", pollResponse.statusCode, is(400))
-        assertThat("Correct Content-Type", pollResponse.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct message", pollResponse.jsonPath().getString("message"), containsString(errorMessage))
-        assertThat("Incident number is present", pollResponse.jsonPath().getString("incident_nr").size(), greaterThan(15))
+        ErrorValidator.validate(pollResponse, HttpStatus.SC_BAD_REQUEST, errorMessage)
+        pollResponse.then().body("incident_nr.size()", greaterThan(15))
 
         where:
         login_locale | label             || errorMessage
-        "et"         | "Estonian locale" || "Kasutajal puudub"
+        "et"         | "Estonian locale" || ErrorMessage.SID_ACCOUNT_NOT_FOUND.message
         "en"         | "English locale"  || "User has no<span translate=\"no\" lang=\"en\"> Smart-ID </span>account."
         "ru"         | "Russian locale"  || "У пользователя нет учетной записи<span translate=\"no\" lang=\"en\"> Smart-ID</span>."
     }
@@ -172,11 +167,8 @@ class SmartIDAuthSpec extends TaraSpecification {
         Response pollResponse = Steps.pollSidResponse(flow, 3000L)
 
         then:
-        assertThat("Correct HTTP status code", pollResponse.statusCode, is(400))
-        assertThat("Correct Content-Type", pollResponse.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct error", pollResponse.jsonPath().getString("error"), is(ERROR_BAD_REQUEST))
-        assertThat("Correct message", pollResponse.jsonPath().getString("message"), is(errorMessage))
-        assertThat("Error not reportable", pollResponse.jsonPath().getBoolean("reportable"), is(false))
+        ErrorValidator.validate(pollResponse, HttpStatus.SC_BAD_REQUEST, errorMessage)
+        pollResponse.then().body("reportable", is(false))
 
         where:
         idCode        | label                                             || errorMessage
@@ -198,11 +190,8 @@ class SmartIDAuthSpec extends TaraSpecification {
         Response pollResponse = Steps.pollSidResponse(flow, 3000L)
 
         then:
-        assertThat("Correct HTTP status code", pollResponse.statusCode, is(400))
-        assertThat("Correct Content-Type", pollResponse.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct error", pollResponse.jsonPath().getString("error"), is(ERROR_BAD_REQUEST))
-        assertThat("Correct message", pollResponse.jsonPath().getString("message"), is(errorMessage))
-        assertThat("Error not reportable", pollResponse.jsonPath().getBoolean("reportable"), is(false))
+        ErrorValidator.validate(pollResponse, HttpStatus.SC_BAD_REQUEST, errorMessage)
+        pollResponse.then().body("reportable", is(false))
 
         where:
         idCode        | label                                             || errorMessage
@@ -224,11 +213,8 @@ class SmartIDAuthSpec extends TaraSpecification {
         Response pollResponse = Steps.pollSidResponse(flow, 3000L)
 
         then:
-        assertThat("Correct HTTP status code", pollResponse.statusCode, is(400))
-        assertThat("Correct Content-Type", pollResponse.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct error", pollResponse.jsonPath().getString("error"), is(ERROR_BAD_REQUEST))
-        assertThat("Correct message", pollResponse.jsonPath().getString("message"), is(errorMessage))
-        assertThat("Error not reportable", pollResponse.jsonPath().getBoolean("reportable"), is(false))
+        ErrorValidator.validate(pollResponse, HttpStatus.SC_BAD_REQUEST, errorMessage)
+        pollResponse.then().body("reportable", is(false))
 
         where:
         idCode        | label                                             || errorMessage
@@ -250,15 +236,12 @@ class SmartIDAuthSpec extends TaraSpecification {
         Response pollResponse = Steps.pollSidResponse(flow, 10000L)
 
         then:
-        assertThat("Correct HTTP status code", pollResponse.statusCode, is(400))
-        assertThat("Correct Content-Type", pollResponse.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct error", pollResponse.jsonPath().getString("error"), is(ERROR_BAD_REQUEST))
-        assertThat("Correct message", pollResponse.jsonPath().getString("message"), is(errorMessage))
-        assertThat("Error not reportable", pollResponse.jsonPath().getBoolean("reportable"), is(false))
+        ErrorValidator.validate(pollResponse, HttpStatus.SC_BAD_REQUEST, errorMessage)
+        pollResponse.then().body("reportable", is(false))
 
         where:
         login_locale || errorMessage
-        "et"         || "Kasutaja ei autentinud<span translate=\"no\" lang=\"en\"> Smart-ID </span>rakenduses oodatud aja jooksul. Palun proovige uuesti."
+        "et"         || ErrorMessage.SID_SESSION_TIMED_OUT.message
         "en"         || "User did not authenticate in the<span translate=\"no\" lang=\"en\"> Smart-ID </span>app within the required time. Please try again."
         "ru"         || "Пользователь не прошел аутентификацию в приложении<span translate=\"no\" lang=\"en\"> Smart-ID </span>в течение требуемого времени. Пожалуйста, попробуйте еще раз."
     }
@@ -306,10 +289,7 @@ class SmartIDAuthSpec extends TaraSpecification {
                 .cookies(cookie)
                 .get(flow.loginService.fullSidPollUrl)
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(400))
-        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct error", response.jsonPath().getString("error"), is(ERROR_BAD_REQUEST))
-        assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_SESSION_NOT_FOUND))
+        ErrorValidator.validate(response, ErrorMessage.SESSION_NOT_FOUND)
 
         where:
         cookie                        | reason
@@ -318,7 +298,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         ["__Host-SESSION": "1234567"] | "incorrect cookie value"
     }
 
-    //TODO: AUT-630
+    @Issue("AUT-630")
     @Feature("SID_AUTH_STATUS_CHECK_ENDPOINT")
     def "Poll Smart-ID authentication with invalid method: #requestType"() {
         given:
@@ -332,16 +312,14 @@ class SmartIDAuthSpec extends TaraSpecification {
                 .request(requestType, flow.loginService.fullSidPollUrl)
 
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(500))
-        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_INTERNAL_ERROR))
+        ErrorValidator.validate(response, ErrorMessage.INTERNAL_ERROR)
 
         where:
-        requestType | _
-        "POST"      | _
-        "PUT"       | _
-        "PATCH"     | _
-        "DELETE"    | _
+        requestType   | _
+        Method.POST   | _
+        Method.PUT    | _
+        Method.PATCH  | _
+        Method.DELETE | _
     }
 
     @Feature("SID_AUTH_STATUS_CHECK_ENDPOINT")
@@ -390,10 +368,7 @@ class SmartIDAuthSpec extends TaraSpecification {
                 .post(flow.loginService.fullSidCancelUrl)
 
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(403))
-        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct error", response.jsonPath().getString("error"), is(ERROR_FORBIDDEN))
-        assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_FORBIDDEN_REQUEST))
+        ErrorValidator.validate(response, ErrorMessage.INVALID_CSRF_TOKEN)
 
         where:
         cookie                        | reason
@@ -402,7 +377,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         ["__Host-SESSION": "1234567"] | "incorrect cookie value"
     }
 
-    //TODO: AUT-630
+    @Issue("AUT-630")
     @Feature("SID_AUTH_STATUS_CHECK_ENDPOINT")
     def "Cancel Smart-ID authentication with invalid method #requestType"() {
         given:
@@ -416,16 +391,13 @@ class SmartIDAuthSpec extends TaraSpecification {
                 .request(requestType, flow.loginService.fullSidCancelUrl)
 
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(500))
-        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct error", response.jsonPath().getString("error"), is(ERROR_INTERNAL))
-        assertThat("Correct message", response.jsonPath().getString("message"), is(MESSAGE_INTERNAL_ERROR))
+        ErrorValidator.validate(response, ErrorMessage.INTERNAL_ERROR)
 
         where:
-        requestType | _
-        "GET"       | _
-        "PUT"       | _
-        "PATCH"     | _
-        "DELETE"    | _
+        requestType   | _
+        Method.GET    | _
+        Method.PUT    | _
+        Method.PATCH  | _
+        Method.DELETE | _
     }
 }
