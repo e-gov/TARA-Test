@@ -1,6 +1,8 @@
 package ee.ria.tara
 
 import com.nimbusds.jose.jwk.JWKSet
+import ee.ria.tara.model.OidcError
+import ee.ria.tara.util.ErrorValidator
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
@@ -45,7 +47,7 @@ class OidcRedirectRequestSpec extends TaraSpecification {
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(303))
         assertThat("Correct state parameter", Utils.getParamValueFromResponseHeader(response, "state"), is(flow.state))
-        assertThat("Correct error", Utils.getParamValueFromResponseHeader(response, "error"), is(ERROR_SCOPE))
+        assertThat("Correct error", Utils.getParamValueFromResponseHeader(response, "error"), is(OidcError.INVALID_SCOPE.code))
         assertThat("Correct error description", Utils.getParamValueFromResponseHeader(response, "error_description"), startsWith("The requested scope is invalid"))
     }
 
@@ -61,7 +63,7 @@ class OidcRedirectRequestSpec extends TaraSpecification {
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(303))
         assertThat("Correct state parameter", Utils.getParamValueFromResponseHeader(response, "state"), is("ab"))
-        assertThat("Correct error", Utils.getParamValueFromResponseHeader(response, "error"), is(ERROR_STATE))
+        assertThat("Correct error", Utils.getParamValueFromResponseHeader(response, "error"), is(OidcError.INVALID_STATE.code))
         assertThat("Correct error description", Utils.getParamValueFromResponseHeader(response, "error_description"), startsWith("The state is missing"))
     }
 
@@ -85,7 +87,7 @@ class OidcRedirectRequestSpec extends TaraSpecification {
     def "Verify redirection url with user cancel"() {
         given:
         Steps.startAuthenticationInTara(flow)
-        Response rejectResponse = Requests.getRequestWithParams(flow, flow.loginService.fullAuthRejectUrl, ["error_code": REJECT_ERROR_CODE])
+        Response rejectResponse = Requests.getRequestWithParams(flow, flow.loginService.fullAuthRejectUrl, ["error_code": OidcError.USER_CANCEL.code])
 
         when:
         Response response = Steps.followRedirectWithCookies(flow, rejectResponse, flow.oidcService.cookies)
@@ -93,7 +95,7 @@ class OidcRedirectRequestSpec extends TaraSpecification {
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(303))
         assertThat("Correct state parameter", Utils.getParamValueFromResponseHeader(response, "state"), is(flow.state))
-        assertThat("Correct error", Utils.getParamValueFromResponseHeader(response, "error"), is(REJECT_ERROR_CODE))
+        assertThat("Correct error", Utils.getParamValueFromResponseHeader(response, "error"), is(OidcError.USER_CANCEL.code))
         assertThat("Correct error description", Utils.getParamValueFromResponseHeader(response, "error_description"), startsWith("User canceled the authentication process"))
     }
 }

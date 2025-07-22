@@ -1,5 +1,7 @@
 package ee.ria.tara
 
+import ee.ria.tara.model.OidcError
+import ee.ria.tara.util.ErrorValidator
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.path.json.JsonPath
@@ -84,7 +86,7 @@ class OidcMetadataSpec extends TaraSpecification {
 
         then:
         assertThat("Correct HTTP status code", authorizationResponse.statusCode, is(302))
-        assertThat("Correct value for authorization endpoint", Utils.getParamValueFromResponseHeader(authorizationResponse, "error"), is(ERROR_CLIENT))
+        assertThat("Correct value for authorization endpoint", Utils.getParamValueFromResponseHeader(authorizationResponse, "error"), is(OidcError.INVALID_CLIENT.code))
     }
 
     @Feature("OIDC_ENDPOINTS")
@@ -98,7 +100,7 @@ class OidcMetadataSpec extends TaraSpecification {
         then:
         assertThat("Correct HTTP status code", tokenResponse.statusCode, is(400))
         assertThat("Correct Content-Type", tokenResponse.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct error message", tokenResponse.jsonPath().getString("error"), is(ERROR_GRANT))
+        assertThat("Correct error message", tokenResponse.jsonPath().getString("error"), is(OidcError.INVALID_GRANT.code))
     }
 
     @Feature("OIDC_ENDPOINTS")
@@ -111,7 +113,7 @@ class OidcMetadataSpec extends TaraSpecification {
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(401))
-        assertThat("Correct error text", response.jsonPath().getString("error"), is(ERROR_UNAUTHORIZED))
+        assertThat("Correct error text", response.jsonPath().getString("error"), is(OidcError.REQUEST_UNAUTHORIZED.code))
         assertThat("Correct error description", response.jsonPath().getString("error_description"), is("The request could not be authorized. Check that you provided valid credentials in the right format."))
     }
 

@@ -2,6 +2,7 @@ package ee.ria.tara
 
 import com.nimbusds.jwt.JWTClaimsSet
 import ee.ria.tara.model.ErrorMessage
+import ee.ria.tara.model.OidcError
 import ee.ria.tara.util.ErrorValidator
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
@@ -68,7 +69,7 @@ class OpenIdConnectSpec extends TaraSpecification {
         then:
         assertThat("Correct status code", response.statusCode, is(400))
         assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct error", response.jsonPath().getString("error"), is(ERROR_GRANT))
+        assertThat("Correct error", response.jsonPath().getString("error"), is(OidcError.INVALID_GRANT.code))
     }
 
     @Feature("OPENID_CONNECT")
@@ -86,7 +87,7 @@ class OpenIdConnectSpec extends TaraSpecification {
         then:
         assertThat("Correct status code", response.statusCode, is(400))
         assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct error message", response.jsonPath().getString("error"), is(ERROR_REQUEST))
+        assertThat("Correct error message", response.jsonPath().getString("error"), is(OidcError.INVALID_REQUEST.code))
         assertThat("Correct error description", response.jsonPath().getString("error_description"), allOf(startsWith(errorSuffix), endsWith(errorPrefix)))
 
         where:
@@ -112,7 +113,7 @@ class OpenIdConnectSpec extends TaraSpecification {
         then:
         assertThat("Correct status code", response.statusCode, is(400))
         assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct error message", response.jsonPath().getString("error"), is(ERROR_REQUEST))
+        assertThat("Correct error message", response.jsonPath().getString("error"), is(OidcError.INVALID_REQUEST.code))
         assertThat("Correct error description", response.jsonPath().getString("error_description"), allOf(startsWith(errorSuffix), endsWith(errorPrefix)))
 
         where:

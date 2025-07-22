@@ -3,6 +3,7 @@ package ee.ria.tara
 import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jwt.JWTClaimsSet
 import ee.ria.tara.model.ErrorMessage
+import ee.ria.tara.model.OidcError
 import ee.ria.tara.util.ErrorValidator
 import io.qameta.allure.Feature
 import io.qameta.allure.Issue
@@ -586,14 +587,14 @@ class AuthenticationSpec extends TaraSpecification {
     def "OIDC login verifier request after rejecting authentication returns correct error in URL"() {
         given:
         authenticateToPolling(flow)
-        Response response = Requests.getRequestWithParams(flow, flow.loginService.fullAuthRejectUrl, [error_code: REJECT_ERROR_CODE])
+        Response response = Requests.getRequestWithParams(flow, flow.loginService.fullAuthRejectUrl, [error_code: OidcError.USER_CANCEL.code])
 
         when: "OIDC login verifier request after rejecting authentication"
         Response oidcServiceResponse = Steps.followRedirectWithCookies(flow, response, flow.oidcService.cookies)
 
         then:
         assertThat("Correct HTTP status code", oidcServiceResponse.statusCode, is(303))
-        assertThat("Correct error in URL", oidcServiceResponse.header("location"), containsString(REJECT_ERROR_CODE))
+        assertThat("Correct error in URL", oidcServiceResponse.header("location"), containsString(OidcError.USER_CANCEL.code))
     }
 
     @Feature("DISALLOW_IFRAMES")
@@ -607,7 +608,7 @@ class AuthenticationSpec extends TaraSpecification {
         authenticateToPolling(flow)
 
         when:
-        Response response = Requests.getRequestWithParams(flow, flow.loginService.fullAuthRejectUrl, [error_code: REJECT_ERROR_CODE])
+        Response response = Requests.getRequestWithParams(flow, flow.loginService.fullAuthRejectUrl, [error_code: OidcError.USER_CANCEL.code])
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(302))
@@ -635,7 +636,7 @@ class AuthenticationSpec extends TaraSpecification {
         when: "reject authentication with invalid session cookie"
         Response response = given()
                 .cookies(cookie)
-                .param("error_code", REJECT_ERROR_CODE)
+                .param("error_code", OidcError.USER_CANCEL.code)
                 .get(flow.loginService.fullAuthRejectUrl)
 
         then:
@@ -656,7 +657,7 @@ class AuthenticationSpec extends TaraSpecification {
         when: "reject authentication with invalid request type"
         Response response = given()
                 .cookies("__Host-SESSION": flow.sessionId)
-                .params([error_code: REJECT_ERROR_CODE,
+                .params([error_code: OidcError.USER_CANCEL.code,
                          _csrf     : flow.csrf])
                 .request(requestType, flow.loginService.fullAuthRejectUrl)
 

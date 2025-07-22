@@ -1,6 +1,8 @@
 package ee.ria.tara
 
 import com.nimbusds.jose.jwk.JWKSet
+import ee.ria.tara.model.OidcError
+import ee.ria.tara.util.ErrorValidator
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
@@ -323,7 +325,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(401))
         assertThat("Correct Content-Type", response.contentType, is("application/json"))
-        assertThat("Correct error", response.jsonPath().getString("error"), is(ERROR_UNAUTHORIZED))
+        assertThat("Correct error", response.jsonPath().getString("error"), is(OidcError.REQUEST_UNAUTHORIZED.code))
         assertThat("Correct error description", response.jsonPath().getString("error_description"), is("The request could not be authorized. Check that you provided valid credentials in the right format."))
     }
 
@@ -338,7 +340,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(401))
         assertThat("Correct Content-Type", response.contentType, is("application/json"))
-        assertThat("Correct error", response.jsonPath().getString("error"), is(ERROR_UNAUTHORIZED))
+        assertThat("Correct error", response.jsonPath().getString("error"), is(OidcError.REQUEST_UNAUTHORIZED.code))
         assertThat("Correct error description", response.jsonPath().getString("error_description"), is("The request could not be authorized. Check that you provided valid credentials in the right format."))
     }
 
@@ -351,8 +353,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(401))
         assertThat("Correct Content-Type", response.contentType, is("application/json"))
-        assertThat("Correct error", response.jsonPath().getString("error"), is(ERROR_UNAUTHORIZED))
+        assertThat("Correct error", response.jsonPath().getString("error"), is(OidcError.REQUEST_UNAUTHORIZED.code))
         assertThat("Correct error description", response.jsonPath().getString("error_description"), is("The request could not be authorized. Check that you provided valid credentials in the right format."))
     }
-
 }

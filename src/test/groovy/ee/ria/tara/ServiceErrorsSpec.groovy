@@ -1,6 +1,7 @@
 package ee.ria.tara
 
 import ee.ria.tara.model.ErrorMessage
+import ee.ria.tara.model.OidcError
 import ee.ria.tara.util.ErrorValidator
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
@@ -31,16 +32,16 @@ class ServiceErrorsSpec extends TaraSpecification {
         ErrorValidator.validate(response, errorMessage)
 
         where:
-        inputValue    || errorMessage
-        ERROR_CLIENT  || ErrorMessage.INVALID_OIDC_CLIENT
-        ERROR_REQUEST || ErrorMessage.INVALID_OIDC_REQUEST
-        ERROR_SERVICE || ErrorMessage.INTERNAL_ERROR
+        inputValue                     || errorMessage
+        OidcError.INVALID_CLIENT.code  || ErrorMessage.INVALID_OIDC_CLIENT
+        OidcError.INVALID_REQUEST.code || ErrorMessage.INVALID_OIDC_REQUEST
+        OidcError.SERVICE_ERROR.code   || ErrorMessage.INTERNAL_ERROR
     }
 
     @Feature("ERROR_CONTENT_JSON")
     def "Verify error response json"() {
         when:
-        Response response = Requests.getRequestWithParams(flow, flow.loginService.fullErrorUrl, ["error": ERROR_SERVICE])
+        Response response = Requests.getRequestWithParams(flow, flow.loginService.fullErrorUrl, ["error": OidcError.SERVICE_ERROR.code])
 
         then:
         ErrorValidator.validate(response, ErrorMessage.INTERNAL_ERROR)
@@ -63,7 +64,7 @@ class ServiceErrorsSpec extends TaraSpecification {
     def "Verify error response html: general error"() {
         when:
         Response response = given()
-                .params(["error": ERROR_SERVICE])
+                .params(["error": OidcError.SERVICE_ERROR.code])
                 .headers(["Accept": "text/html"])
                 .get(flow.loginService.fullErrorUrl)
 
@@ -83,7 +84,7 @@ class ServiceErrorsSpec extends TaraSpecification {
     def "Verify error response html: invalid client"() {
         when:
         Response response = given()
-                .params(["error": ERROR_CLIENT])
+                .params(["error": OidcError.INVALID_CLIENT.code])
                 .headers(["Accept": "text/html"])
                 .get(flow.loginService.fullErrorUrl)
 

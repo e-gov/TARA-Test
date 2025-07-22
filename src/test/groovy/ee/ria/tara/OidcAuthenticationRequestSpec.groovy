@@ -3,6 +3,7 @@ package ee.ria.tara
 import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jwt.JWTClaimsSet
 import ee.ria.tara.model.ErrorMessage
+import ee.ria.tara.model.OidcError
 import ee.ria.tara.util.ErrorValidator
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
@@ -31,16 +32,16 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(statusCode))
-        assertThat("Correct error", Utils.getParamValueFromResponseHeader(response, "error"), is(error))
+        assertThat("Correct error", Utils.getParamValueFromResponseHeader(response, "error"), is(error.code))
         assertThat("Correct error_description", Utils.getParamValueFromResponseHeader(response, "error_description"), allOf(startsWith(errorSuffix), endsWith(errorPrefix)))
 
         where:
-        parameter                                 || statusCode | error                       | errorSuffix                                                   | errorPrefix
-        [redirect_uri: "https://www.example.com"] || 302        | ERROR_REQUEST               | "The request is missing a required parameter"                 | "pre-registered redirect urls."
-        [scope: "my_scope"]                       || 303        | ERROR_SCOPE                 | "The requested scope is invalid"                              | " is not allowed to request scope 'my_scope'."
-        [scope: "openid,eidas"]                   || 303        | ERROR_SCOPE                 | "The requested scope is invalid"                              | " is not allowed to request scope 'openid,eidas'."
-        [response_type: "token"]                  || 303        | "unsupported_response_type" | "The authorization server does not support obtaining a token" | "is not allowed to request response_type 'token'."
-        [client_id: "my_client"]                  || 302        | ERROR_CLIENT                | "Client authentication failed"                                | "The requested OAuth 2.0 Client does not exist."
+        parameter                                 || statusCode | error                               | errorSuffix                                                   | errorPrefix
+        [redirect_uri: "https://www.example.com"] || 302        | OidcError.INVALID_REQUEST           | "The request is missing a required parameter"                 | "pre-registered redirect urls."
+        [scope: "my_scope"]                       || 303        | OidcError.INVALID_SCOPE             | "The requested scope is invalid"                              | " is not allowed to request scope 'my_scope'."
+        [scope: "openid,eidas"]                   || 303        | OidcError.INVALID_SCOPE             | "The requested scope is invalid"                              | " is not allowed to request scope 'openid,eidas'."
+        [response_type: "token"]                  || 303        | OidcError.UNSUPPORTED_RESPONSE_TYPE | "The authorization server does not support obtaining a token" | "is not allowed to request response_type 'token'."
+        [client_id: "my_client"]                  || 302        | OidcError.INVALID_CLIENT            | "Client authentication failed"                                | "The requested OAuth 2.0 Client does not exist."
     }
 
     @Feature("https://e-gov.github.io/TARA-Doku/TechnicalSpecification#41-authentication-request")
@@ -54,7 +55,7 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
         then:
         String errorDescription = "The requested scope is invalid, unknown, or malformed. The OAuth 2.0 Client is not allowed to request scope 'smartid'."
         assertThat("Correct HTTP status code", response.statusCode, is(303))
-        assertThat("Correct error", Utils.getParamValueFromResponseHeader(response, "error"), is(ERROR_SCOPE))
+        assertThat("Correct error", Utils.getParamValueFromResponseHeader(response, "error"), is(OidcError.INVALID_SCOPE.code))
         assertThat("Correct error description", Utils.getParamValueFromResponseHeader(response, "error_description"), is(errorDescription))
     }
 

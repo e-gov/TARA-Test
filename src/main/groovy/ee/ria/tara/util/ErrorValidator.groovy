@@ -1,5 +1,6 @@
 package ee.ria.tara.util
 
+
 import ee.ria.tara.model.ErrorMessage
 import io.restassured.response.Response
 import io.restassured.response.ValidatableResponse
@@ -16,12 +17,12 @@ class ErrorValidator {
     }
 
     static void validate(Response response, int statusCode, String message) {
-        baseAssert(response, statusCode)
+        baseValidate(response, statusCode)
                 .body("message", equalTo(message))
     }
 
     static void validate(Response response, int statusCode, ErrorMessage... errorMessages) {
-        baseAssert(response, statusCode)
+        baseValidate(response, statusCode)
 
         def actualMessages = response.jsonPath().getString("message").split("; *").toList()
         def expectedMessages = errorMessages*.message
@@ -29,7 +30,7 @@ class ErrorValidator {
         assertThat(actualMessages, containsInAnyOrder(expectedMessages as String[]))
     }
 
-    private static ValidatableResponse baseAssert(Response response, int statusCode) {
+    private static ValidatableResponse baseValidate(Response response, int statusCode) {
         response.then()
                 .statusCode(statusCode)
                 .contentType("application/json;charset=UTF-8")

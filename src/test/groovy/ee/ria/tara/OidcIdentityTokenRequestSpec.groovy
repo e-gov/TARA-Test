@@ -2,8 +2,8 @@ package ee.ria.tara
 
 import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jwt.JWTClaimsSet
+import ee.ria.tara.model.OidcError
 import io.qameta.allure.Feature
-import io.qameta.allure.restassured.AllureRestAssured
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 
@@ -103,7 +103,7 @@ class OidcIdentityTokenRequestSpec extends TaraSpecification {
             assertThat("Id_token element exists", tokenResponse.jsonPath().getString("id_token").size(), greaterThan(1000))
         } else {
             assertThat("Correct HTTP status", tokenResponse.statusCode, is(401))
-            assertThat("Correct error", tokenResponse.jsonPath().getString("error"), is(ERROR_CLIENT))
+            assertThat("Correct error", tokenResponse.jsonPath().getString("error"), is(OidcError.INVALID_CLIENT.code))
             assertThat("Correct error message", tokenResponse.jsonPath().getString("error_description"), containsString(
                     "The OAuth 2.0 Client supports client authentication method 'client_secret_basic', but method 'client_secret_post' was requested."))
         }
@@ -132,7 +132,7 @@ class OidcIdentityTokenRequestSpec extends TaraSpecification {
             assertThat("Id_token element exists", tokenResponse.jsonPath().getString("id_token").size(), greaterThan(1000))
         } else {
             assertThat("Correct HTTP status", tokenResponse.statusCode, is(401))
-            assertThat("Correct error", tokenResponse.jsonPath().getString("error"), is(ERROR_CLIENT))
+            assertThat("Correct error", tokenResponse.jsonPath().getString("error"), is(OidcError.INVALID_CLIENT.code))
             assertThat("Correct error message", tokenResponse.jsonPath().getString("error_description"), containsString(
                     "The OAuth 2.0 Client supports client authentication method 'client_secret_post', but method 'client_secret_basic' was requested."))
         }
@@ -154,15 +154,15 @@ class OidcIdentityTokenRequestSpec extends TaraSpecification {
 
         then:
         assertThat("Correct HTTP status", tokenResponse.statusCode, is(statusCode))
-        assertThat("Correct error", tokenResponse.jsonPath().getString("error"), is(error))
+        assertThat("Correct error", tokenResponse.jsonPath().getString("error"), is(error.code))
         assertThat("Correct error message", tokenResponse.jsonPath().getString("error_description"), containsString(errorDescription))
 
 
         where:
-        parameter      || statusCode | error                     | errorDescription
-        "ClientId"     || 400        | ERROR_UNAUTHORIZED_CLIENT | "is not whitelisted"
-        "ClientSecret" || 401        | ERROR_CLIENT              | "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method)."
-        "RedirectUri"  || 400        | ERROR_GRANT               | "The 'redirect_uri' from this request does not match the one from the authorize request."
+        parameter      || statusCode | error                         | errorDescription
+        "ClientId"     || 400        | OidcError.UNAUTHORIZED_CLIENT | "is not whitelisted"
+        "ClientSecret" || 401        | OidcError.INVALID_CLIENT      | "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method)."
+        "RedirectUri"  || 400        | OidcError.INVALID_GRANT       | "The 'redirect_uri' from this request does not match the one from the authorize request."
     }
 
     @Feature("OIDC_ID_TOKEN")
@@ -176,15 +176,15 @@ class OidcIdentityTokenRequestSpec extends TaraSpecification {
 
         then:
         assertThat("Correct HTTP status", tokenResponse.statusCode, is(statusCode))
-        assertThat("Correct error", tokenResponse.jsonPath().getString("error"), is(error))
+        assertThat("Correct error", tokenResponse.jsonPath().getString("error"), is(error.code))
         assertThat("Correct error message", tokenResponse.jsonPath().getString("error_description"), containsString(errorDescription))
 
 
         where:
-        parameter      || statusCode | error                     | errorDescription
-        "ClientId"     || 400        | ERROR_UNAUTHORIZED_CLIENT | "is not whitelisted"
-        "ClientSecret" || 401        | ERROR_CLIENT              | "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method)."
-        "RedirectUri"  || 400        | ERROR_GRANT               | "The 'redirect_uri' from this request does not match the one from the authorize request."
+        parameter      || statusCode | error                         | errorDescription
+        "ClientId"     || 400        | OidcError.UNAUTHORIZED_CLIENT | "is not whitelisted"
+        "ClientSecret" || 401        | OidcError.INVALID_CLIENT      | "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method)."
+        "RedirectUri"  || 400        | OidcError.INVALID_GRANT       | "The 'redirect_uri' from this request does not match the one from the authorize request."
     }
 
 
@@ -201,7 +201,7 @@ class OidcIdentityTokenRequestSpec extends TaraSpecification {
         assertThat("Correct HTTP status code", tokenResponse.statusCode, is(200))
         assertThat("Correct HTTP status code", tokenResponse2.statusCode, is(400))
         assertThat("Correct Content-Type", tokenResponse2.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct error", tokenResponse2.jsonPath().getString("error"), is(ERROR_GRANT))
+        assertThat("Correct error", tokenResponse2.jsonPath().getString("error"), is(OidcError.INVALID_GRANT.code))
         assertThat("Correct error description", tokenResponse2.jsonPath().getString("error_description"), endsWith("The authorization code has already been used."))
     }
 
@@ -218,7 +218,7 @@ class OidcIdentityTokenRequestSpec extends TaraSpecification {
         assertThat("Correct HTTP status code", tokenResponse.statusCode, is(200))
         assertThat("Correct HTTP status code", tokenResponse2.statusCode, is(400))
         assertThat("Correct Content-Type", tokenResponse2.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct error", tokenResponse2.jsonPath().getString("error"), is(ERROR_GRANT))
+        assertThat("Correct error", tokenResponse2.jsonPath().getString("error"), is(OidcError.INVALID_GRANT.code))
         assertThat("Correct error description", tokenResponse2.jsonPath().getString("error_description"), endsWith("The authorization code has already been used."))
     }
 
@@ -241,7 +241,7 @@ class OidcIdentityTokenRequestSpec extends TaraSpecification {
 
         then:
         assertThat("Correct HTTP status code", tokenResponse.statusCode, is(400))
-        assertThat("Correct error", tokenResponse.jsonPath().getString("error"), is(ERROR_UNAUTHORIZED_CLIENT))
+        assertThat("Correct error", tokenResponse.jsonPath().getString("error"), is(OidcError.UNAUTHORIZED_CLIENT.code))
         assertThat("Correct error description", tokenResponse.jsonPath().getString("error_description"),
                 allOf(startsWith("IP address"), endsWith("is not whitelisted for client_id \"tara-client\"")))
     }

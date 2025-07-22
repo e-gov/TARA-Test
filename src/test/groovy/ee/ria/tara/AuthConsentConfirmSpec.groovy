@@ -1,6 +1,7 @@
 package ee.ria.tara
 
 import ee.ria.tara.model.ErrorMessage
+import ee.ria.tara.model.OidcError
 import ee.ria.tara.util.ErrorValidator
 import io.qameta.allure.Feature
 import io.qameta.allure.Issue
@@ -216,7 +217,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         Response response = Steps.followRedirectWithCookies(flow, consentRejectResult, flow.oidcClientPublic.cookies)
 
         then:
-        assertThat("Correct error", Utils.getParamValueFromResponseHeader(response, "error"), is(REJECT_ERROR_CODE))
+        assertThat("Correct error", Utils.getParamValueFromResponseHeader(response, "error"), is(OidcError.USER_CANCEL_CONSENT.code))
         assertThat("Correct error description", Utils.getParamValueFromResponseHeader(response, "error_description"), is("Consent not given. User canceled the authentication process."))
         assertThat("Correct state", Utils.getParamValueFromResponseHeader(response, "state"), is(flow.state))
     }
