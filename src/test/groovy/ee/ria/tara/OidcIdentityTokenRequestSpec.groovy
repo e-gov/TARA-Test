@@ -5,6 +5,7 @@ import com.nimbusds.jwt.JWTClaimsSet
 import ee.ria.tara.model.OidcError
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
+import io.restassured.http.Method
 import io.restassured.response.Response
 
 import static io.restassured.RestAssured.given
@@ -269,10 +270,10 @@ class OidcIdentityTokenRequestSpec extends TaraSpecification {
         assertThat("Correct message", tokenResponse.body.asString(), containsString("Method Not Allowed"))
 
         where:
-        method   | _
-        "get"    | _
-        "put"    | _
-        "patch"  | _
-        "delete" | _
+        method        | _
+        Method.GET    | _
+        Method.PUT    | _
+        Method.PATCH  | _
+        Method.DELETE | _
     }
 }

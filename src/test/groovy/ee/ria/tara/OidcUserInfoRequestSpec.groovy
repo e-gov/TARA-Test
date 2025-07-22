@@ -2,10 +2,11 @@ package ee.ria.tara
 
 import com.nimbusds.jose.jwk.JWKSet
 import ee.ria.tara.model.OidcError
-import ee.ria.tara.util.ErrorValidator
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
+import io.restassured.http.Method
 import io.restassured.response.Response
+import org.apache.http.HttpStatus
 
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.MatcherAssert.assertThat
@@ -31,7 +32,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         String accessToken = tokenResponse.jsonPath().getString("access_token")
 
         when:
-        Response userInfoResponse = Steps.getUserInfoResponseWithQueryParam(flow, REQUEST_TYPE_GET, accessToken)
+        Response userInfoResponse = Steps.getUserInfoResponseWithQueryParam(flow, Method.GET, accessToken)
 
         then:
         assertThat("Correct HTTP status code", userInfoResponse.statusCode, is(200))
@@ -60,7 +61,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         String accessToken = idCardAuthResponse.jsonPath().getString("access_token")
 
         when:
-        Response userInfoResponse = Steps.getUserInfoResponseWithHeaderParam(flow, REQUEST_TYPE_GET, accessToken)
+        Response userInfoResponse = Steps.getUserInfoResponseWithHeaderParam(flow, Method.GET, accessToken)
 
         then:
         assertThat("Correct HTTP status code", userInfoResponse.statusCode, is(200))
@@ -87,7 +88,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         String accessToken = idCardAuthResponse.jsonPath().getString("access_token")
 
         when:
-        Response userInfoResponse = Steps.getUserInfoResponseWithHeaderParam(flow, REQUEST_TYPE_POST, accessToken)
+        Response userInfoResponse = Steps.getUserInfoResponseWithHeaderParam(flow, Method.POST, accessToken)
 
         then:
         assertThat("Correct HTTP status code", userInfoResponse.statusCode, is(200))
@@ -113,7 +114,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         String accessToken = idCardAuthResponse.jsonPath().getString("access_token")
 
         when:
-        Response userInfoResponse = Steps.getUserInfoResponseWithHeaderParam(flow, REQUEST_TYPE_GET, accessToken)
+        Response userInfoResponse = Steps.getUserInfoResponseWithHeaderParam(flow, Method.GET, accessToken)
 
         then:
         assertThat("Correct HTTP status code", userInfoResponse.statusCode, is(200))
@@ -143,7 +144,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         String accessToken = tokenResponse.jsonPath().getString("access_token")
 
         when:
-        Response userInfoResponse = Steps.getUserInfoResponseWithQueryParam(flow, REQUEST_TYPE_POST, accessToken)
+        Response userInfoResponse = Steps.getUserInfoResponseWithQueryParam(flow, Method.POST, accessToken)
 
         then:
         assertThat("Correct HTTP status code", userInfoResponse.statusCode, is(200))
@@ -169,7 +170,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         String accessToken = tokenResponse.jsonPath().getString("access_token")
 
         when:
-        Response userInfoResponse = Steps.getUserInfoResponseWithQueryParam(flow, REQUEST_TYPE_GET, accessToken)
+        Response userInfoResponse = Steps.getUserInfoResponseWithQueryParam(flow, Method.GET, accessToken)
 
         then:
         assertThat("Correct HTTP status code", userInfoResponse.statusCode, is(200))
@@ -197,7 +198,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         String accessToken = tokenResponse.jsonPath().getString("access_token")
 
         when:
-        Response userInfoResponse = Steps.getUserInfoResponseWithQueryParam(flow, REQUEST_TYPE_GET, accessToken)
+        Response userInfoResponse = Steps.getUserInfoResponseWithQueryParam(flow, Method.GET, accessToken)
 
         then:
         assertThat("Correct HTTP status code", userInfoResponse.statusCode, is(200))
@@ -223,7 +224,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         String accessToken = tokenResponse.jsonPath().getString("access_token")
 
         when:
-        Response userInfoResponse = Steps.getUserInfoResponseWithQueryParam(flow, REQUEST_TYPE_GET, accessToken)
+        Response userInfoResponse = Steps.getUserInfoResponseWithQueryParam(flow, Method.GET, accessToken)
 
         then:
         assertThat("Correct HTTP status code", userInfoResponse.statusCode, is(200))
@@ -251,7 +252,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         String accessToken = tokenResponse.jsonPath().getString("access_token")
 
         when:
-        Response userInfoResponse = Steps.getUserInfoResponseWithQueryParam(flow, REQUEST_TYPE_GET, accessToken)
+        Response userInfoResponse = Steps.getUserInfoResponseWithQueryParam(flow, Method.GET, accessToken)
 
         then:
         assertThat("Correct HTTP status code", userInfoResponse.statusCode, is(200))
@@ -278,7 +279,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         String accessToken = tokenResponse.jsonPath().getString("access_token")
 
         when:
-        Response userInfoResponse = Steps.getUserInfoResponseWithQueryParam(flow, REQUEST_TYPE_GET, accessToken)
+        Response userInfoResponse = Steps.getUserInfoResponseWithQueryParam(flow, Method.GET, accessToken)
 
         then:
         assertThat("Correct HTTP status code", userInfoResponse.statusCode, is(200))
@@ -304,14 +305,14 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         Response userInfoResponse = Steps.getUserInfoResponseWithHeaderParam(flow, requestType, accessToken)
 
         then:
-        assertThat("Correct HTTP status code", userInfoResponse.statusCode, is(405))
+        assertThat("Correct HTTP status code", userInfoResponse.statusCode, is(HttpStatus.SC_METHOD_NOT_ALLOWED))
 
         where:
-        requestType | _
-        // TARA2-153 "post" || 405
-        "delete"    | _
-        "patch"     | _
-        "put"       | _
+        requestType   | _
+//        Method.POST   | _ // TODO: (original comment: TARA2-153)
+        Method.DELETE | _
+        Method.PATCH  | _
+        Method.PUT    | _
     }
 
     @Feature("OIDC_USERINFO_RESPONSE_NOK")
@@ -320,7 +321,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         String accessToken = "access.Token.12345"
 
         when:
-        Response response = Steps.getUserInfoResponseWithHeaderParam(flow, REQUEST_TYPE_GET, accessToken)
+        Response response = Steps.getUserInfoResponseWithHeaderParam(flow, Method.GET, accessToken)
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(401))
@@ -335,7 +336,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         String accessToken = "access.Token.12345"
 
         when:
-        Response response = Steps.getUserInfoResponseWithQueryParam(flow, REQUEST_TYPE_GET, accessToken)
+        Response response = Steps.getUserInfoResponseWithQueryParam(flow, Method.GET, accessToken)
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(401))

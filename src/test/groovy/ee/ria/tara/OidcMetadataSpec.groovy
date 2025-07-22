@@ -1,9 +1,9 @@
 package ee.ria.tara
 
 import ee.ria.tara.model.OidcError
-import ee.ria.tara.util.ErrorValidator
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
+import io.restassured.http.Method
 import io.restassured.path.json.JsonPath
 import io.restassured.response.Response
 
@@ -109,7 +109,7 @@ class OidcMetadataSpec extends TaraSpecification {
         flow.setOpenIdServiceConfiguration(Requests.getOpenidConfiguration(flow.oidcService.fullConfigurationUrl))
 
         when:
-        Response response = Steps.getUserInfoResponseWithHeaderParam(flow, REQUEST_TYPE_GET, "456789")
+        Response response = Steps.getUserInfoResponseWithHeaderParam(flow, Method.GET, "456789")
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(401))

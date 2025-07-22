@@ -6,7 +6,9 @@ import com.nimbusds.jwt.SignedJWT
 import io.qameta.allure.Allure
 import io.qameta.allure.Step
 import io.qameta.allure.model.Link
+import io.restassured.http.Method
 import io.restassured.response.Response
+import org.apache.http.HttpStatus
 import org.json.JSONObject
 
 import java.text.ParseException
@@ -128,15 +130,13 @@ class Steps {
 
     @Step("Authenticate with Mobile-ID")
     static Response authenticateWithMid(Flow flow, String idCode, String phoneNo) {
-        Response midInit = Requests.startMidAuthentication(flow, idCode, phoneNo)
-        assertThat("Correct HTTP status code", midInit.statusCode, is(200))
-        Response midPollResult = pollMidResponse(flow)
-        assertThat("Correct HTTP status code", midPollResult.statusCode, is(200))
-        assertThat(midPollResult.jsonPath().getString("status"), is("COMPLETED"))
+        Requests.startMidAuthentication(flow, idCode, phoneNo).then().statusCode(HttpStatus.SC_OK)
+        pollMidResponse(flow).then()
+                .statusCode(HttpStatus.SC_OK)
+                .body("status", is("COMPLETED"))
         Response acceptResponse = Requests.postRequest(flow, flow.loginService.fullAuthAcceptUrl)
-        assertThat("Correct HTTP status code", acceptResponse.statusCode, is(302))
+        acceptResponse.then().statusCode(HttpStatus.SC_MOVED_TEMPORARILY)
         Response oidcServiceResponse = loginVerifier(flow, acceptResponse)
-        assertThat("Correct HTTP status code", oidcServiceResponse.statusCode, is(302))
         Response consentResponse = followRedirectWithSessionId(flow, oidcServiceResponse)
         return consentResponse
     }
@@ -203,14 +203,13 @@ class Steps {
     static Response loginVerifier(Flow flow, Response response) {
         Response oidcServiceResponse = followRedirectWithCookies(flow, response, flow.oidcService.cookies)
         flow.oidcService.cookies << oidcServiceResponse.getCookies()
-        assertThat("Correct HTTP status code", oidcServiceResponse.statusCode, is(302))
+        oidcServiceResponse.then().statusCode(HttpStatus.SC_MOVED_TEMPORARILY)
         return oidcServiceResponse
     }
 
     @Step("Initialize authentication session")
     static Response initLoginSession(Flow flow, Response response, Map paramsMap) {
-        String location = response.then().extract().response().header("location")
-        Response initResponse = Requests.getRequestWithParams(flow, location, paramsMap)
+        Response initResponse = Requests.getRequestWithParams(flow, response.getHeader("location"), paramsMap)
         flow.setSessionId(initResponse.getCookie("__Host-SESSION"))
         flow.setCsrf(initResponse.htmlPath().get("**.find {it.@name == '_csrf'}.@value"))
         return initResponse
@@ -218,20 +217,17 @@ class Steps {
 
     @Step("Follow redirect")
     static Response followRedirect(Flow flow, Response response) {
-        String location = response.then().extract().response().header("location")
-        return Requests.followRedirect(flow, location)
+        return Requests.followRedirect(flow, response.getHeader("location"))
     }
 
     @Step("Follow redirect with cookies")
     static Response followRedirectWithCookies(Flow flow, Response response, Map cookies) {
-        String location = response.then().extract().response().header("location")
-        return Requests.followRedirectWithCookie(flow, location, cookies)
+        return Requests.followRedirectWithCookie(flow, response.getHeader("location"), cookies)
     }
 
     @Step("Follow redirect with session id")
     static Response followRedirectWithSessionId(Flow flow, Response response) {
-        String location = response.then().extract().response().header("location")
-        return Requests.getRequest(flow, location)
+        return Requests.getRequest(flow, response.getHeader("location"))
     }
 
     @Step("Confirm or reject consent")
@@ -310,13 +306,13 @@ class Steps {
     }
 
     @Step("Get user info response with header parameter")
-    static Response getUserInfoResponseWithHeaderParam(Flow flow, String requestType, String accessToken) {
+    static Response getUserInfoResponseWithHeaderParam(Flow flow, Method requestType, String accessToken) {
         Map headersMap = ["Authorization": "Bearer " + accessToken]
         return Requests.getUserInfoWithHeaderParam(flow, requestType, headersMap)
     }
 
     @Step("Get user info response with query parameter")
-    static Response getUserInfoResponseWithQueryParam(Flow flow, String requestType, String accessToken) {
+    static Response getUserInfoResponseWithQueryParam(Flow flow, Method requestType, String accessToken) {
         Map paramsMap = ["access_token": accessToken]
         return Requests.getUserInfoWithQueryParam(flow, requestType, paramsMap)
     }

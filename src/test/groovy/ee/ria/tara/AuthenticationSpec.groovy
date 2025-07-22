@@ -555,11 +555,11 @@ class AuthenticationSpec extends TaraSpecification {
         ErrorValidator.validate(response, ErrorMessage.INTERNAL_ERROR)
 
         where:
-        requestType | _
-        "GET"       | _
-        "PUT"       | _
-        "PATCH"     | _
-        "DELETE"    | _
+        requestType   | _
+        Method.GET    | _
+        Method.PUT    | _
+        Method.PATCH  | _
+        Method.DELETE | _
     }
 
     @Feature("AUTH_ACCEPT_LOGIN_ENDPOINT")

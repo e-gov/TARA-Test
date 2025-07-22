@@ -11,8 +11,6 @@ class TaraSpecification extends Specification {
 
     Flow flow = new Flow()
 
-    static final REQUEST_TYPE_POST = "post"
-    static final REQUEST_TYPE_GET = "get"
     static final IDP_USERNAME = "xavi"
     static final IDP_PASSWORD = "creus"
     static final EIDASLOA_HIGH = "E"

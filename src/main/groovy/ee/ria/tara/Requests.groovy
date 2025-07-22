@@ -201,7 +201,7 @@ class Requests {
     }
 
     @Step("Get user info with header parameter")
-    static Response getUserInfoWithHeaderParam(Flow flow, String requestType, Map headers) {
+    static Response getUserInfoWithHeaderParam(Flow flow, Method requestType, Map headers) {
         return given()
                 .headers(headers)
                 .urlEncodingEnabled(true)
@@ -209,7 +209,7 @@ class Requests {
     }
 
     @Step("Get user info with query parameter")
-    static Response getUserInfoWithQueryParam(Flow flow, String requestType, Map queryParams) {
+    static Response getUserInfoWithQueryParam(Flow flow, Method requestType, Map queryParams) {
         return given()
                 .params(queryParams)
                 .urlEncodingEnabled(true)
