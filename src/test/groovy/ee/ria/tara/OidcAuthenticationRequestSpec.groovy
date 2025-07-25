@@ -3,6 +3,7 @@ package ee.ria.tara
 import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jwt.JWTClaimsSet
 import ee.ria.tara.model.ErrorMessage
+import ee.ria.tara.model.LoA
 import ee.ria.tara.model.OidcError
 import ee.ria.tara.util.ErrorValidator
 import io.qameta.allure.Feature
@@ -196,7 +197,7 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
         assertThat("Correct audience", claims.audience[0], is(flow.oidcClientPublic.clientId))
         assertThat("Correct subject", claims.subject, is("EE38001085718"))
         assertThat("Correct authentication method", claims.getStringArrayClaim("amr")[0], is("idcard"))
-        assertThat("Correct LoA", claims.getClaim("acr"), is("high"))
+        assertThat("Correct LoA", claims.getClaim("acr"), is(LoA.HIGH.toString()))
 
         where:
         parameter            | paramValue

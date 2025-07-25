@@ -5,6 +5,7 @@ import com.nimbusds.jose.JWSVerifier
 import com.nimbusds.jose.crypto.RSASSAVerifier
 import com.nimbusds.jose.jwk.*
 import com.nimbusds.jwt.SignedJWT
+import ee.ria.tara.model.LoA
 import org.apache.commons.codec.digest.DigestUtils
 import org.apache.commons.lang3.RandomStringUtils
 
@@ -78,7 +79,7 @@ class OpenIdUtils {
         return queryParams
     }
 
-    static Map getAuthorizationParametersWithAcrValues(Flow flow, String acr_values = "substantial") {
+    static Map getAuthorizationParametersWithAcrValues(Flow flow, LoA acr_values = LoA.SUBSTANTIAL) {
         flow.setState(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
         flow.setNonce(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
         Map queryParams = [acr_values   : acr_values,

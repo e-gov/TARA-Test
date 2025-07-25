@@ -2,6 +2,7 @@ package ee.ria.tara
 
 import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jwt.JWTClaimsSet
+import ee.ria.tara.model.LoA
 import ee.ria.tara.model.OidcError
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
@@ -48,7 +49,7 @@ class OidcIdentityTokenRequestSpec extends TaraSpecification {
         assertThat("Correct family name", claims.getJSONObjectClaim("profile_attributes")["family_name"], is("JÕEORG"))
         assertThat("Correct amr value", claims.getStringArrayClaim("amr")[0].toString(), is("idcard"))
         assertThat("Correct state value", claims.getClaim("state"), is(flow.state))
-        assertThat("Correct LoA level", claims.getClaim("acr"), is("high"))
+        assertThat("Correct LoA level", claims.getClaim("acr"), is(LoA.HIGH.toString()))
         assertThat("At_hash claim exists", claims.getStringClaim("at_hash").size(), greaterThan(20))
     }
 

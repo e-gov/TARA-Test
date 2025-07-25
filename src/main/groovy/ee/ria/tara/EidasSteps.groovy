@@ -1,5 +1,7 @@
 package ee.ria.tara
 
+
+import ee.ria.tara.model.LoA
 import io.qameta.allure.Step
 import io.restassured.response.Response
 
@@ -70,7 +72,7 @@ class EidasSteps {
     }
 
     @Step("Eidas iDP authorization request")
-    static Response eidasIdpAuthorizationRequest(Flow flow, Response response, String idpUsername, idpPassword, String eidasloa) {
+    static Response eidasIdpAuthorizationRequest(Flow flow, Response response, String idpUsername, idpPassword, LoA eidasloa) {
         String callbackUrl = response.htmlPath().getString("**.find { it.@name == 'callback' }.@value")
         String smsspToken = response.htmlPath().get("**.find {it.@name == 'smsspToken'}.@value")
         String smsspTokenRequestJson = response.htmlPath().get("**.find {it.@id == 'jSonRequestDecoded'}")
@@ -78,7 +80,7 @@ class EidasSteps {
                 "smsspToken"        : smsspToken,
                 "username"          : idpUsername,
                 "password"          : idpPassword,
-                "eidasloa"          : eidasloa,
+                "eidasloa"          : eidasloa.eidasTestCaLoa,
                 "eidasnameid"       : "persistent",
                 "callback"          : callbackUrl,
                 "jSonRequestDecoded": smsspTokenRequestJson]
@@ -116,7 +118,7 @@ class EidasSteps {
     }
 
     @Step("Continue authentication on abroad")
-    static Response continueEidasAuthenticationFlow(Flow flow, String idpUsername, idpPassword, String eidasloa) {
+    static Response continueEidasAuthenticationFlow(Flow flow, String idpUsername, idpPassword, LoA eidasloa) {
         Response authorizationResponse = continueEidasFlow(flow, idpUsername, idpPassword, eidasloa)
         String binaryLightToken = authorizationResponse.htmlPath().get("**.find {it.@id == 'binaryLightToken'}.@value")
         Response consentResponse = eidasConfirmConsent(flow, binaryLightToken)
@@ -127,7 +129,7 @@ class EidasSteps {
     }
 
     @Step("Continue Eidas flow")
-    static Response continueEidasFlow(Flow flow, String idpUsername, idpPassword, String eidasloa) {
+    static Response continueEidasFlow(Flow flow, String idpUsername, idpPassword, LoA eidasloa) {
         Response serviceProviderResponse = eidasServiceProviderRequest(flow, flow.nextEndpoint, flow.relayState, flow.requestMessage)
         Response specificConnectorResponse = eidasSpecificConnectorRequest(flow, serviceProviderResponse)
         Response colleagueResponse = eidasColleagueRequest(flow, specificConnectorResponse)
@@ -176,7 +178,7 @@ class EidasSteps {
     }
 
     @Step("Initialize Eidas authentication session, accept authorization, submit consent and get authentication finished response")
-    static Response initAuthenticationSessionGetFinishedResponse(Flow flow, String loa) {
+    static Response initAuthenticationSessionGetFinishedResponse(Flow flow, LoA loa) {
         initEidasAuthSession(flow, TaraSpecification.COUNTRY_CA)
         Response colleagueResponse = continueEidasAuthenticationFlow(flow, TaraSpecification.IDP_USERNAME, TaraSpecification.IDP_PASSWORD, loa)
         Response authorizationResponse = getAuthorizationResponseFromEidas(flow, colleagueResponse)

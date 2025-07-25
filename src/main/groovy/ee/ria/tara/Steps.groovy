@@ -3,6 +3,7 @@ package ee.ria.tara
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.nimbusds.jose.JOSEException
 import com.nimbusds.jwt.SignedJWT
+import ee.ria.tara.model.LoA
 import io.qameta.allure.Allure
 import io.qameta.allure.Step
 import io.qameta.allure.model.Link
@@ -62,7 +63,7 @@ class Steps {
     }
 
     @Step("Start authentication in TARA with acr_values and follow redirects")
-    static Response startAuthenticationInTaraWithAcr(Flow flow, String acr_values, boolean checkStatusCode = true) {
+    static Response startAuthenticationInTaraWithAcr(Flow flow, LoA acr_values, boolean checkStatusCode = true) {
         Map paramsMap = OpenIdUtils.getAuthorizationParametersWithAcrValues(flow, acr_values)
         Response initOIDCServiceSession = startAuthenticationInOidcWithParams(flow, paramsMap)
         Response initLoginSession = createLoginSession(flow, initOIDCServiceSession)

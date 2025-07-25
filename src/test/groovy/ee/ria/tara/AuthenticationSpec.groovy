@@ -3,6 +3,7 @@ package ee.ria.tara
 import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jwt.JWTClaimsSet
 import ee.ria.tara.model.ErrorMessage
+import ee.ria.tara.model.LoA
 import ee.ria.tara.model.OidcError
 import ee.ria.tara.util.ErrorValidator
 import io.qameta.allure.Feature
@@ -142,12 +143,12 @@ class AuthenticationSpec extends TaraSpecification {
 
 
         then:
-        assertThat("Correct acr value", claims.getClaim("acr"), is(defaultAcr))
+        assertThat("Correct acr value", claims.getClaim("acr"), is(defaultAcr.toString()))
 
         where:
         acrValues   | defaultAcr
-        "undefined" | "high"
-        null        | "high"
+        "undefined" | LoA.HIGH
+        null        | LoA.HIGH
     }
 
     @Feature("AUTHENTICATION")
@@ -163,17 +164,17 @@ class AuthenticationSpec extends TaraSpecification {
 
         then:
         assertThat("Correct audience", claims.audience[0], is(flow.oidcClientPublic.clientId))
-        assertThat("Correct acr", claims.claims["acr"], is(acrClaim))
+        assertThat("Correct acr", claims.claims["acr"], is(acrClaim.toString()))
         assertThat("Correct subject", claims.subject, is("CA12345"))
 
         where:
-        acrValues     | loa                  || acrClaim
-        "low"         | EIDASLOA_LOW         || "low"
-        "low"         | EIDASLOA_SUBSTANTIAL || "substantial"
-        "low"         | EIDASLOA_HIGH        || "high"
-        "substantial" | EIDASLOA_SUBSTANTIAL || "substantial"
-        "substantial" | EIDASLOA_HIGH        || "high"
-        "high"        | EIDASLOA_HIGH        || "high"
+        acrValues       | loa             || acrClaim
+        LoA.LOW         | LoA.LOW         || LoA.LOW
+        LoA.LOW         | LoA.SUBSTANTIAL || LoA.SUBSTANTIAL
+        LoA.LOW         | LoA.HIGH        || LoA.HIGH
+        LoA.SUBSTANTIAL | LoA.SUBSTANTIAL || LoA.SUBSTANTIAL
+        LoA.SUBSTANTIAL | LoA.HIGH        || LoA.HIGH
+        LoA.HIGH        | LoA.HIGH        || LoA.HIGH
     }
 
     @Feature("AUTHENTICATION")
@@ -197,17 +198,17 @@ class AuthenticationSpec extends TaraSpecification {
 
         then:
         assertThat("Correct audience", claims.audience[0], is(clientId))
-        assertThat("Correct acr", claims.claims["acr"], is(acrClaim))
+        assertThat("Correct acr", claims.claims["acr"], is(acrClaim.toString()))
         assertThat("Correct subject", claims.subject, is("CA12345"))
 
         where:
-        loa                  | minimumAcrValue || acrClaim
-        EIDASLOA_LOW         | "low"           || "low"
-        EIDASLOA_SUBSTANTIAL | "low"           || "substantial"
-        EIDASLOA_HIGH        | "low"           || "high"
-        EIDASLOA_SUBSTANTIAL | "substantial"   || "substantial"
-        EIDASLOA_HIGH        | "substantial"   || "high"
-        EIDASLOA_HIGH        | "high"          || "high"
+        loa             | minimumAcrValue || acrClaim
+        LoA.LOW         | LoA.LOW         || LoA.LOW
+        LoA.SUBSTANTIAL | LoA.LOW         || LoA.SUBSTANTIAL
+        LoA.HIGH        | LoA.LOW         || LoA.HIGH
+        LoA.SUBSTANTIAL | LoA.SUBSTANTIAL || LoA.SUBSTANTIAL
+        LoA.HIGH        | LoA.SUBSTANTIAL || LoA.HIGH
+        LoA.HIGH        | LoA.HIGH        || LoA.HIGH
     }
 
     @Feature("AUTHENTICATION")
@@ -235,13 +236,13 @@ class AuthenticationSpec extends TaraSpecification {
         assertThat("Correct subject", claims.subject, is("CA12345"))
 
         where:
-        loa                  | minimumAcrValue || acrClaim
-        EIDASLOA_LOW         | "low"           || "low"
-        EIDASLOA_SUBSTANTIAL | "low"           || "substantial"
-        EIDASLOA_HIGH        | "low"           || "high"
-        EIDASLOA_SUBSTANTIAL | "substantial"   || "substantial"
-        EIDASLOA_HIGH        | "substantial"   || "high"
-        EIDASLOA_HIGH        | "high"          || "high"
+        loa             | minimumAcrValue || acrClaim
+        LoA.LOW         | LoA.LOW         || LoA.LOW
+        LoA.SUBSTANTIAL | LoA.LOW         || LoA.SUBSTANTIAL
+        LoA.HIGH        | LoA.LOW         || LoA.HIGH
+        LoA.SUBSTANTIAL | LoA.SUBSTANTIAL || LoA.SUBSTANTIAL
+        LoA.HIGH        | LoA.SUBSTANTIAL || LoA.HIGH
+        LoA.HIGH        | LoA.HIGH        || LoA.HIGH
     }
 
     @Feature("AUTHENTICATION")
@@ -261,13 +262,13 @@ class AuthenticationSpec extends TaraSpecification {
 
         then:
         assertThat("Correct audience", claims.audience[0], is(flow.oidcClientPublic.clientId))
-        assertThat("Correct acr", claims.claims["acr"], is(acrClaim))
+        assertThat("Correct acr", claims.claims["acr"], is(acrClaim.toString()))
         assertThat("Correct subject", claims.subject, is("CA12345"))
 
         where:
-        loa                  | acrClaim
-        EIDASLOA_SUBSTANTIAL | "substantial"
-        EIDASLOA_HIGH        | "high"
+        loa             | acrClaim
+        LoA.SUBSTANTIAL | LoA.SUBSTANTIAL
+        LoA.HIGH        | LoA.HIGH
     }
 
     @Feature("AUTHENTICATION")
@@ -294,12 +295,12 @@ class AuthenticationSpec extends TaraSpecification {
 
         where:
         minimumAcrValue | acrValues
-        "low"           | "substantial"
-        "low"           | "high"
-        "substantial"   | "low"
-        "substantial"   | "high"
-        "high"          | "low"
-        "high"          | "substantial"
+        LoA.LOW         | LoA.SUBSTANTIAL
+        LoA.LOW         | LoA.HIGH
+        LoA.SUBSTANTIAL | LoA.LOW
+        LoA.SUBSTANTIAL | LoA.HIGH
+        LoA.HIGH        | LoA.LOW
+        LoA.HIGH        | LoA.SUBSTANTIAL
     }
 
     @Feature("AUTHENTICATION")
@@ -314,7 +315,7 @@ class AuthenticationSpec extends TaraSpecification {
             String clientSecret = "secret"
             paramsMap = OpenIdUtils.getAuthorizationParametersWithClient(flow, clientId, clientSecret, clientResponseUrl)
         } else {
-            paramsMap = OpenIdUtils.getAuthorizationParametersWithAcrValues(flow, acrValues.toString())
+            paramsMap = OpenIdUtils.getAuthorizationParametersWithAcrValues(flow, acrValues as LoA)
         }
 
         if (hasAcrValues) {
@@ -336,17 +337,17 @@ class AuthenticationSpec extends TaraSpecification {
         ErrorValidator.validate(redirectionResponse, ErrorMessage.EIDAS_INCORRECT_LOA)
 
         where:
-        minimumAcrValue | acrValues     | loa
-        "high"          | "high"        | EIDASLOA_SUBSTANTIAL
-        "high"          | "high"        | EIDASLOA_LOW
-        "substantial"   | "substantial" | EIDASLOA_LOW
-        "high"          | "undefined"   | EIDASLOA_SUBSTANTIAL
-        "high"          | "undefined"   | EIDASLOA_LOW
-        "substantial"   | "undefined"   | EIDASLOA_LOW
-        "undefined"     | "high"        | EIDASLOA_SUBSTANTIAL
-        "undefined"     | "high"        | EIDASLOA_LOW
-        "undefined"     | "substantial" | EIDASLOA_LOW
-        "undefined"     | "undefined"   | EIDASLOA_LOW
+        minimumAcrValue | acrValues       | loa
+        LoA.HIGH        | LoA.HIGH        | LoA.SUBSTANTIAL
+        LoA.HIGH        | LoA.HIGH        | LoA.LOW
+        LoA.SUBSTANTIAL | LoA.SUBSTANTIAL | LoA.LOW
+        LoA.HIGH        | "undefined"     | LoA.SUBSTANTIAL
+        LoA.HIGH        | "undefined"     | LoA.LOW
+        LoA.SUBSTANTIAL | "undefined"     | LoA.LOW
+        "undefined"     | LoA.HIGH        | LoA.SUBSTANTIAL
+        "undefined"     | LoA.HIGH        | LoA.LOW
+        "undefined"     | LoA.SUBSTANTIAL | LoA.LOW
+        "undefined"     | "undefined"     | LoA.LOW
     }
 
     @Feature("https://e-gov.github.io/TARA-Doku/TechnicalSpecification#41-authentication-request")
@@ -374,7 +375,7 @@ class AuthenticationSpec extends TaraSpecification {
         given:
         Steps.startAuthenticationInTaraWithClient(flow, flow.oidcClientPrivate.clientId, flow.oidcClientPrivate.clientSecret, flow.oidcClientPrivate.fullResponseUrl)
         EidasSteps.initEidasAuthSession(flow, COUNTRY_CA)
-        Response colleagueResponse = EidasSteps.continueEidasAuthenticationFlow(flow, IDP_USERNAME, IDP_PASSWORD, EIDASLOA_HIGH)
+        Response colleagueResponse = EidasSteps.continueEidasAuthenticationFlow(flow, IDP_USERNAME, IDP_PASSWORD, LoA.HIGH)
         Response authorizationResponse = EidasSteps.getAuthorizationResponseFromEidas(flow, colleagueResponse)
         Response redirectionResponse = EidasSteps.eidasRedirectAuthorizationResponse(flow, authorizationResponse)
         Response acceptResponse = EidasSteps.eidasAcceptAuthorizationResult(flow, redirectionResponse)
@@ -416,7 +417,7 @@ class AuthenticationSpec extends TaraSpecification {
         given:
         Steps.startAuthenticationInTara(flow, "openid eidas")
         EidasSteps.initEidasAuthSession(flow, COUNTRY_CA)
-        Response colleagueResponse = EidasSteps.continueEidasAuthenticationFlow(flow, IDP_USERNAME, IDP_PASSWORD, EIDASLOA_LOW)
+        Response colleagueResponse = EidasSteps.continueEidasAuthenticationFlow(flow, IDP_USERNAME, IDP_PASSWORD, LoA.LOW)
         EidasSteps.getAuthorizationResponseFromEidas(flow, colleagueResponse)
 
         when:

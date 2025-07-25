@@ -1,6 +1,7 @@
 package ee.ria.tara
 
 import com.nimbusds.jose.jwk.JWKSet
+import ee.ria.tara.model.LoA
 import ee.ria.tara.model.OidcError
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
@@ -37,7 +38,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         then:
         assertThat("Correct HTTP status code", userInfoResponse.statusCode, is(200))
         assertThat("Correct Content-Type", userInfoResponse.contentType, is("application/json; charset=utf-8"))
-        assertThat("Correct acr", userInfoResponse.jsonPath().getString("acr"), is("high"))
+        assertThat("Correct acr", userInfoResponse.jsonPath().getString("acr"), is(LoA.HIGH.toString()))
         assertThat("Correct amr", userInfoResponse.jsonPath().getList("amr")[0].toString(), is("mID"))
         Date date = new Date()
         long authTime = userInfoResponse.jsonPath().getLong("auth_time")
@@ -66,7 +67,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         then:
         assertThat("Correct HTTP status code", userInfoResponse.statusCode, is(200))
         assertThat("Correct Content-Type", userInfoResponse.contentType, is("application/json; charset=utf-8"))
-        assertThat("Correct acr", userInfoResponse.jsonPath().getString("acr"), is("high"))
+        assertThat("Correct acr", userInfoResponse.jsonPath().getString("acr"), is(LoA.HIGH.toString()))
         assertThat("Correct amr", userInfoResponse.jsonPath().getList("amr")[0].toString(), is("idcard"))
         assertThat("Correct subject", userInfoResponse.jsonPath().getString("sub"), is("EE38001085718"))
         assertThat("Correct date of birth", userInfoResponse.jsonPath().getString("date_of_birth"), is("1980-01-08"))
@@ -93,7 +94,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         then:
         assertThat("Correct HTTP status code", userInfoResponse.statusCode, is(200))
         assertThat("Correct Content-Type", userInfoResponse.contentType, is("application/json; charset=utf-8"))
-        assertThat("Correct acr", userInfoResponse.jsonPath().getString("acr"), is("high"))
+        assertThat("Correct acr", userInfoResponse.jsonPath().getString("acr"), is(LoA.HIGH.toString()))
         assertThat("Correct amr", userInfoResponse.jsonPath().getList("amr")[0].toString(), is("idcard"))
         assertThat("Correct subject", userInfoResponse.jsonPath().getString("sub"), is("EE38001085718"))
         assertThat("Correct date of birth", userInfoResponse.jsonPath().getString("date_of_birth"), is("1980-01-08"))
@@ -119,7 +120,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         then:
         assertThat("Correct HTTP status code", userInfoResponse.statusCode, is(200))
         assertThat("Correct Content-Type", userInfoResponse.contentType, is("application/json; charset=utf-8"))
-        assertThat("Correct acr", userInfoResponse.jsonPath().getString("acr"), is("high"))
+        assertThat("Correct acr", userInfoResponse.jsonPath().getString("acr"), is(LoA.HIGH.toString()))
         assertThat("Correct amr", userInfoResponse.jsonPath().getList("amr")[0].toString(), is("idcard"))
         assertThat("Correct subject", userInfoResponse.jsonPath().getString("sub"), is("EE38001085718"))
         assertThat("Correct date of birth", userInfoResponse.jsonPath().getString("date_of_birth"), is("1980-01-08"))

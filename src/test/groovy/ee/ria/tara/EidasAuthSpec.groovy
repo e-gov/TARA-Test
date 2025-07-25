@@ -2,6 +2,7 @@ package ee.ria.tara
 
 import com.nimbusds.jose.jwk.JWKSet
 import ee.ria.tara.model.ErrorMessage
+import ee.ria.tara.model.LoA
 import ee.ria.tara.util.ErrorValidator
 import io.qameta.allure.Feature
 import io.qameta.allure.Issue
@@ -214,7 +215,7 @@ class EidasAuthSpec extends TaraSpecification {
         given:
         Steps.startAuthenticationInTara(flow, "openid eidas")
         EidasSteps.initEidasAuthSession(flow, COUNTRY_CA)
-        Response authorizationResponse = EidasSteps.continueEidasFlow(flow, IDP_USERNAME, "myPassword", EIDASLOA_HIGH)
+        Response authorizationResponse = EidasSteps.continueEidasFlow(flow, IDP_USERNAME, "myPassword", LoA.HIGH)
         String endpointUrl = authorizationResponse.htmlPath().getString("**.find { it.@id == 'redirectForm' }.@action")
         String token = authorizationResponse.htmlPath().getString("**.find { it.@id == 'token' }.@value")
         Response eidasProxyResponse2 = EidasSteps.eidasProxyServiceRequest(flow, endpointUrl, token)
@@ -258,7 +259,7 @@ class EidasAuthSpec extends TaraSpecification {
     private static authenticateToEidasAuthorization(Flow flow) {
         Steps.startAuthenticationInTara(flow, "openid eidas")
         EidasSteps.initEidasAuthSession(flow, COUNTRY_CA)
-        Response colleagueResponse = EidasSteps.continueEidasAuthenticationFlow(flow, IDP_USERNAME, IDP_PASSWORD, EIDASLOA_HIGH)
+        Response colleagueResponse = EidasSteps.continueEidasAuthenticationFlow(flow, IDP_USERNAME, IDP_PASSWORD, LoA.HIGH)
         EidasSteps.getAuthorizationResponseFromEidas(flow, colleagueResponse)
     }
 }
