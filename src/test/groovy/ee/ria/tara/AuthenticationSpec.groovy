@@ -155,7 +155,7 @@ class AuthenticationSpec extends TaraSpecification {
         given:
         Steps.startAuthenticationInTaraWithAcr(flow, acrValues)
 
-        Response authenticationFinishedResponse = EidasSteps.initAuthenticationSessionGetFinishedResponse(flow,loa)
+        Response authenticationFinishedResponse = EidasSteps.initAuthenticationSessionGetFinishedResponse(flow, loa)
 
         when:
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
@@ -189,7 +189,7 @@ class AuthenticationSpec extends TaraSpecification {
         Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
         Steps.createLoginSession(flow, initOIDCServiceSession)
 
-        Response authenticationFinishedResponse = EidasSteps.initAuthenticationSessionGetFinishedResponse(flow,loa)
+        Response authenticationFinishedResponse = EidasSteps.initAuthenticationSessionGetFinishedResponse(flow, loa)
 
         when:
         Response tokenResponse = Steps.getIdentityTokenResponseWithClient(flow, authenticationFinishedResponse, clientId, clientSecret, clientResponseUrl)
@@ -223,7 +223,7 @@ class AuthenticationSpec extends TaraSpecification {
         Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
         Steps.createLoginSession(flow, initOIDCServiceSession)
 
-        Response authenticationFinishedResponse = EidasSteps.initAuthenticationSessionGetFinishedResponse(flow,loa)
+        Response authenticationFinishedResponse = EidasSteps.initAuthenticationSessionGetFinishedResponse(flow, loa)
 
         when:
         Response tokenResponse = Steps.getIdentityTokenResponseWithClient(flow, authenticationFinishedResponse, clientId, clientSecret, clientResponseUrl)
@@ -253,7 +253,7 @@ class AuthenticationSpec extends TaraSpecification {
         Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
         Steps.createLoginSession(flow, initOIDCServiceSession)
 
-        Response authenticationFinishedResponse = EidasSteps.initAuthenticationSessionGetFinishedResponse(flow,loa)
+        Response authenticationFinishedResponse = EidasSteps.initAuthenticationSessionGetFinishedResponse(flow, loa)
 
         when:
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
@@ -268,40 +268,6 @@ class AuthenticationSpec extends TaraSpecification {
         loa                  | acrClaim
         EIDASLOA_SUBSTANTIAL | "substantial"
         EIDASLOA_HIGH        | "high"
-    }
-
-    @Feature("AUTHENTICATION")
-    def "Eidas authentication with Loa '#loa' fails with acr_values undefined and minimum_acr_value equal to #minimumAcrValue"() {
-        given:
-        String clientId = "client-mock-acr-$minimumAcrValue"
-        String clientResponseUrl = "https://client.mock.acr.${minimumAcrValue}.localhost/oauth/response"
-        String clientSecret = "secret"
-
-        Map paramsMap = OpenIdUtils.getAuthorizationParametersWithClient(flow, clientId, clientSecret, clientResponseUrl)
-        paramsMap.remove("acr_values")
-
-        Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
-        Steps.createLoginSession(flow, initOIDCServiceSession)
-        EidasSteps.initEidasAuthSession(flow, COUNTRY_CA)
-        Response colleagueResponse = EidasSteps.continueEidasAuthenticationFlow(flow, IDP_USERNAME, IDP_PASSWORD, loa)
-        Response authorizationResponse = EidasSteps.getAuthorizationResponseFromEidas(flow, colleagueResponse)
-
-        when:
-        Response redirectionResponse = EidasSteps.eidasRedirectAuthorizationResponse(flow, authorizationResponse,false)
-
-        then:
-        redirectionResponse.then()
-                .statusCode(400)
-                .body(
-                        "error", is("Bad Request"),
-                        "message", is("Teie poolt valitud välisriigi autentimisvahend on teenuse " +
-                        "poolt nõutust madalama autentimistasemega. Palun valige mõni muu autentimisvahend."))
-
-        where:
-        loa                  | minimumAcrValue
-        EIDASLOA_LOW         | "substantial"
-        EIDASLOA_LOW         | "high"
-        EIDASLOA_SUBSTANTIAL | "high"
     }
 
     @Feature("AUTHENTICATION")
@@ -337,70 +303,50 @@ class AuthenticationSpec extends TaraSpecification {
     }
 
     @Feature("AUTHENTICATION")
-    def "Eidas authentication with insufficient Loa '#loa' fails with both minimum_acr_value and acr_values equal to #acrValues"() {
+    def "Eidas authentication with insufficient Loa '#loa' fails with minimum_acr_value '#minimumAcrValue' and acr_values '#acrValues'"() {
         given:
-        String clientId = "client-mock-acr-$acrValues"
-        String clientResponseUrl = "https://client.mock.acr.${acrValues}.localhost/oauth/response"
-        String clientSecret = "secret"
+        boolean hasMinimumAcr = minimumAcrValue != "undefined"
+        boolean hasAcrValues = acrValues != "undefined"
+        Map paramsMap
+        if (hasMinimumAcr) {
+            String clientId = "client-mock-acr-$minimumAcrValue"
+            String clientResponseUrl = "https://client.mock.acr.${minimumAcrValue}.localhost/oauth/response"
+            String clientSecret = "secret"
+            paramsMap = OpenIdUtils.getAuthorizationParametersWithClient(flow, clientId, clientSecret, clientResponseUrl)
+        } else {
+            paramsMap = OpenIdUtils.getAuthorizationParametersWithAcrValues(flow, acrValues.toString())
+        }
 
-        Map paramsMap = OpenIdUtils.getAuthorizationParametersWithClient(flow, clientId, clientSecret, clientResponseUrl)
-        paramsMap << [acr_values: acrValues]
-
-        Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
-        Steps.createLoginSession(flow, initOIDCServiceSession)
-        EidasSteps.initEidasAuthSession(flow, COUNTRY_CA)
-
-        when:
-        Response colleagueResponse = EidasSteps.continueEidasAuthenticationFlow(flow, IDP_USERNAME, IDP_PASSWORD, loa)
-        Response authorizationResponse = EidasSteps.getAuthorizationResponseFromEidas(flow, colleagueResponse)
-        Response redirectionResponse = EidasSteps.eidasRedirectAuthorizationResponse(flow, authorizationResponse, false)
-
-        then:
-        redirectionResponse.then()
-                .statusCode(400)
-                .body(
-                        "error", is("Bad Request"),
-                        "message", is("Teie poolt valitud välisriigi autentimisvahend on teenuse poolt " +
-                        "nõutust madalama autentimistasemega. Palun valige mõni muu autentimisvahend."))
-
-        where:
-        loa                  | acrValues
-        EIDASLOA_LOW         | "substantial"
-        EIDASLOA_LOW         | "high"
-        EIDASLOA_SUBSTANTIAL | "high"
-    }
-
-    @Feature("AUTHENTICATION")
-    def "Eidas authentication with insufficient Loa '#loa' fails with minimum_acr_value undefined and acr_values #acrValues"() {
-        given:
-        Map paramsMap = OpenIdUtils.getAuthorizationParametersWithAcrValues(flow, acrValues)
-        if (acrValues == "undefined") {
+        if (hasAcrValues) {
+            paramsMap << [acr_values: acrValues]
+        } else {
             paramsMap.remove("acr_values")
         }
 
         Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
         Steps.createLoginSession(flow, initOIDCServiceSession)
         EidasSteps.initEidasAuthSession(flow, COUNTRY_CA)
-
-        when:
         Response colleagueResponse = EidasSteps.continueEidasAuthenticationFlow(flow, IDP_USERNAME, IDP_PASSWORD, loa)
         Response authorizationResponse = EidasSteps.getAuthorizationResponseFromEidas(flow, colleagueResponse)
+
+        when:
         Response redirectionResponse = EidasSteps.eidasRedirectAuthorizationResponse(flow, authorizationResponse, false)
 
         then:
-        redirectionResponse.then()
-                .statusCode(400)
-                .body(
-                        "error", is("Bad Request"),
-                        "message", is("Teie poolt valitud välisriigi autentimisvahend on teenuse poolt " +
-                        "nõutust madalama autentimistasemega. Palun valige mõni muu autentimisvahend."))
+        ErrorValidator.validate(redirectionResponse, ErrorMessage.EIDAS_INCORRECT_LOA)
 
         where:
-        loa                  | acrValues
-        EIDASLOA_LOW         | "undefined"
-        EIDASLOA_LOW         | "substantial"
-        EIDASLOA_LOW         | "high"
-        EIDASLOA_SUBSTANTIAL | "high"
+        minimumAcrValue | acrValues     | loa
+        "high"          | "high"        | EIDASLOA_SUBSTANTIAL
+        "high"          | "high"        | EIDASLOA_LOW
+        "substantial"   | "substantial" | EIDASLOA_LOW
+        "high"          | "undefined"   | EIDASLOA_SUBSTANTIAL
+        "high"          | "undefined"   | EIDASLOA_LOW
+        "substantial"   | "undefined"   | EIDASLOA_LOW
+        "undefined"     | "high"        | EIDASLOA_SUBSTANTIAL
+        "undefined"     | "high"        | EIDASLOA_LOW
+        "undefined"     | "substantial" | EIDASLOA_LOW
+        "undefined"     | "undefined"   | EIDASLOA_LOW
     }
 
     @Feature("https://e-gov.github.io/TARA-Doku/TechnicalSpecification#41-authentication-request")
@@ -415,10 +361,7 @@ class AuthenticationSpec extends TaraSpecification {
         Response response = Steps.followRedirect(flow, initOIDCServiceSession)
 
         then:
-        response.then()
-                .statusCode(500)
-                .contentType("application/json;charset=UTF-8")
-                .body("message", is(MESSAGE_INTERNAL_ERROR))
+        ErrorValidator.validate(response, ErrorMessage.INTERNAL_ERROR)
 
         where:
         acrValues | _

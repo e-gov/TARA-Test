@@ -51,11 +51,7 @@ class EidasAuthSpec extends TaraSpecification {
         Response response = EidasSteps.initEidasAuthSession(flow, country)
 
         then:
-        ErrorValidator.validate(
-                response,
-                ErrorMessage.EIDAS_NOT_ALLOWED_COUNTRY.type,
-                ErrorMessage.EIDAS_NOT_ALLOWED_COUNTRY.getMessage("CA, DE")
-        )
+        ErrorValidator.validate(response, ErrorMessage.EIDAS_NOT_ALLOWED_COUNTRY, "CA, DE")
         response.then().body("incident_nr", hasLength(32))
 
         where:

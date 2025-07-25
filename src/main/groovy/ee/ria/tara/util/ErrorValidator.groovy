@@ -12,8 +12,8 @@ import static org.hamcrest.Matchers.equalTo
 
 class ErrorValidator {
 
-    static void validate(Response response, ErrorMessage errorMessage) {
-        validate(response, errorMessage.type, errorMessage.message)
+    static void validate(Response response, ErrorMessage errorMessage, String... messageModifiers) {
+        validate(response, errorMessage.type, errorMessage.getMessage(messageModifiers))
     }
 
     static void validate(Response response, int statusCode, String message) {
