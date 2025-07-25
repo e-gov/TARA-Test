@@ -1,5 +1,6 @@
 package ee.ria.tara.configuration
 
+import ee.ria.tara.Utils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -16,6 +17,10 @@ class ConfigLoader {
 
         if (!loadFromEnv(props) && !loadFromClasspath(props)) {
             throw new Exception("Configurations not found")
+        }
+
+        if (!props.containsKey("test.isLocal")) {
+            props.setProperty("test.isLocal", Utils.isLocal().toString())
         }
         return props
     }

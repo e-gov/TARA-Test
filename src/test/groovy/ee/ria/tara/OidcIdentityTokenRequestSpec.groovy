@@ -9,6 +9,8 @@ import io.restassured.filter.cookie.CookieFilter
 import io.restassured.http.Method
 import io.restassured.response.Response
 
+import java.time.Instant
+
 import static io.restassured.RestAssured.given
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.containsString
@@ -40,9 +42,15 @@ class OidcIdentityTokenRequestSpec extends TaraSpecification {
         assertThat("Jti claim exists", claims.getJWTID().size(), is(36))
         assertThat("Correct issuer claim", claims.issuer, is(flow.openIdServiceConfiguration.get("issuer")))
         assertThat("Correct audience", claims.audience[0], is(flow.oidcClientPublic.clientId))
-        Date date = new Date()
-        assertThat("Expected current: " + date + " to be after nbf: " + claims.notBeforeTime, date.after(claims.notBeforeTime), is(true))
-        assertThat("Iat claim exists", Math.abs(date.time - claims.getDateClaim("iat").time), lessThan(10000L))
+
+        Instant now = Instant.now()
+        assertThat("Current time should be after nbf",
+                now.isAfter(claims.notBeforeTime.toInstant()), is(true))
+
+        long iatEpoch = claims.getDateClaim("iat").toInstant().epochSecond
+        long skew = Math.abs(now.epochSecond - iatEpoch)
+        assertThat("iat should be within 10s of now (skew: ${skew}s)", skew, lessThan(10L))
+
         assertThat("Correct subject claim", claims.subject, is("EE38001085718"))
         assertThat("Correct date of birth", claims.getJSONObjectClaim("profile_attributes")["date_of_birth"], is("1980-01-08"))
         assertThat("Correct given name", claims.getJSONObjectClaim("profile_attributes")["given_name"], is("JAAK-KRISTJAN"))

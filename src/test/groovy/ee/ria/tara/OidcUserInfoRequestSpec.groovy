@@ -9,6 +9,8 @@ import io.restassured.http.Method
 import io.restassured.response.Response
 import org.apache.http.HttpStatus
 
+import java.time.Instant
+
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.MatcherAssert.assertThat
 
@@ -36,18 +38,22 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         Response userInfoResponse = Steps.getUserInfoResponseWithQueryParam(flow, Method.GET, accessToken)
 
         then:
-        assertThat("Correct HTTP status code", userInfoResponse.statusCode, is(200))
-        assertThat("Correct Content-Type", userInfoResponse.contentType, is("application/json; charset=utf-8"))
-        assertThat("Correct acr", userInfoResponse.jsonPath().getString("acr"), is(LoA.HIGH.toString()))
-        assertThat("Correct amr", userInfoResponse.jsonPath().getList("amr")[0].toString(), is("mID"))
-        Date date = new Date()
+        userInfoResponse.then()
+                .statusCode(HttpStatus.SC_OK)
+                .contentType("application/json; charset=utf-8")
+                .body("acr", is(LoA.HIGH.toString()),
+                        "amr[0]", is("mID"),
+                        "sub", is("EE60001017716"),
+                        "date_of_birth", is("2000-01-01"),
+                        "family_name", is("TESTNUMBER"),
+                        "given_name", is("ONE"))
+
+        and: "auth_time is fresh"
+        Instant now = Instant.now()
         long authTime = userInfoResponse.jsonPath().getLong("auth_time")
+        long drift = Math.abs(now.getEpochSecond() - authTime)
         // 10 seconds
-        assertThat("Correct auth_time", Math.abs(date.getTime() / 1000 - authTime) < 10L)
-        assertThat("Correct subject", userInfoResponse.jsonPath().getString("sub"), is("EE60001017716"))
-        assertThat("Correct date of birth", userInfoResponse.jsonPath().getString("date_of_birth"), is("2000-01-01"))
-        assertThat("Correct family name", userInfoResponse.jsonPath().getString("family_name"), is("TESTNUMBER"))
-        assertThat("Correct given name", userInfoResponse.jsonPath().getString("given_name"), is("ONE"))
+        assertThat("auth_time should be within 10s of now (drift: ${drift}s)", drift < 10L)
     }
 
     @Feature("OIDC_USERINFO_ENDPOINT")

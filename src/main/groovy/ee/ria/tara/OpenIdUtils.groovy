@@ -79,10 +79,14 @@ class OpenIdUtils {
         return queryParams
     }
 
-    static Map getAuthorizationParametersWithAcrValues(Flow flow, LoA acr_values = LoA.SUBSTANTIAL) {
+    static Map getAuthorizationParametersWithAcrValues(Flow flow, LoA acrValues) {
+        getAuthorizationParametersWithAcrValues(flow, acrValues.toString())
+    }
+
+    static Map getAuthorizationParametersWithAcrValues(Flow flow, String acrValues = LoA.SUBSTANTIAL) {
         flow.setState(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
         flow.setNonce(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
-        Map queryParams = [acr_values   : acr_values,
+        Map queryParams = [acr_values   : acrValues,
                            ui_locales   : "et",
                            response_type: "code",
                            scope        : "openid",

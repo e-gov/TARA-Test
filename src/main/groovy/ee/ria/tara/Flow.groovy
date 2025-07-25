@@ -6,56 +6,25 @@ import groovy.transform.Canonical
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.path.json.JsonPath
 
+
 @Canonical
-class Flow {
-    OidcService oidcService
-    LoginService loginService
-    OidcClient oidcClientPublic
-    OidcClient oidcClientPost
-    OidcClient oidcClientPrivate
-    OidcClient oidcClientLegal
-    SpecificProxyService specificProxyService
-    ForeignIdpProvider foreignIdpProvider
-    ForeignProxyService foreignProxyService
-    TaraAdminService taraAdminService
+abstract class BaseService {
+    String protocol
+    String host
+    String port
 
-    CookieFilter cookieFilter
-    String clientId
-    String clientSecret
-    String redirectUri
-    String sessionId
-    String code
-    String locale
-    String csrf
-    String loginChallenge
-    String authCertificate
+    @Lazy baseUrl = "${protocol}://${host}"
+    @Lazy fullBaseUrl = "${baseUrl}${Utils.portCheck(port)}"
 
-    String state
-    String nonce
-    JWKSet jwkSet
-    JsonPath openIdServiceConfiguration
-
-    String nextEndpoint
-    String requestMessage
-    String responseMessage
-    String relayState
-
-    Flow() {
-        this.loginService = new LoginService(ConfigHolder.loginService)
-        this.oidcService = new OidcService(ConfigHolder.oidcService)
-        this.oidcClientPublic = new OidcClient(ConfigHolder.oidcClientPublic)
-        this.oidcClientPost = new OidcClient(ConfigHolder.oidcClientPost)
-        this.oidcClientPrivate = new OidcClient(ConfigHolder.oidcClientPrivate)
-        this.oidcClientLegal = new OidcClient(ConfigHolder.oidcClientLegal)
-        this.specificProxyService = new SpecificProxyService(ConfigHolder.specificProxyService)
-        this.foreignIdpProvider = new ForeignIdpProvider(ConfigHolder.foreignIdp)
-        this.foreignProxyService = new ForeignProxyService(ConfigHolder.caProxyService)
-        this.taraAdminService = new TaraAdminService(ConfigHolder.adminService)
+    BaseService(conf) {
+        this.protocol = conf.protocol()
+        this.host = conf.host()
+        this.port = conf.port()
     }
 }
 
 @Canonical
-class LoginService extends BaseService{
+class LoginService extends BaseService {
     String nodeHost
     String nodePort
     String nodeProtocol
@@ -136,7 +105,7 @@ class LoginService extends BaseService{
 }
 
 @Canonical
-class OidcService extends BaseService{
+class OidcService extends BaseService {
     String authorizationUrl
     String jwksUrl
     String configurationUrl
@@ -155,7 +124,7 @@ class OidcService extends BaseService{
 }
 
 @Canonical
-class OidcClient extends BaseService{
+class OidcClient extends BaseService {
     String responseUrl
     String clientId
     String clientSecret
@@ -172,7 +141,7 @@ class OidcClient extends BaseService{
 }
 
 @Canonical
-class SpecificProxyService extends BaseService{
+class SpecificProxyService extends BaseService {
     String responseUrl
     String clientId
     String clientSecret
@@ -189,7 +158,7 @@ class SpecificProxyService extends BaseService{
 }
 
 @Canonical
-class ForeignIdpProvider extends BaseService{
+class ForeignIdpProvider extends BaseService {
     String responseUrl
 
     @Lazy fullResponseUrl = "${fullBaseUrl}${responseUrl}"
@@ -201,7 +170,7 @@ class ForeignIdpProvider extends BaseService{
 }
 
 @Canonical
-class ForeignProxyService extends BaseService{
+class ForeignProxyService extends BaseService {
     String consentUrl
 
     @Lazy fullConsentUrl = "${fullBaseUrl}${consentUrl}"
@@ -213,7 +182,7 @@ class ForeignProxyService extends BaseService{
 }
 
 @Canonical
-class TaraAdminService extends BaseService{
+class TaraAdminService extends BaseService {
     String username
     String password
     String xsrfToken
@@ -226,19 +195,51 @@ class TaraAdminService extends BaseService{
     }
 }
 
+
 @Canonical
-abstract class BaseService {
-    String protocol
-    String host
-    String port
+class Flow {
+    OidcService oidcService
+    LoginService loginService
+    OidcClient oidcClientPublic
+    OidcClient oidcClientPost
+    OidcClient oidcClientPrivate
+    OidcClient oidcClientLegal
+    SpecificProxyService specificProxyService
+    ForeignIdpProvider foreignIdpProvider
+    ForeignProxyService foreignProxyService
+    TaraAdminService taraAdminService
 
-    @Lazy baseUrl = "${protocol}://${host}"
-    @Lazy fullBaseUrl = "${baseUrl}${Utils.portCheck(port)}"
+    CookieFilter cookieFilter
+    String clientId
+    String clientSecret
+    String redirectUri
+    String sessionId
+    String code
+    String locale
+    String csrf
+    String loginChallenge
+    String authCertificate
 
-    BaseService(conf) {
-        this.protocol = conf.protocol()
-        this.host = conf.host()
-        this.port = conf.port()
+    String state
+    String nonce
+    JWKSet jwkSet
+    JsonPath openIdServiceConfiguration
+
+    String nextEndpoint
+    String requestMessage
+    String responseMessage
+    String relayState
+
+    Flow() {
+        this.loginService = new LoginService(ConfigHolder.loginService)
+        this.oidcService = new OidcService(ConfigHolder.oidcService)
+        this.oidcClientPublic = new OidcClient(ConfigHolder.oidcClientPublic)
+        this.oidcClientPost = new OidcClient(ConfigHolder.oidcClientPost)
+        this.oidcClientPrivate = new OidcClient(ConfigHolder.oidcClientPrivate)
+        this.oidcClientLegal = new OidcClient(ConfigHolder.oidcClientLegal)
+        this.specificProxyService = new SpecificProxyService(ConfigHolder.specificProxyService)
+        this.foreignIdpProvider = new ForeignIdpProvider(ConfigHolder.foreignIdp)
+        this.foreignProxyService = new ForeignProxyService(ConfigHolder.caProxyService)
+        this.taraAdminService = new TaraAdminService(ConfigHolder.adminService)
     }
 }
-

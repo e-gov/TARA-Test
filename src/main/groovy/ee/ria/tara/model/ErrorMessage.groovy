@@ -5,7 +5,6 @@ import org.apache.http.HttpStatus
 enum ErrorMessage {
 
     // General errors
-    AUTH_TITLE(HttpStatus.SC_BAD_REQUEST, "Kasutaja tuvastamine ebaõnnestus."),
     INVALID_LOGIN_CHALLENGE(HttpStatus.SC_BAD_REQUEST, "Vigane päring. Päringu volituskood ei ole korrektne."),
 //    INVALID_GOVSSO_LOGIN_CHALLENGE(TBD, "Vigane päring. GovSSO päringu volituskood ei ole korrektne."),
 //    NO_ALLOWED_AUTHMETHODS(TBD, "Autentimispäring ei ole korrektne. Soovitud autentimistasemele vastavaid autentimisvahendeid pole antud infosüsteemile lubatud."),
@@ -61,12 +60,12 @@ enum ErrorMessage {
     // Additional errors
     DUPLICATE_PARAMETERS(HttpStatus.SC_BAD_REQUEST, "Multiple request parameters with the same name not allowed"),
 
-    final int type
+    final int statusCode
     final String message
 
 
-    ErrorMessage(int errorType, String message) {
-        this.type = errorType
+    ErrorMessage(int statusCode, String message) {
+        this.statusCode = statusCode
         this.message = message
     }
 

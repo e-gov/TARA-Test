@@ -3,16 +3,17 @@ package ee.ria.tara
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.nimbusds.jose.JOSEException
 import com.nimbusds.jwt.SignedJWT
+import ee.ria.tara.configuration.ConfigHolder
 import ee.ria.tara.model.LoA
 import io.qameta.allure.Allure
 import io.qameta.allure.Step
-import io.qameta.allure.model.Link
 import io.restassured.http.Method
 import io.restassured.response.Response
 import org.apache.http.HttpStatus
 import org.json.JSONObject
 
 import java.text.ParseException
+import java.time.Instant
 
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.anyOf
@@ -63,8 +64,8 @@ class Steps {
     }
 
     @Step("Start authentication in TARA with acr_values and follow redirects")
-    static Response startAuthenticationInTaraWithAcr(Flow flow, LoA acr_values, boolean checkStatusCode = true) {
-        Map paramsMap = OpenIdUtils.getAuthorizationParametersWithAcrValues(flow, acr_values)
+    static Response startAuthenticationInTaraWithAcr(Flow flow, LoA acrValues, boolean checkStatusCode = true) {
+        Map paramsMap = OpenIdUtils.getAuthorizationParametersWithAcrValues(flow, acrValues)
         Response initOIDCServiceSession = startAuthenticationInOidcWithParams(flow, paramsMap)
         Response initLoginSession = createLoginSession(flow, initOIDCServiceSession)
         if (checkStatusCode) {
@@ -267,17 +268,17 @@ class Steps {
         //TODO: single attachment
         addJsonAttachment("Header", signedJWT.header.toString())
         addJsonAttachment("Payload", signedJWT.JWTClaimsSet.toString())
-        try {
-            Allure.link("View Token in jwt.io", new Link().toString(),
-                    "https://jwt.io/#debugger-io?token=" + token)
-        } catch (Exception e) {
-            //NullPointerException when running test from IntelliJ
-        }
+        Allure.link("View Token in jwt.io", "https://jwt.io/#debugger-io?token=" + token)
+
         assertThat("Token Signature is not valid!", OpenIdUtils.isTokenSignatureValid(flow.jwkSet, signedJWT), is(true))
         assertThat(signedJWT.JWTClaimsSet.issuer, equalTo(flow.openIdServiceConfiguration.get("issuer")))
-        Date date = new Date()
-        assertThat("Expected current: " + date + " to be before exp: " + signedJWT.JWTClaimsSet.expirationTime, date.before(signedJWT.JWTClaimsSet.expirationTime), is(true))
-        assertThat("Expected current: " + date + " to be after nbf: " + signedJWT.JWTClaimsSet.notBeforeTime, date.after(signedJWT.JWTClaimsSet.notBeforeTime), is(true))
+        Instant now = Instant.now()
+        // Set 2 second buffer on local env to account for clock drift or execution delays
+        long skewSeconds = ConfigHolder.getTestConf().isLocal() ? 2 : 0
+        Instant exp = signedJWT.JWTClaimsSet.expirationTime.toInstant()
+        Instant nbf = signedJWT.JWTClaimsSet.notBeforeTime.toInstant()
+        assertThat("Expected current: ${now} to be before exp: ${exp}", now.isBefore(exp), is(true))
+        assertThat("Expected current: ${now} to be after nbf: ${nbf}", now.isAfter(nbf.minusSeconds(skewSeconds)), is(true))
         if (!flow.nonce.isEmpty()) {
             assertThat(signedJWT.JWTClaimsSet.getStringClaim("nonce"), is(flow.nonce))
         }

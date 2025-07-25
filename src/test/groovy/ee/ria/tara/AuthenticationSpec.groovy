@@ -127,10 +127,8 @@ class AuthenticationSpec extends TaraSpecification {
     @Feature("https://e-gov.github.io/TARA-Doku/TechnicalSpecification#41-authentication-request")
     def "Authentication request with #acrValues acr_values and with clients minimum_acr_value undefined defaults to acr '#defaultAcr'"() {
         given:
-        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "openid")
-        if (acrValues == "undefined") {
-            paramsMap.remove("acr_values")
-        } else {
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
+        if (acrValues != "undefined") {
             paramsMap << [acr_values: acrValues]
         }
 
@@ -219,7 +217,6 @@ class AuthenticationSpec extends TaraSpecification {
         String clientSecret = "secret"
 
         Map paramsMap = OpenIdUtils.getAuthorizationParametersWithClient(flow, clientId, clientSecret, clientResponseUrl)
-        paramsMap.remove("acr_values")
 
         Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
         Steps.createLoginSession(flow, initOIDCServiceSession)
@@ -232,7 +229,7 @@ class AuthenticationSpec extends TaraSpecification {
 
         then:
         assertThat("Correct audience", claims.audience[0], is(clientId))
-        assertThat("Correct acr", claims.claims["acr"], is(acrClaim))
+        assertThat("Correct acr", claims.claims["acr"], is(acrClaim.toString()))
         assertThat("Correct subject", claims.subject, is("CA12345"))
 
         where:
@@ -249,7 +246,6 @@ class AuthenticationSpec extends TaraSpecification {
     def "Eidas authentication #loa Loa request succeeds with minimum_acr_value undefined and with acr_values undefined"() {
         given:
         Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
-        paramsMap.remove("acr_values")
 
         Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
         Steps.createLoginSession(flow, initOIDCServiceSession)
@@ -315,13 +311,11 @@ class AuthenticationSpec extends TaraSpecification {
             String clientSecret = "secret"
             paramsMap = OpenIdUtils.getAuthorizationParametersWithClient(flow, clientId, clientSecret, clientResponseUrl)
         } else {
-            paramsMap = OpenIdUtils.getAuthorizationParametersWithAcrValues(flow, acrValues as LoA)
+            paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
         }
 
         if (hasAcrValues) {
             paramsMap << [acr_values: acrValues]
-        } else {
-            paramsMap.remove("acr_values")
         }
 
         Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
