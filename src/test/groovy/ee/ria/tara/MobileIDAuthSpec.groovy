@@ -40,7 +40,7 @@ class MobileIDAuthSpec extends TaraSpecification {
         when: "initialize Mobile-ID authentication with invalid session cookie"
         Response response = given()
                 .relaxedHTTPSValidation()
-                .params([idCode: "30303039914",
+                .params([idCode: "40404049996",
                          _csrf : flow.csrf])
                 .cookies(cookie)
                 .post(flow.loginService.fullMidInitUrl)

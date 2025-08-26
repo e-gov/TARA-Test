@@ -52,7 +52,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         Steps.startAuthenticationInTara(flow, "openid")
 
         when:
-        Response response = Steps.initSidAuthSession(flow, "30303039914")
+        Response response = Steps.initSidAuthSession(flow, "40404049996")
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(200))
@@ -69,7 +69,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         when: "initialize Smart-ID authentication with invalid session cookie"
         Response response = given()
                 .relaxedHTTPSValidation()
-                .params([idCode: "30303039914",
+                .params([idCode: "40404049996",
                          _csrf : flow.csrf])
                 .cookies(cookie)
                 .post(flow.loginService.fullSidInitUrl)
@@ -95,7 +95,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         when: "initialize Smart-ID authentication with invalid method"
         Response response = given()
                 .relaxedHTTPSValidation()
-                .params([idCode: "30303039914",
+                .params([idCode: "40404049996",
                          _csrf : flow.csrf])
                 .cookies(["__Host-SESSION": flow.sessionId])
                 .request(requestType, flow.loginService.fullSidInitUrl)
@@ -288,7 +288,7 @@ class SmartIDAuthSpec extends TaraSpecification {
     def "Poll Smart-ID authentication with session complete"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
-        Steps.initSidAuthSession(flow, "30303039914")
+        Steps.initSidAuthSession(flow, "40404049996")
 
         when:
         Response response = Steps.pollSidResponse(flow)
@@ -328,7 +328,7 @@ class SmartIDAuthSpec extends TaraSpecification {
     def "Poll Smart-ID authentication with invalid method: #requestType"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
-        Steps.initSidAuthSession(flow, "30303039914")
+        Steps.initSidAuthSession(flow, "40404049996")
 
         when: "request Smart-ID polling with invalid request type"
         Response response = given()
@@ -355,7 +355,7 @@ class SmartIDAuthSpec extends TaraSpecification {
     def "Cancel Smart-ID authentication"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
-        Steps.initSidAuthSession(flow, "30303039914")
+        Steps.initSidAuthSession(flow, "40404049996")
 
         when:
         Response response = Requests.postRequest(flow, flow.loginService.fullSidCancelUrl)
@@ -374,7 +374,7 @@ class SmartIDAuthSpec extends TaraSpecification {
     def "Verify cancel Smart-ID authentication response headers"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
-        Steps.initSidAuthSession(flow, "30303039914")
+        Steps.initSidAuthSession(flow, "40404049996")
 
         when:
         Response response = Requests.postRequest(flow, flow.loginService.fullSidCancelUrl)
@@ -388,7 +388,7 @@ class SmartIDAuthSpec extends TaraSpecification {
     def "Cancel Smart-ID authentication with invalid session cookie: #reason"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
-        Steps.initSidAuthSession(flow, "30303039914")
+        Steps.initSidAuthSession(flow, "40404049996")
 
         when: "Cancel Smart-ID authentication with invalid session cookie"
         Response response = given()
@@ -414,7 +414,7 @@ class SmartIDAuthSpec extends TaraSpecification {
     def "Cancel Smart-ID authentication with invalid method #requestType"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
-        Steps.initSidAuthSession(flow, "30303039914")
+        Steps.initSidAuthSession(flow, "40404049996")
 
         when: "Cancel authentication with invalid method"
         Response response = given()

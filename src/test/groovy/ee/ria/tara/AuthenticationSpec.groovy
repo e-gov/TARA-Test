@@ -66,7 +66,7 @@ class AuthenticationSpec extends TaraSpecification {
 
         where:
         certificate                           | idCode        || subject
-        "TEST of EID-SK 2016"                 | "30303039914" || "EE" + idCode
+        "TEST of EID-SK 2016"                 | "40404049996" || "EE" + idCode
         "TEST of SK ID Solutions EID-Q 2024E" | "40504040001" || "EE" + idCode
     }
 
@@ -91,7 +91,7 @@ class AuthenticationSpec extends TaraSpecification {
     def "Request authentication with Smart-ID"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
-        Response sidAuthResponse = Steps.authenticateWithSid(flow, "30303039914")
+        Response sidAuthResponse = Steps.authenticateWithSid(flow, "40404049996")
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, sidAuthResponse)
 
         when:
@@ -100,7 +100,7 @@ class AuthenticationSpec extends TaraSpecification {
 
         then:
         assertThat("Correct audience", claims.audience[0], is(flow.oidcClientPublic.clientId))
-        assertThat("Correct subject", claims.subject, is("EE30303039914"))
+        assertThat("Correct subject", claims.subject, is("EE40404049996"))
     }
 
     @Feature("AUTHENTICATION")
@@ -108,7 +108,7 @@ class AuthenticationSpec extends TaraSpecification {
     def "Authenticate with Smart-ID with custom relying party name and UUID"() {
         given:
         Steps.startAuthenticationInTaraWithClient(flow, "SysTest-Relying-Party-client", "secret", "https://rp-client.test/oauth/response")
-        Response sidAuthResponse = Steps.authenticateWithSid(flow, "30303039914")
+        Response sidAuthResponse = Steps.authenticateWithSid(flow, "40404049996")
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, sidAuthResponse)
 
         when:
@@ -117,7 +117,7 @@ class AuthenticationSpec extends TaraSpecification {
 
         then:
         assertThat("Correct audience", claims.audience[0], is("SysTest-Relying-Party-client"))
-        assertThat("Correct subject", claims.subject, is("EE30303039914"))
+        assertThat("Correct subject", claims.subject, is("EE40404049996"))
     }
 
     @Feature("AUTHENTICATION")
