@@ -225,6 +225,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
     def "Verify user info response: auth Smart-ID, email scope"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid email")
+//Smart-ID number 40404049996 is not marked in SK smart-id-documentation https://github.com/SK-EID/smart-id-documentation/wiki/Environment-technical-parameters#test-accounts-for-automated-testing
         Response sidAuthResponse = Steps.authenticateWithSid(flow, "40404049996")
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, sidAuthResponse)
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
@@ -240,7 +241,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         assertThat("Correct given name", userInfoResponse.jsonPath().getString("given_name"), is("OK"))
         assertThat("Correct subject", userInfoResponse.jsonPath().getString("sub"), is("EE40404049996"))
         assertThat("Correct date of birth", userInfoResponse.jsonPath().getString("date_of_birth"), is("1904-04-04"))
-        assertThat("Correct family name", userInfoResponse.jsonPath().getString("family_name"), is("TESTNUMBER"))
+        assertThat("Correct family name", userInfoResponse.jsonPath().getString("family_name"), is("TEST"))
         assertThat("No email", userInfoResponse.jsonPath().getString("email"), is(null))
         assertThat("No email_verified", userInfoResponse.jsonPath().getString("email_verified"), is(null))
         assertThat("No phone number", userInfoResponse.jsonPath().getString("phone_number"), is(null))
@@ -253,6 +254,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
     def "Verify user info response: auth Smart-ID, phone scope"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid phone")
+//Smart-ID number 40404049996 is not marked in SK smart-id-documentation https://github.com/SK-EID/smart-id-documentation/wiki/Environment-technical-parameters#test-accounts-for-automated-testing
         Response sidAuthResponse = Steps.authenticateWithSid(flow, "40404049996")
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, sidAuthResponse)
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
@@ -267,7 +269,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         assertThat("Correct given name", userInfoResponse.jsonPath().getString("given_name"), is("OK"))
         assertThat("Correct subject", userInfoResponse.jsonPath().getString("sub"), is("EE40404049996"))
         assertThat("Correct date of birth", userInfoResponse.jsonPath().getString("date_of_birth"), is("1904-04-04"))
-        assertThat("Correct family name", userInfoResponse.jsonPath().getString("family_name"), is("TESTNUMBER"))
+        assertThat("Correct family name", userInfoResponse.jsonPath().getString("family_name"), is("TEST"))
         assertThat("No email", userInfoResponse.jsonPath().getString("email"), is(null))
         assertThat("No email_verified", userInfoResponse.jsonPath().getString("email_verified"), is(null))
         assertThat("No phone number", userInfoResponse.jsonPath().getString("phone_number"), is(null))
@@ -280,6 +282,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
     def "Verify user info response: auth Smart-ID, openid scope"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid")
+//Smart-ID number 40404049996 is not marked in SK smart-id-documentation https://github.com/SK-EID/smart-id-documentation/wiki/Environment-technical-parameters#test-accounts-for-automated-testing
         Response sidAuthResponse = Steps.authenticateWithSid(flow, "40404049996")
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, sidAuthResponse)
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
@@ -294,7 +297,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         assertThat("Correct given name", userInfoResponse.jsonPath().getString("given_name"), is("OK"))
         assertThat("Correct subject", userInfoResponse.jsonPath().getString("sub"), is("EE40404049996"))
         assertThat("Correct date of birth", userInfoResponse.jsonPath().getString("date_of_birth"), is("1904-04-04"))
-        assertThat("Correct family name", userInfoResponse.jsonPath().getString("family_name"), is("TESTNUMBER"))
+        assertThat("Correct family name", userInfoResponse.jsonPath().getString("family_name"), is("TEST"))
         assertThat("No email", userInfoResponse.jsonPath().getString("email"), is(null))
         assertThat("No phone number", userInfoResponse.jsonPath().getString("phone_number"), is(null))
         assertThat("No email_verified", userInfoResponse.jsonPath().getString("email_verified"), is(null))

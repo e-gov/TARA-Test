@@ -45,8 +45,9 @@ class SmartIDAuthSpec extends TaraSpecification {
         where:
         idCode        || givenName      | familyName   | dateOfBirth  | label
         "61101012257" || "OK"           | "TESTMINOR"  | "2011-01-01" | "User age is under 18"
-        "30303039903" || "QUALIFIED OK" | "TESTNUMBER" | "1903-03-03" | "No numbers in names"
-        "30303039816" || "MULTIPLE OK"  | "TESTNUMBER" | "1903-03-03" | "User has other active account"
+//Smart-ID number 30303039903 is not marked in SK smart-id-documentation https://github.com/SK-EID/smart-id-documentation/wiki/Environment-technical-parameters#test-accounts-for-automated-testing
+        "30303039903" || "OK"           | "TEST"       | "1903-03-03" | "No numbers in names"
+        "39901012239" || "OK"           | "TEST"       | "1999-01-01" | "User has other active account"
     }
 
     @Feature("SID_AUTH_INIT_ENDPOINT")
