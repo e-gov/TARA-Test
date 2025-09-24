@@ -8,4 +8,6 @@ interface TestConf extends Config {
     Boolean restAssuredConsoleLogging()
 
     Boolean isLocal()
+
+    String adminSetupPath()
 }
