@@ -5,6 +5,7 @@ import com.nimbusds.jose.JWSVerifier
 import com.nimbusds.jose.crypto.RSASSAVerifier
 import com.nimbusds.jose.jwk.*
 import com.nimbusds.jwt.SignedJWT
+import ee.ria.tara.model.Client
 import ee.ria.tara.model.LoA
 import org.apache.commons.codec.digest.DigestUtils
 import org.apache.commons.lang3.RandomStringUtils
@@ -27,29 +28,29 @@ class OpenIdUtils {
         Map queryParams = [ui_locales   : uiLocales,
                            response_type: "code",
                            scope        : scope,
-                           client_id    : flow.oidcClientPublic.clientId,
-                           redirect_uri : flow.oidcClientPublic.fullResponseUrl,
+                           client_id    : ClientStore.mockPublic.clientId,
+                           redirect_uri : ClientStore.mockPublic.redirectUri,
                            state        : flow.state,
                            nonce        : flow.nonce]
-        flow.setClientId(flow.oidcClientPublic.clientId)
-        flow.setClientSecret(flow.oidcClientPublic.clientSecret)
-        flow.setRedirectUri(flow.oidcClientPublic.fullResponseUrl)
+        flow.setClientId(ClientStore.mockPublic.clientId)
+        flow.setClientSecret(ClientStore.mockPublic.secret)
+        flow.setRedirectUri(ClientStore.mockPublic.redirectUri)
         return queryParams
     }
 
-    static Map getAuthorizationParametersWithClient(Flow flow, String clientId, String clientSecret, String redirectUri) {
+    static Map getAuthorizationParametersWithClient(Flow flow, Client client) {
         flow.setState(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
         flow.setNonce(Base64.getEncoder().encodeToString(DigestUtils.sha256(RandomStringUtils.random(16))))
         Map queryParams = [ui_locales   : "et",
                            response_type: "code",
                            scope        : "openid",
-                           client_id    : clientId,
-                           redirect_uri : redirectUri,
+                           client_id    : client.clientId,
+                           redirect_uri : client.redirectUri,
                            state        : flow.state,
                            nonce        : flow.nonce]
-        flow.setClientId(clientId)
-        flow.setClientSecret(clientSecret)
-        flow.setRedirectUri(redirectUri)
+        flow.setClientId(client.clientId)
+        flow.setClientSecret(client.secret)
+        flow.setRedirectUri(client.redirectUri)
         return queryParams
     }
 
@@ -59,8 +60,8 @@ class OpenIdUtils {
         Map queryParams = [ui_locales   : uiLocales,
                            response_type: "code",
                            scope        : scope,
-                           client_id    : flow.oidcClientLegal.clientId,
-                           redirect_uri : flow.oidcClientLegal.fullResponseUrl,
+                           client_id    : ClientStore.mockLegal.clientId,
+                           redirect_uri : ClientStore.mockLegal.redirectUri,
                            state        : flow.state,
                            nonce        : flow.nonce]
         return queryParams
@@ -72,8 +73,8 @@ class OpenIdUtils {
         Map queryParams = [ui_locales   : uiLocales,
                            response_type: "code",
                            scope        : scope,
-                           client_id    : flow.specificProxyService.clientId,
-                           redirect_uri : flow.specificProxyService.fullResponseUrl,
+                           client_id    : ClientStore.specificProxyService.clientId,
+                           redirect_uri : ClientStore.specificProxyService.redirectUri,
                            state        : flow.state,
                            nonce        : flow.nonce]
         return queryParams
@@ -90,8 +91,8 @@ class OpenIdUtils {
                            ui_locales   : "et",
                            response_type: "code",
                            scope        : "openid",
-                           client_id    : flow.oidcClientPublic.clientId,
-                           redirect_uri : flow.oidcClientPublic.fullResponseUrl,
+                           client_id    : ClientStore.mockPublic.clientId,
+                           redirect_uri : ClientStore.mockPublic.redirectUri,
                            state        : flow.state,
                            nonce        : flow.nonce]
         return queryParams

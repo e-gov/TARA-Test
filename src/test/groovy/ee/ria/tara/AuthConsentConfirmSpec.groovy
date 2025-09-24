@@ -214,7 +214,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         Response consentRejectResult = Steps.submitConsent(flow, false)
 
         when:
-        Response response = Steps.followRedirectWithCookies(flow, consentRejectResult, flow.oidcClientPublic.cookies)
+        Response response = Steps.followRedirectWithCookies(flow, consentRejectResult, flow.oidcService.cookies)
 
         then:
         assertThat("Correct error", Utils.getParamValueFromResponseHeader(response, "error"), is(OidcError.USER_CANCEL_CONSENT.code))

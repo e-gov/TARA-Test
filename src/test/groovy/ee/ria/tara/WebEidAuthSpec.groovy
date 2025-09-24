@@ -34,7 +34,7 @@ class WebEidAuthSpec extends TaraSpecification {
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.jsonPath().get("id_token")).JWTClaimsSet
 
         then:
-        assertThat("Correct audience", claims.audience[0], equalTo(flow.oidcClientPublic.clientId))
+        assertThat("Correct audience", claims.audience[0], equalTo(ClientStore.mockPublic.clientId))
         assertThat("Correct subject", claims.subject, equalTo("EE38001085718"))
         assertThat("Correct authentication method", claims.getClaim("amr"), equalTo(["idcard"]))
     }

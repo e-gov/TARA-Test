@@ -76,24 +76,6 @@ Description of values:
 | loginservice.consentUrl               | /auth/consent                                     | Authentication consent selection endpoint.                    |
 | loginservice.consentConfirmUrl        | /auth/consent/confirm                             | Authentication consent confirmation endpoint                  |
 | loginservice.heartbeatUrl             | /heartbeat                                        | Service heartbeat endpoint.                                   |
-| oidcclientpublic.protocol             | https                                             | Service protocol.                                             |
-| oidcclientpublic.host                 | oidc-client-mock                                  | Service URL.                                                  |
-| oidcclientpublic.port                 | 8451                                              | Service port.                                                 |
-| oidcclientpublic.responseUrl          | /oauth/response                                   | Authentication response endpoint.                             |
-| oidcclientpublic.clientId             | dev-mock-oidc-client                              | Registered client id with client_secret_basic configuration.  |
-| oidcclientpublic.secret               | secret                                            | Registered client secret.                                     |
-| oidcclientpost.protocol               | https                                             | Service protocol.                                             |
-| oidcclientpost.host                   | oidc-client-mock                                  | Service URL.                                                  |
-| oidcclientpost.port                   | 8451                                              | Service port.                                                 |
-| oidcclientpost.responseUrl            | /oauth/response                                   | Authentication response endpoint.                             |
-| oidcclientpost.clientId               | dev-mock-oidc-client                              | Registered client id with client_secret_post.                 |
-| oidcclientpost.secret                 | secret                                            | Registered client secret.                                     |
-| oidcclientprivate.protocol            | https                                             | Service protocol.                                             |
-| oidcclientprivate.host                | oidc-client-mock                                  | Service URL.                                                  |
-| oidcclientprivate.port                | 8451                                              | Service port.                                                 |
-| oidcclientprivate.responseUrl         | /oauth/response                                   | Authentication response endpoint.                             |
-| oidcclientprivate.clientId            | dev-mock-oidc-client                              | Registered private sector client id.                          |
-| oidcclientprivate.secret              | secret                                            | Registered client secret.                                     |
 | ca-proxyservice.protocol              | https                                             | Service protocol.                                             |
 | ca-proxyservice.host                  | eidas-caproxy                                     | Service URL.                                                  |
 | ca-proxyservice.port                  | 8080                                              | Service port.                                                 |

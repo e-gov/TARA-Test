@@ -194,7 +194,7 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.jsonPath().get('id_token')).JWTClaimsSet
 
         then:
-        assertThat("Correct audience", claims.audience[0], is(flow.oidcClientPublic.clientId))
+        assertThat("Correct audience", claims.audience[0], is(ClientStore.mockPublic.clientId))
         assertThat("Correct subject", claims.subject, is("EE38001085718"))
         assertThat("Correct authentication method", claims.getStringArrayClaim("amr")[0], is("idcard"))
         assertThat("Correct LoA", claims.getClaim("acr"), is(LoA.HIGH.toString()))

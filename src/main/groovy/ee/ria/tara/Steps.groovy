@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.nimbusds.jose.JOSEException
 import com.nimbusds.jwt.SignedJWT
 import ee.ria.tara.configuration.ConfigHolder
+import ee.ria.tara.model.Client
 import ee.ria.tara.model.LoA
 import io.qameta.allure.Allure
 import io.qameta.allure.Step
@@ -75,8 +76,8 @@ class Steps {
     }
 
     @Step("Start authentication in TARA with specified client and follow redirects")
-    static Response startAuthenticationInTaraWithClient(Flow flow, String clientId, String clientSecret, String redirectUri, boolean checkStatusCode = true) {
-        Map paramsMap = OpenIdUtils.getAuthorizationParametersWithClient(flow, clientId, clientSecret, redirectUri)
+    static Response startAuthenticationInTaraWithClient(Flow flow, Client client, boolean checkStatusCode = true) {
+        Map paramsMap = OpenIdUtils.getAuthorizationParametersWithClient(flow, client)
         Response initOIDCServiceSession = startAuthenticationInOidcWithParams(flow, paramsMap)
         Response initLoginSession = createLoginSession(flow, initOIDCServiceSession)
         if (checkStatusCode) {
@@ -257,9 +258,9 @@ class Steps {
     }
 
     @Step("Get identity token response with OIDC client details")
-    static Response getIdentityTokenResponseWithClient(Flow flow, Response response, String clientId, String clientSecret, String redirectUrl) {
+    static Response getIdentityTokenResponseWithClient(Flow flow, Response response, Client client) {
         String authorizationCode = Utils.getParamValueFromResponseHeader(response, "code")
-        return Requests.webTokenBasicRequest(flow, authorizationCode, clientId, clientSecret, redirectUrl)
+        return Requests.webTokenBasicRequest(flow, authorizationCode, client.clientId, client.secret, client.redirectUri)
     }
 
     @Step("verify token")

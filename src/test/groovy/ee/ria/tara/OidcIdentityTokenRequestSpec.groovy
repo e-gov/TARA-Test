@@ -41,7 +41,7 @@ class OidcIdentityTokenRequestSpec extends TaraSpecification {
         then: "Verify claims"
         assertThat("Jti claim exists", claims.getJWTID().size(), is(36))
         assertThat("Correct issuer claim", claims.issuer, is(flow.openIdServiceConfiguration.get("issuer")))
-        assertThat("Correct audience", claims.audience[0], is(flow.oidcClientPublic.clientId))
+        assertThat("Correct audience", claims.audience[0], is(ClientStore.mockPublic.clientId))
 
         Instant now = Instant.now()
         assertThat("Current time should be after nbf",
@@ -98,7 +98,7 @@ class OidcIdentityTokenRequestSpec extends TaraSpecification {
     @Feature("OIDC_ID_TOKEN")
     def "Verify #clientJWTMethod token response with client_secret_basic configured client"() {
         given: "Start authentication"
-        Steps.startAuthenticationInTaraWithClient(flow, flow.oidcClientPublic.clientId, flow.oidcClientPublic.clientSecret, flow.oidcClientPublic.fullResponseUrl)
+        Steps.startAuthenticationInTaraWithClient(flow, ClientStore.mockPublic)
 
         when: "Request token with #label client authentication method"
         Response tokenResponse = Steps.authenticateWithWebEid(flow, JWTBasic)
@@ -127,7 +127,7 @@ class OidcIdentityTokenRequestSpec extends TaraSpecification {
     @Feature("OIDC_ID_TOKEN")
     def "Verify #clientJWTMethod token response with client_secret_post configured client"() {
         given: "Start authentication"
-        Steps.startAuthenticationInTaraWithClient(flow, flow.oidcClientPost.clientId, flow.oidcClientPrivate.clientSecret, flow.oidcClientPost.fullResponseUrl)
+        Steps.startAuthenticationInTaraWithClient(flow, ClientStore.mockSecretPost)
 
         when: "Request token with #label client authentication method"
         Response tokenResponse = Steps.authenticateWithWebEid(flow, JWTBasic)
@@ -178,7 +178,7 @@ class OidcIdentityTokenRequestSpec extends TaraSpecification {
     @Feature("OIDC_ID_TOKEN")
     def "Request ID token with client_secret_post with incorrect request parameter: #parameter should fail"() {
         given: "Start authentication"
-        Steps.startAuthenticationInTaraWithClient(flow, flow.oidcClientPost.clientId, flow.oidcClientPost.clientSecret, flow.oidcClientPost.fullResponseUrl)
+        Steps.startAuthenticationInTaraWithClient(flow, ClientStore.mockSecretPost)
 
         when: "Request token with incorrect #parameter"
         flow.("set" + parameter)("incorrect")
@@ -218,7 +218,7 @@ class OidcIdentityTokenRequestSpec extends TaraSpecification {
     @Feature("OPENID_CONNECT")
     def "Request an ID token twice with same authorization code with client_secret_post should fail"() {
         given: "Obtain ID token"
-        Steps.startAuthenticationInTaraWithClient(flow, flow.oidcClientPost.clientId, flow.oidcClientPost.clientSecret, flow.oidcClientPost.fullResponseUrl)
+        Steps.startAuthenticationInTaraWithClient(flow, ClientStore.mockSecretPost)
         Response tokenResponse = Steps.authenticateWithWebEid(flow, false)
 
         when: "Request ID token again with the same authorization code"

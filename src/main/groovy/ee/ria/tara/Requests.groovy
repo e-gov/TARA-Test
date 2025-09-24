@@ -167,9 +167,9 @@ class Requests {
     @Step("Get JWT with basic method")
     static Response webTokenBasicRequest(Flow flow,
                                          String authorizationCode,
-                                         String clientId = flow.oidcClientPublic.clientId,
-                                         String clientSecret = flow.oidcClientPublic.clientSecret,
-                                         String redirectUri = flow.oidcClientPublic.fullResponseUrl) {
+                                         String clientId = ClientStore.mockPublic.clientId,
+                                         String clientSecret = ClientStore.mockPublic.secret,
+                                         String redirectUri = ClientStore.mockPublic.redirectUri) {
         return given()
                 .params([grant_type  : "authorization_code",
                          code        : authorizationCode,
@@ -195,7 +195,7 @@ class Requests {
     static Response getWebTokenResponseBody(Flow flow, Map formParams) {
         return given()
                 .params(formParams)
-                .auth().preemptive().basic(flow.oidcClientPublic.clientId, flow.oidcClientPublic.clientSecret)
+                .auth().preemptive().basic(ClientStore.mockPublic.clientId, ClientStore.mockPublic.secret)
                 .urlEncodingEnabled(true)
                 .post(flow.openIdServiceConfiguration.getString("token_endpoint"))
     }
@@ -245,7 +245,7 @@ class Requests {
     }
 
     @Step("Post request with json for admin api")
-    static Response postRequestAdminApiWithJsonBody(Flow flow, String location, Map cookies, String body) {
+    static Response postRequestAdminApiWithJsonBody(Flow flow, String location, Map cookies, Object body) {
         return given()
                 .filter(flow.cookieFilter)
                 .header("X-XSRF-TOKEN", cookies.get("XSRF-TOKEN"))

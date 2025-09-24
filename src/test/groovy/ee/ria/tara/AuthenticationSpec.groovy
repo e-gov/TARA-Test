@@ -2,6 +2,7 @@ package ee.ria.tara
 
 import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jwt.JWTClaimsSet
+import ee.ria.tara.model.Client
 import ee.ria.tara.model.ErrorMessage
 import ee.ria.tara.model.LoA
 import ee.ria.tara.model.OidcError
@@ -13,6 +14,8 @@ import io.restassured.filter.cookie.CookieFilter
 import io.restassured.http.Method
 import io.restassured.response.Response
 import org.apache.http.HttpStatus
+
+import java.security.InvalidParameterException
 
 import static io.restassured.RestAssured.given
 import static org.hamcrest.MatcherAssert.assertThat
@@ -43,7 +46,7 @@ class AuthenticationSpec extends TaraSpecification {
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.jsonPath().get("id_token")).JWTClaimsSet
 
         then:
-        assertThat("Correct audience", claims.audience[0], is(flow.oidcClientPublic.clientId))
+        assertThat("Correct audience", claims.audience[0], is(ClientStore.mockPublic.clientId))
         assertThat("Correct subject", claims.subject, is(subject))
 
         where:
@@ -65,7 +68,7 @@ class AuthenticationSpec extends TaraSpecification {
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.jsonPath().get("id_token")).JWTClaimsSet
 
         then:
-        assertThat("Correct audience", claims.audience[0], is(flow.oidcClientPublic.clientId))
+        assertThat("Correct audience", claims.audience[0], is(ClientStore.mockPublic.clientId))
         assertThat("Correct subject", claims.subject, is(subject))
 
         where:
@@ -78,16 +81,16 @@ class AuthenticationSpec extends TaraSpecification {
     @Feature("MID_AUTH_INIT_REQUEST")
     def "Authenticate with Mobile-ID with custom relying party name and UUID"() {
         given:
-        Steps.startAuthenticationInTaraWithClient(flow, "SysTest-Relying-Party-client", "secret", "https://rp-client.test/oauth/response")
+        Steps.startAuthenticationInTaraWithClient(flow, ClientStore.mockRelyingParty)
         Response sidAuthResponse = Steps.authenticateWithMid(flow, "60001017869", "68000769")
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, sidAuthResponse)
 
         when:
-        Response tokenResponse = Steps.getIdentityTokenResponseWithClient(flow, authenticationFinishedResponse, "SysTest-Relying-Party-client", "secret", "https://rp-client.test/oauth/response")
+        Response tokenResponse = Steps.getIdentityTokenResponseWithClient(flow, authenticationFinishedResponse, ClientStore.mockRelyingParty)
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.jsonPath().get("id_token")).JWTClaimsSet
 
         then:
-        assertThat("Correct audience", claims.audience[0], is("SysTest-Relying-Party-client"))
+        assertThat("Correct audience", claims.audience[0], is(ClientStore.mockRelyingParty.clientId))
         assertThat("Correct subject", claims.subject, is("EE60001017869"))
     }
 
@@ -103,7 +106,7 @@ class AuthenticationSpec extends TaraSpecification {
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.jsonPath().get("id_token")).JWTClaimsSet
 
         then:
-        assertThat("Correct audience", claims.audience[0], is(flow.oidcClientPublic.clientId))
+        assertThat("Correct audience", claims.audience[0], is(ClientStore.mockPublic.clientId))
         assertThat("Correct subject", claims.subject, is("EE40404049996"))
     }
 
@@ -111,16 +114,16 @@ class AuthenticationSpec extends TaraSpecification {
     @Feature("SID_AUTH_INIT_REQUEST")
     def "Authenticate with Smart-ID with custom relying party name and UUID"() {
         given:
-        Steps.startAuthenticationInTaraWithClient(flow, "SysTest-Relying-Party-client", "secret", "https://rp-client.test/oauth/response")
+        Steps.startAuthenticationInTaraWithClient(flow, ClientStore.mockRelyingParty)
         Response sidAuthResponse = Steps.authenticateWithSid(flow, "40404049996")
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, sidAuthResponse)
 
         when:
-        Response tokenResponse = Steps.getIdentityTokenResponseWithClient(flow, authenticationFinishedResponse, "SysTest-Relying-Party-client", "secret", "https://rp-client.test/oauth/response")
+        Response tokenResponse = Steps.getIdentityTokenResponseWithClient(flow, authenticationFinishedResponse, ClientStore.mockRelyingParty)
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.jsonPath().get("id_token")).JWTClaimsSet
 
         then:
-        assertThat("Correct audience", claims.audience[0], is("SysTest-Relying-Party-client"))
+        assertThat("Correct audience", claims.audience[0], is(ClientStore.mockRelyingParty.clientId))
         assertThat("Correct subject", claims.subject, is("EE40404049996"))
     }
 
@@ -161,7 +164,7 @@ class AuthenticationSpec extends TaraSpecification {
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.jsonPath().get("id_token")).JWTClaimsSet
 
         then:
-        assertThat("Correct audience", claims.audience[0], is(flow.oidcClientPublic.clientId))
+        assertThat("Correct audience", claims.audience[0], is(ClientStore.mockPublic.clientId))
         assertThat("Correct acr", claims.claims["acr"], is(acrClaim.toString()))
         assertThat("Correct subject", claims.subject, is("CA12345"))
 
@@ -178,11 +181,8 @@ class AuthenticationSpec extends TaraSpecification {
     @Feature("AUTHENTICATION")
     def "Eidas authentication with Loa '#loa' succeeds with both minimum_acr_value and acr_values equal to #minimumAcrValue"() {
         given:
-        String clientId = "client-mock-acr-$minimumAcrValue"
-        String clientResponseUrl = "https://client.mock.acr.${minimumAcrValue}.localhost/oauth/response"
-        String clientSecret = "secret"
-
-        Map paramsMap = OpenIdUtils.getAuthorizationParametersWithClient(flow, clientId, clientSecret, clientResponseUrl)
+        Client client = getClientByMinimumAcrValue(minimumAcrValue as LoA)
+        Map paramsMap = OpenIdUtils.getAuthorizationParametersWithClient(flow, client)
         paramsMap << [acr_values: minimumAcrValue]
 
         Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
@@ -191,11 +191,11 @@ class AuthenticationSpec extends TaraSpecification {
         Response authenticationFinishedResponse = EidasSteps.initAuthenticationSessionGetFinishedResponse(flow, loa)
 
         when:
-        Response tokenResponse = Steps.getIdentityTokenResponseWithClient(flow, authenticationFinishedResponse, clientId, clientSecret, clientResponseUrl)
+        Response tokenResponse = Steps.getIdentityTokenResponseWithClient(flow, authenticationFinishedResponse, client)
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.jsonPath().get("id_token")).JWTClaimsSet
 
         then:
-        assertThat("Correct audience", claims.audience[0], is(clientId))
+        assertThat("Correct audience", claims.audience[0], is(client.clientId))
         assertThat("Correct acr", claims.claims["acr"], is(acrClaim.toString()))
         assertThat("Correct subject", claims.subject, is("CA12345"))
 
@@ -212,11 +212,8 @@ class AuthenticationSpec extends TaraSpecification {
     @Feature("AUTHENTICATION")
     def "Authentication request with undefined acr_values defaults to minimum_acr_value '#minimumAcrValue' and succeeds for eIDAS LoA '#loa'"() {
         given:
-        String clientId = "client-mock-acr-$minimumAcrValue"
-        String clientResponseUrl = "https://client.mock.acr.${minimumAcrValue}.localhost/oauth/response"
-        String clientSecret = "secret"
-
-        Map paramsMap = OpenIdUtils.getAuthorizationParametersWithClient(flow, clientId, clientSecret, clientResponseUrl)
+        Client client = getClientByMinimumAcrValue(minimumAcrValue as LoA)
+        Map paramsMap = OpenIdUtils.getAuthorizationParametersWithClient(flow, client)
 
         Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
         Steps.createLoginSession(flow, initOIDCServiceSession)
@@ -224,11 +221,11 @@ class AuthenticationSpec extends TaraSpecification {
         Response authenticationFinishedResponse = EidasSteps.initAuthenticationSessionGetFinishedResponse(flow, loa)
 
         when:
-        Response tokenResponse = Steps.getIdentityTokenResponseWithClient(flow, authenticationFinishedResponse, clientId, clientSecret, clientResponseUrl)
+        Response tokenResponse = Steps.getIdentityTokenResponseWithClient(flow, authenticationFinishedResponse, client)
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.jsonPath().get("id_token")).JWTClaimsSet
 
         then:
-        assertThat("Correct audience", claims.audience[0], is(clientId))
+        assertThat("Correct audience", claims.audience[0], is(client.clientId))
         assertThat("Correct acr", claims.claims["acr"], is(acrClaim.toString()))
         assertThat("Correct subject", claims.subject, is("CA12345"))
 
@@ -257,7 +254,7 @@ class AuthenticationSpec extends TaraSpecification {
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.jsonPath().get("id_token")).JWTClaimsSet
 
         then:
-        assertThat("Correct audience", claims.audience[0], is(flow.oidcClientPublic.clientId))
+        assertThat("Correct audience", claims.audience[0], is(ClientStore.mockPublic.clientId))
         assertThat("Correct acr", claims.claims["acr"], is(acrClaim.toString()))
         assertThat("Correct subject", claims.subject, is("CA12345"))
 
@@ -270,11 +267,8 @@ class AuthenticationSpec extends TaraSpecification {
     @Feature("AUTHENTICATION")
     def "Authentication request with acr_values '#acrValues' not matching clients minimum_acr_value '#minimumAcrValue' returns error"() {
         given:
-        String clientId = "client-mock-acr-$minimumAcrValue"
-        String clientResponseUrl = "https://client.mock.acr.${minimumAcrValue}.localhost/oauth/response"
-        String clientSecret = "secret"
-
-        Map paramsMap = OpenIdUtils.getAuthorizationParametersWithClient(flow, clientId, clientSecret, clientResponseUrl)
+        Client client = getClientByMinimumAcrValue(minimumAcrValue as LoA)
+        Map paramsMap = OpenIdUtils.getAuthorizationParametersWithClient(flow, client)
         paramsMap << [acr_values: acrValues]
 
         when:
@@ -306,10 +300,8 @@ class AuthenticationSpec extends TaraSpecification {
         boolean hasAcrValues = acrValues != "undefined"
         Map paramsMap
         if (hasMinimumAcr) {
-            String clientId = "client-mock-acr-$minimumAcrValue"
-            String clientResponseUrl = "https://client.mock.acr.${minimumAcrValue}.localhost/oauth/response"
-            String clientSecret = "secret"
-            paramsMap = OpenIdUtils.getAuthorizationParametersWithClient(flow, clientId, clientSecret, clientResponseUrl)
+            Client client = getClientByMinimumAcrValue(minimumAcrValue as LoA)
+            paramsMap = OpenIdUtils.getAuthorizationParametersWithClient(flow, client)
         } else {
             paramsMap = OpenIdUtils.getAuthorizationParameters(flow)
         }
@@ -367,7 +359,7 @@ class AuthenticationSpec extends TaraSpecification {
     @Feature("AUTHENTICATION")
     def "Request authentication with eIDAS with privet sector client"() {
         given:
-        Steps.startAuthenticationInTaraWithClient(flow, flow.oidcClientPrivate.clientId, flow.oidcClientPrivate.clientSecret, flow.oidcClientPrivate.fullResponseUrl)
+        Steps.startAuthenticationInTaraWithClient(flow, ClientStore.mockPrivate)
         EidasSteps.initEidasAuthSession(flow, COUNTRY_CA)
         Response colleagueResponse = EidasSteps.continueEidasAuthenticationFlow(flow, IDP_USERNAME, IDP_PASSWORD, LoA.HIGH)
         Response authorizationResponse = EidasSteps.getAuthorizationResponseFromEidas(flow, colleagueResponse)
@@ -378,11 +370,11 @@ class AuthenticationSpec extends TaraSpecification {
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, redirectResponse)
 
         when:
-        Response tokenResponse = Steps.getIdentityTokenResponseWithClient(flow, authenticationFinishedResponse, flow.oidcClientPrivate.clientId, flow.oidcClientPrivate.clientSecret, flow.oidcClientPrivate.fullResponseUrl)
+        Response tokenResponse = Steps.getIdentityTokenResponseWithClient(flow, authenticationFinishedResponse, ClientStore.mockPrivate)
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.jsonPath().get("id_token")).JWTClaimsSet
 
         then:
-        assertThat(claims.audience[0], is(flow.oidcClientPrivate.clientId))
+        assertThat(claims.audience[0], is(ClientStore.mockPrivate.clientId))
         assertThat(claims.subject, is("CA12345"))
         assertThat(claims.getJSONObjectClaim("profile_attributes")["given_name"], is("javier"))
         assertThat(claims.getJSONObjectClaim("profile_attributes")["family_name"], is("Garcia"))
@@ -397,11 +389,11 @@ class AuthenticationSpec extends TaraSpecification {
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
 
         when:
-        Response tokenResponse = Steps.getIdentityTokenResponseWithClient(flow, authenticationFinishedResponse, flow.specificProxyService.clientId, flow.specificProxyService.clientSecret, flow.specificProxyService.fullResponseUrl)
+        Response tokenResponse = Steps.getIdentityTokenResponseWithClient(flow, authenticationFinishedResponse, ClientStore.specificProxyService)
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.jsonPath().get('id_token')).JWTClaimsSet
 
         then:
-        assertThat(claims.audience[0], is(flow.specificProxyService.clientId))
+        assertThat(claims.audience[0], is(ClientStore.specificProxyService.clientId))
         assertThat(claims.subject, is("EE60001017716"))
         assertThat(claims.getJSONObjectClaim("profile_attributes")["given_name"], is("ONE"))
     }
@@ -459,7 +451,7 @@ class AuthenticationSpec extends TaraSpecification {
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.jsonPath().get("id_token")).JWTClaimsSet
 
         then:
-        assertThat(claims.audience[0], is(flow.oidcClientPublic.clientId))
+        assertThat(claims.audience[0], is(ClientStore.mockPublic.clientId))
         assertThat(claims.subject, is("EE60001017716"))
         assertThat(claims.getJSONObjectClaim("profile_attributes")["given_name"], is("ONE"))
     }
@@ -475,7 +467,7 @@ class AuthenticationSpec extends TaraSpecification {
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(302))
         assertThat("Correct URL", response.header("location"), startsWith(flow.openIdServiceConfiguration.getString("authorization_endpoint")))
-        assertThat("Location field contains correct client_id value", Utils.getParamValueFromResponseHeader(response, "client_id"), is(flow.oidcClientPublic.clientId))
+        assertThat("Location field contains correct client_id value", Utils.getParamValueFromResponseHeader(response, "client_id"), is(ClientStore.mockPublic.clientId))
     }
 
     @Feature("AUTH_ACCEPT_LOGIN_ENDPOINT")
@@ -631,5 +623,14 @@ class AuthenticationSpec extends TaraSpecification {
         Steps.startAuthenticationInTara(flow)
         Steps.initMidAuthSession(flow, "60001017869", "68000769")
         Steps.pollMidResponse(flow)
+    }
+
+    private static Client getClientByMinimumAcrValue(LoA minimumAcrValue) {
+        return switch (minimumAcrValue) {
+            case LoA.LOW -> ClientStore.mockAcrLow
+            case LoA.SUBSTANTIAL -> ClientStore.mockAcrSubstantial
+            case LoA.HIGH -> ClientStore.mockAcrHigh
+            default -> throw new InvalidParameterException("'$minimumAcrValue' is not a valid minimumAcrValue")
+        }
     }
 }

@@ -36,7 +36,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.jsonPath().get("id_token")).JWTClaimsSet
 
         then:
-        assertThat("Correct audience", claims.audience[0], is(flow.oidcClientPublic.clientId))
+        assertThat("Correct audience", claims.audience[0], is(ClientStore.mockPublic.clientId))
         assertThat("Correct subject", claims.subject, is("EE" + idCode))
         assertThat("Correct given name", claims.getJSONObjectClaim("profile_attributes")["given_name"], is(givenName))
         assertThat("Correct family game", claims.getJSONObjectClaim("profile_attributes")["family_name"], is(familyName))

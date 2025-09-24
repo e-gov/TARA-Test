@@ -39,11 +39,11 @@ class LegalPersonAuthConfirmSpec extends TaraSpecification {
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, response)
 
         when:
-        Response tokenResponse = Steps.getIdentityTokenResponseWithClient(flow, authenticationFinishedResponse, flow.oidcClientLegal.clientId, flow.oidcClientLegal.clientSecret, flow.oidcClientLegal.fullResponseUrl)
+        Response tokenResponse = Steps.getIdentityTokenResponseWithClient(flow, authenticationFinishedResponse, ClientStore.mockLegal)
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.jsonPath().get("id_token")).JWTClaimsSet
 
         then:
-        assertThat("Correct audience", claims.audience[0], is(flow.oidcClientLegal.clientId))
+        assertThat("Correct audience", claims.audience[0], is(ClientStore.mockLegal.clientId))
         assertThat("Correct subject", claims.subject, is("EE60001019906"))
         assertThat("Correct given name", claims.getJSONObjectClaim("profile_attributes")["given_name"], is("MARY ÄNN"))
         assertThat("Correct registry code", claims.getJSONObjectClaim("profile_attributes")["represents_legal_person"]["registry_code"], is(legalPersonIdentifier))

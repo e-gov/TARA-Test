@@ -77,7 +77,7 @@ class OpenIdConnectSpec extends TaraSpecification {
         given:
         Map formParamsMap = ["grant_type"  : "code",
                              "code"        : "1234567",
-                             "redirect_uri": flow.oidcClientPublic.fullResponseUrl]
+                             "redirect_uri": ClientStore.mockPublic.redirectUri]
 
         formParamsMap.remove(paramName)
 
@@ -103,7 +103,7 @@ class OpenIdConnectSpec extends TaraSpecification {
         given:
         Map paramsMap = ["grant_type"  : "code",
                          "code"        : "1234567",
-                         "redirect_uri": flow.oidcClientPublic.fullResponseUrl]
+                         "redirect_uri": ClientStore.mockPublic.redirectUri]
 
         paramsMap << parameter
 

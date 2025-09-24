@@ -124,40 +124,6 @@ class OidcService extends BaseService {
 }
 
 @Canonical
-class OidcClient extends BaseService {
-    String responseUrl
-    String clientId
-    String clientSecret
-    Map cookies = [:]
-
-    @Lazy fullResponseUrl = "${fullBaseUrl}${responseUrl}"
-
-    OidcClient(OidcClientConf conf) {
-        super(conf)
-        this.responseUrl = conf.responseUrl()
-        this.clientId = conf.clientId()
-        this.clientSecret = conf.secret()
-    }
-}
-
-@Canonical
-class SpecificProxyService extends BaseService {
-    String responseUrl
-    String clientId
-    String clientSecret
-    Map cookies = [:]
-
-    @Lazy fullResponseUrl = "${fullBaseUrl}${responseUrl}"
-
-    SpecificProxyService(SpecificProxyServiceConf conf) {
-        super(conf)
-        this.responseUrl = conf.responseUrl()
-        this.clientId = conf.clientId()
-        this.clientSecret = conf.secret()
-    }
-}
-
-@Canonical
 class ForeignIdpProvider extends BaseService {
     String responseUrl
 
@@ -200,11 +166,6 @@ class TaraAdminService extends BaseService {
 class Flow {
     OidcService oidcService
     LoginService loginService
-    OidcClient oidcClientPublic
-    OidcClient oidcClientPost
-    OidcClient oidcClientPrivate
-    OidcClient oidcClientLegal
-    SpecificProxyService specificProxyService
     ForeignIdpProvider foreignIdpProvider
     ForeignProxyService foreignProxyService
     TaraAdminService taraAdminService
@@ -233,11 +194,6 @@ class Flow {
     Flow() {
         this.loginService = new LoginService(ConfigHolder.loginService)
         this.oidcService = new OidcService(ConfigHolder.oidcService)
-        this.oidcClientPublic = new OidcClient(ConfigHolder.oidcClientPublic)
-        this.oidcClientPost = new OidcClient(ConfigHolder.oidcClientPost)
-        this.oidcClientPrivate = new OidcClient(ConfigHolder.oidcClientPrivate)
-        this.oidcClientLegal = new OidcClient(ConfigHolder.oidcClientLegal)
-        this.specificProxyService = new SpecificProxyService(ConfigHolder.specificProxyService)
         this.foreignIdpProvider = new ForeignIdpProvider(ConfigHolder.foreignIdp)
         this.foreignProxyService = new ForeignProxyService(ConfigHolder.caProxyService)
         this.taraAdminService = new TaraAdminService(ConfigHolder.adminService)
