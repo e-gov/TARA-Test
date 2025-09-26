@@ -1,0 +1,8 @@
+
+services:
+  test:
+    image: mcr.microsoft.com/playwright/java:v1.55.0-noble
+    user: 1000:1000
+    volumes:
+      - "./:/test"
+    command: "sh -c 'cd /test && mvn clean test -Dtest=DummySpec'"
