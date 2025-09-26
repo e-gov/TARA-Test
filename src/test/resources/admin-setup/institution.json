@@ -1,0 +1,13 @@
+{
+  "name": "Institution (dev-local)",
+  "registry_code": "70006317",
+  "type": {
+    "type": "public"
+  },
+  "address": "Address A",
+  "phone": "+37270000001",
+  "email": "contact.institutiona@example.org",
+  "billing_settings": {
+    "email": "billing.institutiona@example.org"
+  }
+}

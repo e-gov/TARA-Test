@@ -1,0 +1,67 @@
+{
+  "client_id": "client",
+  "client_name": {
+    "et": "Teenusenimi",
+    "en": "Service name",
+    "ru": "Название службы"
+  },
+  "client_short_name": {
+    "et": "Teenus",
+    "en": "Service",
+    "ru": "Название"
+  },
+  "institution_metainfo": {
+    "registry_code": "70006317",
+    "type": {
+      "type": "public"
+    },
+    "name": "RIA"
+  },
+  "redirect_uris": [
+    "https://client.localhost:31443/login/oauth2/code/tara"
+  ],
+  "token_request_allowed_ip_addresses": [
+    "0.0.0.0/0",
+    "::/0"
+  ],
+  "token_endpoint_auth_method": "client_secret_basic",
+  "scope": [
+    "openid",
+    "idcard",
+    "mid",
+    "smartid",
+    "legalperson",
+    "eidas",
+    "eidasonly",
+    "eidas:country:*",
+    "email",
+    "phone"
+  ],
+  "secret": "secret",
+  "eidas_requester_id": "urn:uuid:6ee88b88-3991-4b7a-b898-cb18f111498b",
+  "description": "This is a sample client. Intended for use in development environment only.",
+  "info_notification_emails": [
+    "notifications.client@example.org"
+  ],
+  "client_contacts": [
+    {
+      "name": "Contact 1",
+      "email": "contact1.client@example.org",
+      "phone": "+37270000001",
+      "department": "Department 1"
+    },
+    {
+      "name": "Contact 2",
+      "email": "contact2.client@example.org",
+      "phone": "+37270000001",
+      "department": "Department 2"
+    }
+  ],
+  "sla_notification_emails": [
+    "slanotifications.client@example.org"
+  ],
+  "is_user_consent_required": true,
+  "smartid_settings": {
+    "should_use_additional_verification_code_check": true
+  }
+}

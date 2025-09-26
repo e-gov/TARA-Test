@@ -37,7 +37,13 @@ class ClientStore {
     static Client mockAcrHigh = readClientJson("client-mock-acr-high")
 
     static Client readClientJson(String fileName) {
-        Path filePath = Paths.get(ConfigHolder.testConf.adminSetupPath(), "${fileName}.json")
+        Path basePath = Paths.get(ConfigHolder.testConf.adminSetupPath())
+
+        if (!basePath.isAbsolute()) {
+            basePath = Paths.get(System.getProperty("user.dir")).resolve(basePath)
+        }
+
+        Path filePath = basePath.resolve("${fileName}.json").normalize().toAbsolutePath()
         return new ObjectMapper().readValue(filePath.toFile(), Client)
     }
 }
