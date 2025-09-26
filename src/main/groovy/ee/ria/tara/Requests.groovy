@@ -136,11 +136,31 @@ class Requests {
                 .get(url)
     }
 
-    @Step("Get heartbeat")
-    static Response getHeartbeat(Flow flow) {
+    @Step("Get health")
+    static Response getHealth(Flow flow) {
         return given()
                 .urlEncodingEnabled(true)
-                .get(flow.loginService.fullHeartbeatUrl)
+                .get(flow.loginService.fullHealthUrl)
+                .then()
+                .statusCode(200)
+                .extract().response()
+    }
+
+    @Step("Get health readiness")
+    static Response getHealthReadiness(Flow flow) {
+        return given()
+                .urlEncodingEnabled(true)
+                .get(flow.loginService.fullHealthReadinessUrl)
+                .then()
+                .statusCode(200)
+                .extract().response()
+    }
+
+    @Step("Get health liveness")
+    static Response getHealthLiveness(Flow flow) {
+        return given()
+                .urlEncodingEnabled(true)
+                .get(flow.loginService.fullHealthLivenessUrl)
                 .then()
                 .statusCode(200)
                 .extract().response()

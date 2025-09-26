@@ -57,7 +57,11 @@ interface LoginServiceConf extends Config {
 
     String consentConfirmUrl()
 
-    String heartbeatUrl()
+    String healthUrl()
+
+    String healthReadinessUrl()
+
+    String healthLivenessUrl()
 
     @Key("id.username")
     String idUsername()

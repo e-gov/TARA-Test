@@ -41,7 +41,9 @@ class LoginService extends BaseService {
     String authRejectUrl
     String consentUrl
     String consentConfirmUrl
-    String heartbeatUrl
+    String healthUrl
+    String healthReadinessUrl
+    String healthLivenessUrl
     String authLegalInitUrl
     String authLegalPersonUrl
     String authLegalConfirmUrl
@@ -71,7 +73,9 @@ class LoginService extends BaseService {
     @Lazy fullAuthLegalPersonUrl = "${fullBaseUrl}${authLegalPersonUrl}"
     @Lazy fullAuthLegalConfirmUrl = "${fullBaseUrl}${authLegalConfirmUrl}"
 
-    @Lazy fullHeartbeatUrl = "${nodeProtocol}://${nodeHost}${Utils.portCheck(nodePort)}${heartbeatUrl}"
+    @Lazy fullHealthUrl = "${nodeProtocol}://${nodeHost}${Utils.portCheck(nodePort)}${healthUrl}"
+    @Lazy fullHealthReadinessUrl = "${nodeProtocol}://${nodeHost}${Utils.portCheck(nodePort)}${healthReadinessUrl}"
+    @Lazy fullHealthLivenessUrl = "${nodeProtocol}://${nodeHost}${Utils.portCheck(nodePort)}${healthLivenessUrl}"
 
     LoginService(LoginServiceConf conf) {
         super(conf)
@@ -92,7 +96,9 @@ class LoginService extends BaseService {
         this.authRejectUrl = conf.authRejectUrl()
         this.consentUrl = conf.consentUrl()
         this.consentConfirmUrl = conf.consentConfirmUrl()
-        this.heartbeatUrl = conf.heartbeatUrl()
+        this.healthUrl = conf.healthUrl()
+        this.healthReadinessUrl = conf.healthReadinessUrl()
+        this.healthLivenessUrl = conf.healthLivenessUrl()
         this.errorUrl = conf.errorUrl()
         this.eidasInitUrl = conf.eidasInitUrl()
         this.eidasCallbackUrl = conf.eidasCallbackUrl()
