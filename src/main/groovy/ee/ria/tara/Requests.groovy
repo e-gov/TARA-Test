@@ -214,19 +214,6 @@ class Requests {
                 .request(requestType, flow.openIdServiceConfiguration.getString("userinfo_endpoint"))
     }
 
-    @Step("Post request with json body for admin api")
-    static Response jsonRequest(Flow flow, String location, Map<String, Object> jsonAsMap) {
-        return given()
-                .filter(flow.cookieFilter)
-                .contentType(ContentType.JSON)
-                .body(jsonAsMap)
-                .urlEncodingEnabled(true)
-                .post(location)
-                .then()
-                .log().cookies()
-                .extract().response()
-    }
-
     @Step("Post request with json body")
     static Response postRequestWithJsonBody(Flow flow, String location, JSONObject body) {
         return given()
@@ -240,40 +227,5 @@ class Requests {
                 .then()
                 .log().cookies()
                 .extract().response()
-    }
-
-    @Step("Post request with json for admin api")
-    static Response postRequestAdminApiWithJsonBody(Flow flow, String location, Map cookies, Object body) {
-        return given()
-                .filter(flow.cookieFilter)
-                .header("X-XSRF-TOKEN", cookies.get("XSRF-TOKEN"))
-                .cookies(cookies)
-                .contentType(ContentType.JSON)
-                .body(body)
-                .urlEncodingEnabled(true)
-                .post(location)
-                .then()
-                .log().cookies()
-                .extract().response()
-    }
-
-    @Step("Delete request for admin api")
-    static Response deleteRequest(Flow flow, String location, Map cookies) {
-        return given()
-                .filter(flow.cookieFilter)
-                .header("X-XSRF-TOKEN", cookies.get("XSRF-TOKEN"))
-                .cookies(cookies)
-                .urlEncodingEnabled(true)
-                .delete(location)
-    }
-
-    @Step("Get request for admin api")
-    static Response getRequest(Flow flow, String location, Map cookies) {
-        return given()
-                .filter(flow.cookieFilter)
-                .header("X-XSRF-TOKEN", cookies.get("XSRF-TOKEN"))
-                .cookies(cookies)
-                .urlEncodingEnabled(true)
-                .get(location)
     }
 }
