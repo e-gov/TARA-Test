@@ -63,6 +63,8 @@ interface LoginServiceConf extends Config {
 
     String healthLivenessUrl()
 
+    String prometheusUrl()
+
     @Key("id.username")
     String idUsername()
 

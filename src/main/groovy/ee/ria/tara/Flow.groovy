@@ -44,6 +44,7 @@ class LoginService extends BaseService {
     String healthUrl
     String healthReadinessUrl
     String healthLivenessUrl
+    String prometheusUrl
     String authLegalInitUrl
     String authLegalPersonUrl
     String authLegalConfirmUrl
@@ -76,6 +77,7 @@ class LoginService extends BaseService {
     @Lazy fullHealthUrl = "${nodeProtocol}://${nodeHost}${Utils.portCheck(nodePort)}${healthUrl}"
     @Lazy fullHealthReadinessUrl = "${nodeProtocol}://${nodeHost}${Utils.portCheck(nodePort)}${healthReadinessUrl}"
     @Lazy fullHealthLivenessUrl = "${nodeProtocol}://${nodeHost}${Utils.portCheck(nodePort)}${healthLivenessUrl}"
+    @Lazy fullPrometheusUrl = "${nodeProtocol}://${nodeHost}${Utils.portCheck(nodePort)}${prometheusUrl}"
 
     LoginService(LoginServiceConf conf) {
         super(conf)
@@ -97,6 +99,7 @@ class LoginService extends BaseService {
         this.consentUrl = conf.consentUrl()
         this.consentConfirmUrl = conf.consentConfirmUrl()
         this.healthUrl = conf.healthUrl()
+        this.prometheusUrl = conf.prometheusUrl()
         this.healthReadinessUrl = conf.healthReadinessUrl()
         this.healthLivenessUrl = conf.healthLivenessUrl()
         this.errorUrl = conf.errorUrl()

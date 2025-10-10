@@ -166,6 +166,16 @@ class Requests {
                 .extract().response()
     }
 
+    @Step("Get prometheus")
+    static Response getPrometheus(Flow flow) {
+        return given()
+                .urlEncodingEnabled(true)
+                .get(flow.loginService.fullPrometheusUrl)
+                .then()
+                .statusCode(200)
+                .extract().response()
+    }
+
     @Step("Download openid service configuration")
     static JsonPath getOpenidConfiguration(String url) {
         return given()

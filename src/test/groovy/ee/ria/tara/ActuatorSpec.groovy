@@ -4,11 +4,12 @@ import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 
+import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.notNullValue
 
-class ActuatorHealthSpec extends TaraSpecification {
+class ActuatorSpec extends TaraSpecification {
 
     def setup() {
         flow.cookieFilter = new CookieFilter()
@@ -17,7 +18,21 @@ class ActuatorHealthSpec extends TaraSpecification {
     @Feature("HEALTH_MONITORING_ENDPOINT")
     @Feature("HEALTH_MONITORING_ENDPOINT_DEPENDENCIES")
     @Feature("HEALTH_MONITORING_STATUS")
-    def "Verify 'health' response elements"() {
+    def "Verify 'actuator prometheus' response elements"() {
+        when:
+        Response response = Requests.getPrometheus(flow)
+
+        then:
+        response.then()
+                .statusCode(200)
+                .contentType("text/plain;version=0.0.4;charset=utf-8")
+                .body(containsString("Time taken for the application to be ready to service requests"))
+    }
+
+    @Feature("HEALTH_MONITORING_ENDPOINT")
+    @Feature("HEALTH_MONITORING_ENDPOINT_DEPENDENCIES")
+    @Feature("HEALTH_MONITORING_STATUS")
+    def "Verify 'actuator health' response elements"() {
         when:
         Response response = Requests.getHealth(flow)
 
@@ -39,7 +54,7 @@ class ActuatorHealthSpec extends TaraSpecification {
     @Feature("HEALTH_MONITORING_ENDPOINT")
     @Feature("HEALTH_MONITORING_ENDPOINT_DEPENDENCIES")
     @Feature("HEALTH_MONITORING_STATUS")
-    def "Verify 'health readiness' response elements"() {
+    def "Verify 'actuator health readiness' response elements"() {
         when:
         Response response = Requests.getHealthReadiness(flow)
 
@@ -56,7 +71,7 @@ class ActuatorHealthSpec extends TaraSpecification {
     @Feature("HEALTH_MONITORING_ENDPOINT")
     @Feature("HEALTH_MONITORING_ENDPOINT_DEPENDENCIES")
     @Feature("HEALTH_MONITORING_STATUS")
-    def "Verify 'health liveness' response elements"() {
+    def "Verify 'actuator health liveness' response elements"() {
         when:
         Response response = Requests.getHealthLiveness(flow)
 
@@ -73,12 +88,13 @@ class ActuatorHealthSpec extends TaraSpecification {
     @Feature("CACHE_POLICY")
     @Feature("NOSNIFF")
     @Feature("XSS_DETECTION_FILTER_ENABLED")
-    def "Verify '#endpoint' response headers"() {
+    def "Verify 'actuator #endpoint' response headers"() {
         when:
         Response response = switch (endpoint) {
             case "health" -> Requests.getHealth(flow)
             case "health readiness" -> Requests.getHealthReadiness(flow)
             case "health liveness" -> Requests.getHealthLiveness(flow)
+            case "prometheus" -> Requests.getPrometheus(flow)
             default -> throw new Exception("Unknown endpoint: $endpoint")
         }
 
@@ -90,15 +106,17 @@ class ActuatorHealthSpec extends TaraSpecification {
         "health"           | _
         "health readiness" | _
         "health liveness"  | _
+        "prometheus"       | _
     }
 
     @Feature("HEALTH_MONITORING_ENDPOINT")
-    def "Endpoint '#endpoint' cannot be accessed through proxy"() {
+    def "Endpoint 'actuator #endpoint' cannot be accessed through proxy"() {
         given:
         String url = switch (endpoint) {
             case "health" -> flow.loginService.healthUrl
             case "health readiness" -> flow.loginService.healthReadinessUrl
             case "health liveness" -> flow.loginService.healthLivenessUrl
+            case "prometheus" -> flow.loginService.prometheusUrl
             default -> throw new Exception("Unknown endpoint: $endpoint")
         }
 
@@ -115,5 +133,6 @@ class ActuatorHealthSpec extends TaraSpecification {
         "health"           | _
         "health readiness" | _
         "health liveness"  | _
+        "prometheus"       | _
     }
 }
