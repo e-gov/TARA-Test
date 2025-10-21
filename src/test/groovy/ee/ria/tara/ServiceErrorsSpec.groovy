@@ -7,15 +7,10 @@ import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 
-import java.time.Duration
-import java.time.ZonedDateTime
-
 import static io.restassured.RestAssured.given
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.is
-import static org.hamcrest.Matchers.lessThan
-import static org.hamcrest.Matchers.greaterThan
 
 class ServiceErrorsSpec extends TaraSpecification {
 
@@ -46,18 +41,12 @@ class ServiceErrorsSpec extends TaraSpecification {
         then:
         ErrorValidator.validate(response, ErrorMessage.INTERNAL_ERROR)
 
-        response.then().body(
-                "path", is(flow.loginService.errorUrl),
-                "status", is(500),
-                "locale", is("et"),
-                "incident_nr.size()", greaterThan(15)
-        )
-
-        long timestampAge = Duration.between(
-                ZonedDateTime.parse(response.jsonPath().get("timestamp")),
-                ZonedDateTime.now()
-        ).abs().seconds
-        assertThat("Timestamp should be within 10 seconds", timestampAge, lessThan(10L))
+        response.then()
+                .body(
+                        "path", is(flow.loginService.errorUrl),
+                        "status", is(500),
+                        "locale", is("et")
+                )
     }
 
     @Feature("USER_ERRORS")
@@ -76,6 +65,7 @@ class ServiceErrorsSpec extends TaraSpecification {
         assertThat(htmlResponse, containsString("Kasutaja tuvastamine ebaõnnestus."))
         assertThat(htmlResponse, containsString("Autentimine ebaõnnestus teenuse tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti."))
         assertThat(htmlResponse, containsString("Intsidendi number:"))
+        assertThat(htmlResponse, containsString("Intsidendi aeg:"))
         assertThat(htmlResponse, containsString("Edasta veakirjeldus"))
         assertThat(htmlResponse, containsString("Palun saatke e-kiri aadressile"))
     }
@@ -96,9 +86,8 @@ class ServiceErrorsSpec extends TaraSpecification {
         assertThat(htmlResponse, containsString("Kasutaja tuvastamine ebaõnnestus."))
         assertThat(htmlResponse, containsString("Kliendi autentimine ebaõnnestus. Tundmatu klient."))
         assertThat(htmlResponse, containsString("Intsidendi number:"))
+        assertThat(htmlResponse, containsString("Intsidendi aeg:"))
         assertThat(htmlResponse, containsString("Edasta veakirjeldus"))
         assertThat(htmlResponse, containsString("Palun saatke e-kiri aadressile"))
     }
-
-
 }

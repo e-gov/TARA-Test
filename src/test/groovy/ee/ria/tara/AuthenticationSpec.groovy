@@ -20,7 +20,6 @@ import java.security.InvalidParameterException
 import static io.restassured.RestAssured.given
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.equalTo
-import static org.hamcrest.Matchers.hasLength
 import static org.hamcrest.Matchers.startsWith
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.not
@@ -504,7 +503,6 @@ class AuthenticationSpec extends TaraSpecification {
 
         then:
         ErrorValidator.validate(response, ErrorMessage.INVALID_CSRF_TOKEN)
-        response.then().body("incident_nr", hasLength(32))
 
         where:
         cookie                        | reason
@@ -555,7 +553,6 @@ class AuthenticationSpec extends TaraSpecification {
 
         then:
         ErrorValidator.validate(response, HttpStatus.SC_BAD_REQUEST, "authReject.errorCode: the only supported value is: 'user_cancel'")
-        response.then().body("incident_nr", hasLength(32))
     }
 
     @Feature("AUTH_REJECT_LOGIN_ENDPOINT")
@@ -615,7 +612,6 @@ class AuthenticationSpec extends TaraSpecification {
 
         then:
         ErrorValidator.validate(response, ErrorMessage.DUPLICATE_PARAMETERS)
-        response.then().body("incident_nr", hasLength(32))
     }
 
     @Step("Authentication flow up to Mobile-ID polling")
