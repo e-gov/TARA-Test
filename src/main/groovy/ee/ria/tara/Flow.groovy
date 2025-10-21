@@ -6,28 +6,44 @@ import groovy.transform.Canonical
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.path.json.JsonPath
 
-
 @Canonical
 abstract class BaseService {
     String protocol
     String host
     String port
 
+    String nodeProtocol
+    String nodeHost
+    String nodePort
+
     @Lazy baseUrl = "${protocol}://${host}"
     @Lazy fullBaseUrl = "${baseUrl}${Utils.portCheck(port)}"
+    @Lazy fullNodeUrl = "${nodeProtocol}://${nodeHost}${Utils.portCheck(nodePort)}"
 
     BaseService(conf) {
         this.protocol = conf.protocol()
         this.host = conf.host()
         this.port = conf.port()
+
+        switch (conf) {
+            case InproxyServiceConf:
+            case CaProxyServiceConf:
+            case AdminServiceConf:
+            case ForeignIdpConf:
+                    this.nodeProtocol = this.protocol
+                    this.nodeHost = this.host
+                    this.nodePort = this.port
+                break
+            default:
+                this.nodeProtocol = conf.nodeProtocol()
+                this.nodeHost = conf.nodeHost()
+                this.nodePort = conf.nodePort()
+        }
     }
 }
 
 @Canonical
 class LoginService extends BaseService {
-    String nodeHost
-    String nodePort
-    String nodeProtocol
     String initUrl
     String midInitUrl
     String midPollUrl
@@ -41,10 +57,6 @@ class LoginService extends BaseService {
     String authRejectUrl
     String consentUrl
     String consentConfirmUrl
-    String healthUrl
-    String healthReadinessUrl
-    String healthLivenessUrl
-    String prometheusUrl
     String authLegalInitUrl
     String authLegalPersonUrl
     String authLegalConfirmUrl
@@ -74,17 +86,8 @@ class LoginService extends BaseService {
     @Lazy fullAuthLegalPersonUrl = "${fullBaseUrl}${authLegalPersonUrl}"
     @Lazy fullAuthLegalConfirmUrl = "${fullBaseUrl}${authLegalConfirmUrl}"
 
-    @Lazy fullHealthUrl = "${nodeProtocol}://${nodeHost}${Utils.portCheck(nodePort)}${healthUrl}"
-    @Lazy fullHealthReadinessUrl = "${nodeProtocol}://${nodeHost}${Utils.portCheck(nodePort)}${healthReadinessUrl}"
-    @Lazy fullHealthLivenessUrl = "${nodeProtocol}://${nodeHost}${Utils.portCheck(nodePort)}${healthLivenessUrl}"
-    @Lazy fullPrometheusUrl = "${nodeProtocol}://${nodeHost}${Utils.portCheck(nodePort)}${prometheusUrl}"
-
     LoginService(LoginServiceConf conf) {
         super(conf)
-        this.protocol = conf.protocol()
-        this.nodeHost = conf.nodeHost()
-        this.nodePort = conf.nodePort()
-        this.nodeProtocol = conf.nodeProtocol()
         this.initUrl = conf.initUrl()
         this.midInitUrl = conf.midInitUrl()
         this.midPollUrl = conf.midPollUrl()
@@ -98,10 +101,6 @@ class LoginService extends BaseService {
         this.authRejectUrl = conf.authRejectUrl()
         this.consentUrl = conf.consentUrl()
         this.consentConfirmUrl = conf.consentConfirmUrl()
-        this.healthUrl = conf.healthUrl()
-        this.prometheusUrl = conf.prometheusUrl()
-        this.healthReadinessUrl = conf.healthReadinessUrl()
-        this.healthLivenessUrl = conf.healthLivenessUrl()
         this.errorUrl = conf.errorUrl()
         this.eidasInitUrl = conf.eidasInitUrl()
         this.eidasCallbackUrl = conf.eidasCallbackUrl()
@@ -170,6 +169,13 @@ class TaraAdminService extends BaseService {
     }
 }
 
+@Canonical
+class InproxyService extends BaseService {
+
+    InproxyService(InproxyServiceConf conf) {
+        super(conf)
+    }
+}
 
 @Canonical
 class Flow {
@@ -178,6 +184,7 @@ class Flow {
     ForeignIdpProvider foreignIdpProvider
     ForeignProxyService foreignProxyService
     TaraAdminService taraAdminService
+    InproxyService inproxyService
 
     CookieFilter cookieFilter
     String clientId
@@ -206,5 +213,6 @@ class Flow {
         this.foreignIdpProvider = new ForeignIdpProvider(ConfigHolder.foreignIdp)
         this.foreignProxyService = new ForeignProxyService(ConfigHolder.caProxyService)
         this.taraAdminService = new TaraAdminService(ConfigHolder.adminService)
+        this.inproxyService = new InproxyService(ConfigHolder.inproxyService)
     }
 }

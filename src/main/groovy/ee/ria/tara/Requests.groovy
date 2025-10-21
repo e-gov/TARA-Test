@@ -137,43 +137,59 @@ class Requests {
     }
 
     @Step("Get health")
-    static Response getHealth(Flow flow) {
+    static Response tryGetHealth(String baseUri) {
         return given()
                 .urlEncodingEnabled(true)
-                .get(flow.loginService.fullHealthUrl)
-                .then()
-                .statusCode(200)
-                .extract().response()
+                .baseUri(baseUri)
+                .get("/actuator/health")
+    }
+
+    static Response getHealth(String baseUri) {
+        Response response = tryGetHealth(baseUri)
+        response.then().statusCode(200)
+        return response
     }
 
     @Step("Get health readiness")
-    static Response getHealthReadiness(Flow flow) {
+    static Response tryGetHealthReadiness(String baseUri) {
         return given()
                 .urlEncodingEnabled(true)
-                .get(flow.loginService.fullHealthReadinessUrl)
-                .then()
-                .statusCode(200)
-                .extract().response()
+                .baseUri(baseUri)
+                .get("/actuator/health/readiness")
+    }
+
+    static Response getHealthReadiness(String baseUri) {
+        Response response = tryGetHealthReadiness(baseUri)
+        response.then().statusCode(200)
+        return response
     }
 
     @Step("Get health liveness")
-    static Response getHealthLiveness(Flow flow) {
+    static Response tryGetHealthLiveness(String baseUri) {
         return given()
                 .urlEncodingEnabled(true)
-                .get(flow.loginService.fullHealthLivenessUrl)
-                .then()
-                .statusCode(200)
-                .extract().response()
+                .baseUri(baseUri)
+                .get("/actuator/health/liveness")
     }
 
-    @Step("Get prometheus")
-    static Response getPrometheus(Flow flow) {
+    static Response getHealthLiveness(String baseUri) {
+        Response response = tryGetHealthLiveness(baseUri)
+        response.then().statusCode(200)
+        return response
+    }
+
+    @Step("Get Prometheus")
+    static Response tryGetPrometheus(String baseUri) {
         return given()
                 .urlEncodingEnabled(true)
-                .get(flow.loginService.fullPrometheusUrl)
-                .then()
-                .statusCode(200)
-                .extract().response()
+                .baseUri(baseUri)
+                .get("/actuator/prometheus")
+    }
+
+    static Response getPrometheus(String baseUri) {
+        Response response = tryGetPrometheus(baseUri)
+        response.then().statusCode(200)
+        return response
     }
 
     @Step("Download openid service configuration")

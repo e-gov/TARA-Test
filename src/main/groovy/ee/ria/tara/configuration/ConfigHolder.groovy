@@ -12,6 +12,7 @@ class ConfigHolder {
     private static final CaProxyServiceConf caProxyService = readConf(CaProxyServiceConf, "ca-proxyservice")
     private static final ForeignIdpConf foreignIdp = readConf(ForeignIdpConf, "idp")
     private static final AdminServiceConf adminService = readConf(AdminServiceConf, "adminservice")
+    private static final InproxyServiceConf inproxyService = readConf(InproxyServiceConf, "inproxyservice")
     private static final TestConf testConf = readConf(TestConf, "test")
 
     private static <T extends Config> T readConf(Class<T> configClass) {
@@ -38,6 +39,8 @@ class ConfigHolder {
     static ForeignIdpConf getForeignIdp() { foreignIdp }
 
     static AdminServiceConf getAdminService() { adminService }
+
+    static InproxyServiceConf getInproxyService() { inproxyService }
 
     static TestConf getTestConf() { testConf }
 }

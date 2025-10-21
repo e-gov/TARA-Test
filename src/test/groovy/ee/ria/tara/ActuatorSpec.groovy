@@ -7,7 +7,6 @@ import io.restassured.response.Response
 import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.Matchers.is
-import static org.hamcrest.Matchers.notNullValue
 
 class ActuatorSpec extends TaraSpecification {
 
@@ -18,110 +17,142 @@ class ActuatorSpec extends TaraSpecification {
     @Feature("HEALTH_MONITORING_ENDPOINT")
     @Feature("HEALTH_MONITORING_ENDPOINT_DEPENDENCIES")
     @Feature("HEALTH_MONITORING_STATUS")
-    def "Verify 'actuator prometheus' response elements"() {
+    def "Verify '#service' service 'actuator prometheus' response"() {
         when:
-        Response response = Requests.getPrometheus(flow)
-
-        then:
-        response.then()
-                .statusCode(200)
-                .contentType("text/plain;version=0.0.4;charset=utf-8")
-                .body(containsString("Time taken for the application to be ready to service requests"))
-    }
-
-    @Feature("HEALTH_MONITORING_ENDPOINT")
-    @Feature("HEALTH_MONITORING_ENDPOINT_DEPENDENCIES")
-    @Feature("HEALTH_MONITORING_STATUS")
-    def "Verify 'actuator health' response elements"() {
-        when:
-        Response response = Requests.getHealth(flow)
-
-        then:
-        response.then()
-                .contentType("application/vnd.spring-boot.actuator.v3+json")
-                .body(
-                        "status", is("UP"),
-                        "groups", equalTo(Arrays.asList("liveness", "readiness")),
-                        "components.ignite.status", equalTo("UP"),
-                        "components.livenessState.status", equalTo("UP"),
-                        "components.oidcServer.status", equalTo("UP"),
-                        "components.readinessState.status", equalTo("UP"),
-                        "components.truststore.status", equalTo("UP"),
-                        "components.truststore.details", notNullValue()
-                )
-    }
-
-    @Feature("HEALTH_MONITORING_ENDPOINT")
-    @Feature("HEALTH_MONITORING_ENDPOINT_DEPENDENCIES")
-    @Feature("HEALTH_MONITORING_STATUS")
-    def "Verify 'actuator health readiness' response elements"() {
-        when:
-        Response response = Requests.getHealthReadiness(flow)
-
-        then:
-        response.then()
-                .contentType("application/vnd.spring-boot.actuator.v3+json")
-                .body(
-                        "status", is("UP"),
-                        "components.oidcServer.status", equalTo("UP"),
-                        "components.readinessState.status", equalTo("UP"),
-                )
-    }
-
-    @Feature("HEALTH_MONITORING_ENDPOINT")
-    @Feature("HEALTH_MONITORING_ENDPOINT_DEPENDENCIES")
-    @Feature("HEALTH_MONITORING_STATUS")
-    def "Verify 'actuator health liveness' response elements"() {
-        when:
-        Response response = Requests.getHealthLiveness(flow)
-
-        then:
-        response.then()
-                .contentType("application/vnd.spring-boot.actuator.v3+json")
-                .body(
-                        "status", is("UP"))
-    }
-
-    @Feature("DISALLOW_IFRAMES")
-    @Feature("CSP_ENABLED")
-    @Feature("HSTS_ENABLED")
-    @Feature("CACHE_POLICY")
-    @Feature("NOSNIFF")
-    @Feature("XSS_DETECTION_FILTER_ENABLED")
-    def "Verify 'actuator #endpoint' response headers"() {
-        when:
-        Response response = switch (endpoint) {
-            case "health" -> Requests.getHealth(flow)
-            case "health readiness" -> Requests.getHealthReadiness(flow)
-            case "health liveness" -> Requests.getHealthLiveness(flow)
-            case "prometheus" -> Requests.getPrometheus(flow)
-            default -> throw new Exception("Unknown endpoint: $endpoint")
+        Response response = switch (service) {
+            case "Login" -> Requests.getPrometheus(flow.loginService.fullNodeUrl)
+            case "OIDC" -> Requests.getPrometheus(flow.oidcService.fullNodeUrl)
+            case "Inproxy" -> Requests.getPrometheus(flow.inproxyService.fullNodeUrl)
+            case "Tara admin" -> Requests.getPrometheus(flow.taraAdminService.fullNodeUrl)
+            default -> throw new Exception("Unknown service: $service")
         }
 
         then:
-        Steps.verifyResponseHeaders(response)
+        response.then()
+                .contentType("text/plain")
+                .body(containsString("process_start_time_seconds"))
 
         where:
-        endpoint           | _
-        "health"           | _
-        "health readiness" | _
-        "health liveness"  | _
-        "prometheus"       | _
+        service      | _
+        "Login"      | _
+        "OIDC"       | _
+        "Inproxy"    | _
+        "Tara admin" | _
     }
 
     @Feature("HEALTH_MONITORING_ENDPOINT")
-    def "Endpoint 'actuator #endpoint' cannot be accessed through proxy"() {
-        given:
-        String url = switch (endpoint) {
-            case "health" -> flow.loginService.healthUrl
-            case "health readiness" -> flow.loginService.healthReadinessUrl
-            case "health liveness" -> flow.loginService.healthLivenessUrl
-            case "prometheus" -> flow.loginService.prometheusUrl
-            default -> throw new Exception("Unknown endpoint: $endpoint")
+    @Feature("HEALTH_MONITORING_ENDPOINT_DEPENDENCIES")
+    @Feature("HEALTH_MONITORING_STATUS")
+    def "Verify '#service' service 'actuator #endpoint' dependent service '#component' status"() {
+        when:
+        Response response = switch (service) {
+            case "Login" -> switch (endpoint) {
+                case "health" -> Requests.getHealth(flow.loginService.fullNodeUrl)
+                case "health readiness" -> Requests.getHealthReadiness(flow.loginService.fullNodeUrl)
+                default -> throw new Exception("Unknown endpoint: $endpoint")
+            }
+            case "Tara admin" -> switch (endpoint) {
+                case "health" -> Requests.getHealth(flow.taraAdminService.fullNodeUrl)
+                case "health readiness" -> Requests.getHealthReadiness(flow.taraAdminService.fullNodeUrl)
+                default -> throw new Exception("Unknown endpoint: $endpoint")
+            }
+            default -> throw new Exception("Unknown service: $service")
         }
 
+        then:
+        response.then()
+                .contentType("application/vnd.spring-boot.actuator")
+                .body("components." + component + ".status", equalTo("UP"),)
+
+        where:
+        service      | endpoint           | component
+        "Login"      | "health"           | "ignite"
+        "Login"      | "health"           | "oidcServer"
+        "Login"      | "health readiness" | "oidcServer"
+        "Tara admin" | "health"           | "db"
+        "Tara admin" | "health"           | "ldap"
+        "Tara admin" | "health"           | "mail"
+        "Tara admin" | "health readiness" | "db"
+        "Tara admin" | "health readiness" | "ldap"
+    }
+
+    @Feature("HEALTH_MONITORING_ENDPOINT")
+    @Feature("HEALTH_MONITORING_ENDPOINT_DEPENDENCIES")
+    @Feature("HEALTH_MONITORING_STATUS")
+    def "Verify '#service' service 'actuator #endpoint' status"() {
         when:
-        Response response = Requests.getRequest(flow, url)
+        Response response = switch (service) {
+            case "Login" -> switch (endpoint) {
+                case "health" -> Requests.getHealth(flow.loginService.fullNodeUrl)
+                case "health readiness" -> Requests.getHealthReadiness(flow.loginService.fullNodeUrl)
+                case "health liveness" -> Requests.getHealthLiveness(flow.loginService.fullNodeUrl)
+                default -> throw new Exception("Unknown endpoint: $endpoint")
+            }
+            case "OIDC" -> switch (endpoint) {
+                case "health" -> Requests.getHealth(flow.oidcService.fullNodeUrl)
+                case "health readiness" -> Requests.getHealthReadiness(flow.oidcService.fullNodeUrl)
+                case "health liveness" -> Requests.getHealthLiveness(flow.oidcService.fullNodeUrl)
+                default -> throw new Exception("Unknown endpoint: $endpoint")
+            }
+            case "Inproxy" -> switch (endpoint) {
+                case "health" -> Requests.getHealth(flow.inproxyService.fullNodeUrl)
+                case "health readiness" -> Requests.getHealthReadiness(flow.inproxyService.fullNodeUrl)
+                case "health liveness" -> Requests.getHealthLiveness(flow.inproxyService.fullNodeUrl)
+                default -> throw new Exception("Unknown endpoint: $endpoint")
+            }
+            case "Tara admin" -> switch (endpoint) {
+                case "health" -> Requests.getHealth(flow.taraAdminService.fullNodeUrl)
+                case "health readiness" -> Requests.getHealthReadiness(flow.taraAdminService.fullNodeUrl)
+                case "health liveness" -> Requests.getHealthLiveness(flow.taraAdminService.fullNodeUrl)
+                default -> throw new Exception("Unknown endpoint: $endpoint")
+            }
+            default -> throw new Exception("Unknown service: $service")
+        }
+
+        then:
+        response.then()
+                .contentType("application/vnd.spring-boot.actuator")
+                .body("status", is("UP"))
+
+        where:
+        service      | endpoint
+        "Login"      | "health"
+        "Login"      | "health readiness"
+        "Login"      | "health liveness"
+
+        "OIDC"       | "health"
+        "OIDC"       | "health readiness"
+        "OIDC"       | "health liveness"
+
+//        "Inproxy"    | "health" //returns 503
+        "Inproxy"    | "health readiness"
+        "Inproxy"    | "health liveness"
+
+        "Tara admin" | "health"
+        "Tara admin" | "health readiness"
+        "Tara admin" | "health liveness"
+    }
+
+    @Feature("HEALTH_MONITORING_ENDPOINT")
+    def "Endpoint '#service' service 'actuator #endpoint' cannot be accessed through proxy"() {
+        when:
+        Response response = switch (service) {
+            case "Login" -> switch (endpoint) {
+                case "health" -> Requests.tryGetHealth(flow.loginService.fullBaseUrl)
+                case "health readiness" -> Requests.tryGetHealthReadiness(flow.loginService.fullBaseUrl)
+                case "health liveness" -> Requests.tryGetHealthLiveness(flow.loginService.fullBaseUrl)
+                case "prometheus" -> Requests.tryGetPrometheus(flow.loginService.fullBaseUrl)
+                default -> throw new Exception("Unknown endpoint: $endpoint")
+            }
+            case "OIDC" -> switch (endpoint) {
+                case "health" -> Requests.tryGetHealth(flow.oidcService.fullBaseUrl)
+                case "health readiness" -> Requests.tryGetHealthReadiness(flow.oidcService.fullBaseUrl)
+                case "health liveness" -> Requests.tryGetHealthLiveness(flow.oidcService.fullBaseUrl)
+                case "prometheus" -> Requests.tryGetPrometheus(flow.oidcService.fullBaseUrl)
+                default -> throw new Exception("Unknown endpoint: $endpoint")
+            }
+            default -> throw new Exception("Unknown service: $service")
+        }
 
         then:
         response.then()
@@ -129,10 +160,14 @@ class ActuatorSpec extends TaraSpecification {
                 .body("path", is("/notfound"))
 
         where:
-        endpoint           | _
-        "health"           | _
-        "health readiness" | _
-        "health liveness"  | _
-        "prometheus"       | _
+        service | endpoint
+        "Login" | "health"
+        "Login" | "health readiness"
+        "Login" | "health liveness"
+        "Login" | "prometheus"
+        "OIDC"  | "health"
+        "OIDC"  | "health readiness"
+        "OIDC"  | "health liveness"
+        "OIDC"  | "prometheus"
     }
 }

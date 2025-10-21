@@ -57,14 +57,6 @@ interface LoginServiceConf extends Config {
 
     String consentConfirmUrl()
 
-    String healthUrl()
-
-    String healthReadinessUrl()
-
-    String healthLivenessUrl()
-
-    String prometheusUrl()
-
     @Key("id.username")
     String idUsername()
 
