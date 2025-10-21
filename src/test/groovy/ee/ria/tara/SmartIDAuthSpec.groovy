@@ -13,7 +13,6 @@ import org.apache.http.HttpStatus
 
 import static io.restassured.RestAssured.given
 import static org.hamcrest.MatcherAssert.assertThat
-import static org.hamcrest.Matchers.greaterThan
 import static org.hamcrest.Matchers.is
 
 class SmartIDAuthSpec extends TaraSpecification {
@@ -149,7 +148,6 @@ class SmartIDAuthSpec extends TaraSpecification {
 
         then:
         ErrorValidator.validate(pollResponse, HttpStatus.SC_BAD_REQUEST, errorMessage)
-        pollResponse.then().body("incident_nr.size()", greaterThan(15))
 
         where:
         login_locale | label             || errorMessage

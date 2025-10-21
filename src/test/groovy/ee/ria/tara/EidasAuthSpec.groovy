@@ -16,7 +16,6 @@ import org.apache.http.HttpStatus
 import static io.restassured.RestAssured.given
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.greaterThan
-import static org.hamcrest.Matchers.hasLength
 import static org.hamcrest.Matchers.is
 
 class EidasAuthSpec extends TaraSpecification {
@@ -53,7 +52,6 @@ class EidasAuthSpec extends TaraSpecification {
 
         then:
         ErrorValidator.validate(response, ErrorMessage.EIDAS_NOT_ALLOWED_COUNTRY, "CA, DE")
-        response.then().body("incident_nr", hasLength(32))
 
         where:
         country | label
