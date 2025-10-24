@@ -26,13 +26,14 @@ abstract class BaseService {
         this.port = conf.port()
 
         switch (conf) {
-            case InproxyServiceConf:
-            case CaProxyServiceConf:
-            case AdminServiceConf:
-            case ForeignIdpConf:
-                    this.nodeProtocol = this.protocol
-                    this.nodeHost = this.host
-                    this.nodePort = this.port
+            case InproxyServiceConf: // fall through
+            case CaProxyServiceConf: // fall through
+            case AdminServiceConf: // fall through
+            case ForeignIdpConf: // fall through
+            case DemoClientConf:
+                this.nodeProtocol = this.protocol
+                this.nodeHost = this.host
+                this.nodePort = this.port
                 break
             default:
                 this.nodeProtocol = conf.nodeProtocol()
@@ -110,6 +111,11 @@ class LoginService extends BaseService {
         this.idCardEndpointUsername = conf.idUsername()
         this.idCardEndpointPassword = conf.idPassword()
     }
+
+    @Override
+    String toString() {
+        return "Login service"
+    }
 }
 
 @Canonical
@@ -128,6 +134,11 @@ class OidcService extends BaseService {
         this.authorizationUrl = conf.authorizationUrl()
         this.jwksUrl = conf.jwksUrl()
         this.configurationUrl = conf.configurationUrl()
+    }
+
+    @Override
+    String toString() {
+        return "OIDC service"
     }
 }
 
@@ -167,6 +178,11 @@ class TaraAdminService extends BaseService {
         this.username = conf.username()
         this.password = conf.password()
     }
+
+    @Override
+    String toString() {
+        return "Tara admin"
+    }
 }
 
 @Canonical
@@ -174,6 +190,24 @@ class InproxyService extends BaseService {
 
     InproxyService(InproxyServiceConf conf) {
         super(conf)
+    }
+
+    @Override
+    String toString() {
+        return "Inproxy service"
+    }
+}
+
+@Canonical
+class DemoClient extends BaseService {
+
+    DemoClient(DemoClientConf conf) {
+        super(conf)
+    }
+
+    @Override
+    String toString() {
+        return "Demo client"
     }
 }
 

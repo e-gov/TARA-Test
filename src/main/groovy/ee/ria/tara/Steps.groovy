@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.nimbusds.jose.JOSEException
 import com.nimbusds.jwt.SignedJWT
 import ee.ria.tara.configuration.ConfigHolder
+import ee.ria.tara.model.Actuator
 import ee.ria.tara.model.Client
 import ee.ria.tara.model.LoA
 import io.qameta.allure.Allure
@@ -366,5 +367,32 @@ class Steps {
         Object jsonObject = mapper.readValue(json, Object.class)
         String prettyJson = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(jsonObject)
         Allure.addAttachment(name, "application/json", prettyJson, "json")
+    }
+
+    static Response tryGetActuatorEndpoint(String baseurl, Actuator actuator) {
+        Requests.get(baseurl, actuator.endpoint)
+    }
+
+    @Step("Get Actuator {1}")
+    static Response getActuatorEndpoint(String baseurl, Actuator actuator) {
+        Response response = tryGetActuatorEndpoint(baseurl, actuator)
+        response.then().statusCode(HttpStatus.SC_OK)
+        return response
+    }
+
+    static Response getHealth(String baseUri) {
+        getActuatorEndpoint(baseUri, Actuator.HEALTH)
+    }
+
+    static Response getHealthReadiness(String baseUri) {
+        getActuatorEndpoint(baseUri, Actuator.READINESS)
+    }
+
+    static Response getHealthLiveness(String baseUri) {
+        getActuatorEndpoint(baseUri, Actuator.LIVENESS)
+    }
+
+    static Response getPrometheus(String baseUri) {
+        getActuatorEndpoint(baseUri, Actuator.PROMETHEUS)
     }
 }

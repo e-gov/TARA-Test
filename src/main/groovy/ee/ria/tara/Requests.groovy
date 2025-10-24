@@ -13,6 +13,14 @@ import static io.restassured.RestAssured.given
 
 class Requests {
 
+    @Step("GET {endpoint}")
+    static Response get(String baseUri, String endpoint) {
+        return given()
+                .urlEncodingEnabled(true)
+                .baseUri(baseUri)
+                .get(endpoint)
+    }
+
     @Step("Mobile-ID authentication init request")
     static Response startMidAuthentication(Flow flow, String idCode, String phoneNo) {
         return given()
@@ -134,62 +142,6 @@ class Requests {
                 .redirects().follow(false)
                 .urlEncodingEnabled(true)
                 .get(url)
-    }
-
-    @Step("Get health")
-    static Response tryGetHealth(String baseUri) {
-        return given()
-                .urlEncodingEnabled(true)
-                .baseUri(baseUri)
-                .get("/actuator/health")
-    }
-
-    static Response getHealth(String baseUri) {
-        Response response = tryGetHealth(baseUri)
-        response.then().statusCode(200)
-        return response
-    }
-
-    @Step("Get health readiness")
-    static Response tryGetHealthReadiness(String baseUri) {
-        return given()
-                .urlEncodingEnabled(true)
-                .baseUri(baseUri)
-                .get("/actuator/health/readiness")
-    }
-
-    static Response getHealthReadiness(String baseUri) {
-        Response response = tryGetHealthReadiness(baseUri)
-        response.then().statusCode(200)
-        return response
-    }
-
-    @Step("Get health liveness")
-    static Response tryGetHealthLiveness(String baseUri) {
-        return given()
-                .urlEncodingEnabled(true)
-                .baseUri(baseUri)
-                .get("/actuator/health/liveness")
-    }
-
-    static Response getHealthLiveness(String baseUri) {
-        Response response = tryGetHealthLiveness(baseUri)
-        response.then().statusCode(200)
-        return response
-    }
-
-    @Step("Get Prometheus")
-    static Response tryGetPrometheus(String baseUri) {
-        return given()
-                .urlEncodingEnabled(true)
-                .baseUri(baseUri)
-                .get("/actuator/prometheus")
-    }
-
-    static Response getPrometheus(String baseUri) {
-        Response response = tryGetPrometheus(baseUri)
-        response.then().statusCode(200)
-        return response
     }
 
     @Step("Download openid service configuration")
