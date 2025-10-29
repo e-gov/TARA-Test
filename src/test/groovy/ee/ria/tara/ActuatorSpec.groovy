@@ -34,7 +34,6 @@ class ActuatorSpec extends TaraSpecification {
         service << [ServiceUrls.LOGIN_SERVICE, ServiceUrls.INPROXY_SERVICE, ServiceUrls.TARA_ADMIN_SERVICE, ServiceUrls.DEMO_CLIENT]
     }
 
-    @Issue("AUT-2386")
     @Feature("HEALTH_MONITORING_ENDPOINT")
     @Feature("HEALTH_MONITORING_ENDPOINT_DEPENDENCIES")
     @Feature("HEALTH_MONITORING_STATUS")
@@ -50,8 +49,7 @@ class ActuatorSpec extends TaraSpecification {
         ServiceUrls.LOGIN_SERVICE      | Actuator.HEALTH    | "oidcServer"
         ServiceUrls.LOGIN_SERVICE      | Actuator.READINESS | "oidcServer"
 
-        // Issue: AUT-2386
-//        ServiceUrls.INPROXY_SERVICE   | Actuator.HEALTH | "admin"
+        ServiceUrls.INPROXY_SERVICE   | Actuator.HEALTH | "admin"
 
         ServiceUrls.TARA_ADMIN_SERVICE | Actuator.HEALTH    | "db"
         ServiceUrls.TARA_ADMIN_SERVICE | Actuator.HEALTH    | "ldap"
@@ -60,7 +58,6 @@ class ActuatorSpec extends TaraSpecification {
         ServiceUrls.TARA_ADMIN_SERVICE | Actuator.READINESS | "ldap"
     }
 
-    @Issue("AUT-2386")
     @Feature("HEALTH_MONITORING_ENDPOINT")
     @Feature("HEALTH_MONITORING_ENDPOINT_DEPENDENCIES")
     @Feature("HEALTH_MONITORING_STATUS")
@@ -76,8 +73,7 @@ class ActuatorSpec extends TaraSpecification {
         ServiceUrls.LOGIN_SERVICE      | Actuator.READINESS
         ServiceUrls.LOGIN_SERVICE      | Actuator.LIVENESS
 
-        // Issue: AUT-2386
-//        ServiceUrls.INPROXY_SERVICE   | Actuator.HEALTH
+        ServiceUrls.INPROXY_SERVICE   | Actuator.HEALTH
         ServiceUrls.INPROXY_SERVICE    | Actuator.READINESS
         ServiceUrls.INPROXY_SERVICE    | Actuator.LIVENESS
 
