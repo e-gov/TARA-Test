@@ -3,6 +3,7 @@ package ee.ria.tara.model
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.annotation.JsonProperty.Access
 import groovy.transform.Canonical
 import groovy.transform.EqualsAndHashCode
 
@@ -35,6 +36,7 @@ class Client {
     String tokenEndpointAuthMethod
 
     Set<String> scope
+    @JsonProperty(value = "_systemTest_secret", access = Access.WRITE_ONLY)
     String secret
     String description
 
