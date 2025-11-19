@@ -26,7 +26,7 @@ class MobileIDAuthSpec extends TaraSpecification {
         Steps.startAuthenticationInTara(flow)
 
         when:
-        Response response = Steps.initMidAuthSession(flow, "60001017716", "69100366")
+        Response response = Steps.initMidAuthSession(flow, "60001017716", "59100366")
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(200))
@@ -66,7 +66,7 @@ class MobileIDAuthSpec extends TaraSpecification {
         when: "initialize mobile-ID authentication with invalid method"
         Response response = given()
                 .params([idCode         : "60001017716",
-                         telephoneNumber: "69100366",
+                         telephoneNumber: "59100366",
                          _csrf          : flow.csrf])
                 .cookies(["__Host-SESSION": flow.sessionId])
                 .request(requestType, flow.loginService.fullMidInitUrl)
@@ -114,8 +114,8 @@ class MobileIDAuthSpec extends TaraSpecification {
         // SK requires tel number with min length of 8 digits and max length of 30 digits (including prefix). TARA adds 3 digits (prefix). Negative boundary values to check is 4 and 28 digits
         [telephoneNumber: "4554", idCode: "60001019939"]                                    | "too short telephone number"          || [ErrorMessage.MID_INVALID_PHONE_NUMBER]
         [telephoneNumber: RandomStringUtils.random(28, false, true), idCode: "60001019939"] | "too long telephone number"           || [ErrorMessage.MID_INVALID_PHONE_NUMBER]
-        [telephoneNumber: "69100366", idCode: ["60001017716", "60001017727"]]               | "multiple idCode parameters"          || [ErrorMessage.DUPLICATE_PARAMETERS]
-        [telephoneNumber: ["69100366", "00000766"], idCode: "60001017716"]                  | "multiple telephoneNumber parameters" || [ErrorMessage.DUPLICATE_PARAMETERS]
+        [telephoneNumber: "59100366", idCode: ["60001017716", "60001017727"]]               | "multiple idCode parameters"          || [ErrorMessage.DUPLICATE_PARAMETERS]
+        [telephoneNumber: ["59100366", "00000766"], idCode: "60001017716"]                  | "multiple telephoneNumber parameters" || [ErrorMessage.DUPLICATE_PARAMETERS]
     }
 
     @Issue("AUT-2341")
@@ -208,7 +208,7 @@ class MobileIDAuthSpec extends TaraSpecification {
     def "Poll mobile-ID authentication session"() {
         given:
         Steps.startAuthenticationInTara(flow)
-        Steps.initMidAuthSession(flow, "60001017716", "69100366")
+        Steps.initMidAuthSession(flow, "60001017716", "59100366")
 
         when:
         Response response = Requests.pollMid(flow)
@@ -224,7 +224,7 @@ class MobileIDAuthSpec extends TaraSpecification {
     def "Poll mobile-ID authentication with session complete"() {
         given:
         Steps.startAuthenticationInTara(flow)
-        Steps.initMidAuthSession(flow, "60001017716", "69100366")
+        Steps.initMidAuthSession(flow, "60001017716", "59100366")
         sleep 10000
 
         when:
@@ -240,7 +240,7 @@ class MobileIDAuthSpec extends TaraSpecification {
     def "Poll mobile-ID authentication session with invalid session cookie: #reason"() {
         given:
         Steps.startAuthenticationInTara(flow)
-        Steps.initMidAuthSession(flow, "60001017716", "69100366")
+        Steps.initMidAuthSession(flow, "60001017716", "59100366")
 
         when: "request polling with invalid session cookie"
         Response response = given()
@@ -262,7 +262,7 @@ class MobileIDAuthSpec extends TaraSpecification {
     def "Poll mobile-ID authentication with invalid method: #requestType"() {
         given:
         Steps.startAuthenticationInTara(flow)
-        Steps.initMidAuthSession(flow, "60001017716", "69100366")
+        Steps.initMidAuthSession(flow, "60001017716", "59100366")
 
         when: "request MID polling with invalid request type"
         Response response = given()
@@ -286,7 +286,7 @@ class MobileIDAuthSpec extends TaraSpecification {
     def "Cancel mobile-ID authentication"() {
         given:
         Steps.startAuthenticationInTara(flow)
-        Steps.initMidAuthSession(flow, "60001017716", "69100366")
+        Steps.initMidAuthSession(flow, "60001017716", "59100366")
 
         when:
         Response response = Requests.postRequest(flow, flow.loginService.fullMidCancelUrl)
@@ -305,7 +305,7 @@ class MobileIDAuthSpec extends TaraSpecification {
     def "Verify cancel mobile-ID authentication response headers"() {
         given:
         Steps.startAuthenticationInTara(flow)
-        Steps.initMidAuthSession(flow, "60001017716", "69100366")
+        Steps.initMidAuthSession(flow, "60001017716", "59100366")
 
         when:
         Response response = Requests.postRequest(flow, flow.loginService.fullMidCancelUrl)
@@ -319,7 +319,7 @@ class MobileIDAuthSpec extends TaraSpecification {
     def "Cancel mobile-ID authentication with invalid session cookie: #reason"() {
         given:
         Steps.startAuthenticationInTara(flow)
-        Steps.initMidAuthSession(flow, "60001017716", "69100366")
+        Steps.initMidAuthSession(flow, "60001017716", "59100366")
 
         when: "Cancel MID authentication with invalid session cookie"
         Response response = given()
@@ -341,7 +341,7 @@ class MobileIDAuthSpec extends TaraSpecification {
     def "Cancel mobile-ID authentication with invalid method get"() {
         given:
         Steps.startAuthenticationInTara(flow)
-        Steps.initMidAuthSession(flow, "60001017716", "69100366")
+        Steps.initMidAuthSession(flow, "60001017716", "59100366")
 
         when: "Cancel authentication with invalid method"
         Response response = given()

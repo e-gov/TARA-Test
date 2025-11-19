@@ -25,7 +25,7 @@ class OidcRedirectRequestSpec extends TaraSpecification {
     def "Verify redirection url parameters"() {
         given:
         Steps.startAuthenticationInTara(flow)
-        Response midAuthResponse = Steps.authenticateWithMid(flow, "60001017716", "69100366")
+        Response midAuthResponse = Steps.authenticateWithMid(flow, "60001017716", "59100366")
 
         when:
         Response response = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)

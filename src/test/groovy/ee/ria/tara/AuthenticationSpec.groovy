@@ -51,7 +51,7 @@ class AuthenticationSpec extends TaraSpecification {
 
         where:
         certificate                           | idCode        | phoneNumber || subject
-        "TEST of ESTEID-SK 2015"              | "60001017716" | "69100366"  || "EE" + idCode
+        "TEST of ESTEID-SK 2015"              | "60001017716" | "59100366"  || "EE" + idCode
         "TEST of EID-SK 2016"                 | "60001017869" | "68000769"  || "EE" + idCode
         "TEST of SK ID Solutions EID-Q 2021E" | "51307149560" | "69930366"  || "EE" + idCode
     }
@@ -385,7 +385,7 @@ class AuthenticationSpec extends TaraSpecification {
     def "Request authentication with mobile-ID with Specific Proxy Service as OIDC client"() {
         given:
         Steps.startAuthenticationInTaraWithSpecificProxyService(flow)
-        Response midAuthResponse = Steps.authenticateWithMid(flow, "60001017716", "69100366")
+        Response midAuthResponse = Steps.authenticateWithMid(flow, "60001017716", "59100366")
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
 
         when:
@@ -395,7 +395,7 @@ class AuthenticationSpec extends TaraSpecification {
         then:
         assertThat(claims.audience[0], is(ClientStore.specificProxyService.clientId))
         assertThat(claims.subject, is("EE60001017716"))
-        assertThat(claims.getJSONObjectClaim("profile_attributes")["given_name"], is("ONE"))
+        assertThat(claims.getJSONObjectClaim("profile_attributes")["given_name"], is("MARY ÄNN"))
     }
 
     @Feature("AUTHENTICATION")
@@ -426,7 +426,7 @@ class AuthenticationSpec extends TaraSpecification {
         Steps.verifyResponseHeaders(initLoginSession)
         assertThat(initLoginSession.getDetailedCookie("__Host-SESSION").toString(), containsString("HttpOnly"))
         assertThat(initLoginSession.getDetailedCookie("__Host-SESSION").toString(), containsString("SameSite=Strict"))
-        Response midInit = Requests.startMidAuthentication(flow, "60001017716", "69100366")
+        Response midInit = Requests.startMidAuthentication(flow, "60001017716", "59100366")
         Steps.verifyResponseHeaders(midInit)
         Response midPollResult = Steps.pollMidResponse(flow)
         assertThat(midPollResult.jsonPath().getString("status"), not(equalTo("PENDING")))
@@ -453,7 +453,7 @@ class AuthenticationSpec extends TaraSpecification {
         then:
         assertThat(claims.audience[0], is(ClientStore.mockPublic.clientId))
         assertThat(claims.subject, is("EE60001017716"))
-        assertThat(claims.getJSONObjectClaim("profile_attributes")["given_name"], is("ONE"))
+        assertThat(claims.getJSONObjectClaim("profile_attributes")["given_name"], is("MARY ÄNN"))
     }
 
     @Feature("AUTH_ACCEPT_LOGIN_ENDPOINT")

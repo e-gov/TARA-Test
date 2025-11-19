@@ -167,7 +167,7 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
     def "Authentication request with phone scope"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid phone")
-        Response midAuthResponse = Steps.authenticateWithMid(flow, "60001017716", "69100366")
+        Response midAuthResponse = Steps.authenticateWithMid(flow, "60001017716", "59100366")
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
 
         when:
@@ -176,7 +176,7 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
 
         then:
         assertThat("Correct authentication method", claims.getStringArrayClaim("amr")[0], is("mID"))
-        assertThat("Correct phone number", claims.getClaim("phone_number"), is('+37269100366'))
+        assertThat("Correct phone number", claims.getClaim("phone_number"), is('+37259100366'))
         assertThat("Phone number is verified", claims.getClaim("phone_number_verified"), is(true))
     }
 

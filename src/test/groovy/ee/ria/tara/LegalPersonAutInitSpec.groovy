@@ -27,7 +27,7 @@ class LegalPersonAutInitSpec extends TaraSpecification {
     def "Request initialize legal person authentication should succeed"() {
         given:
         Steps.startAuthenticationInTaraWithLegalPerson(flow)
-        Steps.initMidAuthSession(flow, "60001017705", "69000366")
+        Steps.initMidAuthSession(flow, "60001017705", "59000366")
         Steps.pollMidResponse(flow)
         Response acceptResponse = Requests.postRequest(flow, flow.loginService.fullAuthAcceptUrl)
 
@@ -85,7 +85,7 @@ class LegalPersonAutInitSpec extends TaraSpecification {
     def "Request initialize legal person authentication with invalid method should fail: #requestType"() {
         given:
         Steps.startAuthenticationInTaraWithLegalPerson(flow)
-        Steps.initMidAuthSession(flow, "60001017705", "69000366")
+        Steps.initMidAuthSession(flow, "60001017705", "59000366")
         Steps.pollMidResponse(flow)
         Requests.postRequest(flow, flow.loginService.fullAuthAcceptUrl)
 

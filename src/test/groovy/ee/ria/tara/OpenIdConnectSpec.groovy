@@ -27,7 +27,7 @@ class OpenIdConnectSpec extends TaraSpecification {
     def "Metadata and token key ID matches"() {
         given:
         Steps.startAuthenticationInTara(flow)
-        Response midAuthResponse = Steps.authenticateWithMid(flow, "60001017727", "69200366")
+        Response midAuthResponse = Steps.authenticateWithMid(flow, "60001017727", "59200366")
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
 
         when:
@@ -59,7 +59,7 @@ class OpenIdConnectSpec extends TaraSpecification {
         given:
         Response initOIDCServiceSession = Steps.startAuthenticationInOidc(flow)
         Steps.createLoginSession(flow, initOIDCServiceSession)
-        Response midAuthResponse = Steps.authenticateWithMid(flow, "60001017727", "69200366")
+        Response midAuthResponse = Steps.authenticateWithMid(flow, "60001017727", "59200366")
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
         String authorizationCode = Utils.getParamValueFromResponseHeader(authenticationFinishedResponse, "code")
 
@@ -132,7 +132,7 @@ class OpenIdConnectSpec extends TaraSpecification {
         paramsMap << [state: flow.state, nonce: flow.nonce]
         Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
         Steps.createLoginSession(flow, initOIDCServiceSession)
-        Response midAuthResponse = Steps.authenticateWithMid(flow, "60001017716", "69100366")
+        Response midAuthResponse = Steps.authenticateWithMid(flow, "60001017716", "59100366")
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
 
         when:

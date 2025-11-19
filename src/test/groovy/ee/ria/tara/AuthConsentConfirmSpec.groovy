@@ -32,7 +32,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         Steps.startAuthenticationInTaraWithSpecificProxyService(flow)
 
         when:
-        Response response = Steps.authenticateWithMid(flow, "60001017716", "69100366")
+        Response response = Steps.authenticateWithMid(flow, "60001017716", "59100366")
 
         then: "Correct status code and info in HTML"
         assertThat("Correct HTTP status code", response.statusCode, is(200))
@@ -41,8 +41,8 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         assertThat("Correct buttons", buttons, hasItems("Nõustu", "Keeldu"))
         assertThat("Correct fields", identityFields, hasItems("Isikukood", "Perenimi", "Eesnimi", "Sünniaeg"))
         assertThat("Correct ID code", response.htmlPath().getString("**.find { it.@id == 'natural-person-id-code'}"), is("EE60001017716"))
-        assertThat("Correct surname", response.htmlPath().getString("**.find { it.@id == 'natural-person-surname'}"), is("TESTNUMBER"))
-        assertThat("Correct given name", response.htmlPath().getString("**.find { it.@id == 'natural-person-given-name'}"), is("ONE"))
+        assertThat("Correct surname", response.htmlPath().getString("**.find { it.@id == 'natural-person-surname'}"), is("O'CONNEŽ-ŠUSLIK TESTNUMBER"))
+        assertThat("Correct given name", response.htmlPath().getString("**.find { it.@id == 'natural-person-given-name'}"), is("MARY ÄNN"))
         assertThat("Correct date of birth", response.htmlPath().getString("**.find { it.@id == 'natural-person-date-of-birth'}"), is("01.01.2000"))
     }
 
