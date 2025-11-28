@@ -1,21 +1,16 @@
 package ee.ria.tara.util
 
-
+import ee.ria.tara.Utils
 import ee.ria.tara.model.ErrorMessage
 import io.restassured.response.Response
 import io.restassured.response.ValidatableResponse
 import org.apache.http.impl.EnglishReasonPhraseCatalog
-import java.time.Duration
-import java.time.LocalDateTime
-import java.time.ZoneId
 import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
 
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.containsInAnyOrder
 import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.Matchers.hasLength
-import static org.hamcrest.Matchers.lessThan
 
 class ErrorValidator {
 
@@ -38,7 +33,7 @@ class ErrorValidator {
     }
 
     private static ValidatableResponse baseValidate(Response response, int statusCode) {
-        validateTimestampAge(ZonedDateTime.parse(response.jsonPath().get("timestamp")), 10)
+        Utils.verifyTimestampAge(ZonedDateTime.parse(response.jsonPath().get("timestamp")), 10)
 
         response.then()
                 .statusCode(statusCode)
@@ -48,10 +43,5 @@ class ErrorValidator {
                         "error", equalTo(EnglishReasonPhraseCatalog.INSTANCE.getReason(statusCode, Locale.ENGLISH)),
                         "incident_nr", hasLength(32)
                 )
-    }
-
-    private static validateTimestampAge(ZonedDateTime incidentTime, long secondsRange) {
-        long timestampAge = Duration.between(incidentTime, ZonedDateTime.now()).abs().seconds
-        assertThat("Timestamp should be within " + secondsRange + "seconds", timestampAge, lessThan(secondsRange))
     }
 }

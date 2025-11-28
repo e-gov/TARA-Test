@@ -6,13 +6,17 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonProperty.Access
+import ee.ria.tara.Utils
 import groovy.transform.Canonical
 import groovy.transform.EqualsAndHashCode
+import spock.lang.Issue
+
+import java.time.ZonedDateTime
 
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.is
 
-@EqualsAndHashCode(excludes = ['id', 'createdAt', 'updatedAt', 'institution'])
+@EqualsAndHashCode(excludes = ['id', 'createdAt', 'updatedAt', 'institution','clientSecretExportSettings'])
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 class Client {
@@ -27,6 +31,8 @@ class Client {
     ClientShortName clientShortName
     @JsonProperty("institution_metainfo")
     InstitutionMetainfo institutionMetainfo
+    @JsonProperty("client_secret_export_settings")
+    ClientSecretExportSettings clientSecretExportSettings
     @JsonProperty("redirect_uris")
     Set<String> redirectUris
     @JsonProperty("token_request_allowed_ip_addresses")
@@ -42,7 +48,6 @@ class Client {
     @JsonProperty("eidas_requester_id")
     String eidasRequesterId
     @JsonProperty("created_at")
-
     String createdAt
     @JsonProperty("updated_at")
     String updatedAt
@@ -91,13 +96,9 @@ class Client {
         redirectUris.first()
     }
 
-    void sync(Client source) {
+    void sync(Client source, List<String> fields) {
         assertThat("Clients should match before sync", this, is(source))
-        this.with {
-            id = source.id
-            createdAt = source.createdAt
-            updatedAt = source.updatedAt
-        }
+        fields.each {field -> this."$field" = source."$field"}
     }
 }
 
@@ -138,4 +139,14 @@ class ClientContact {
     String email
     String phone
     String department
+}
+
+@Canonical
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
+class ClientSecretExportSettings {
+    @JsonProperty("recipient_email")
+    String recipientEmail
+    @JsonProperty("recipient_id_code")
+    String recipientIdCode
 }

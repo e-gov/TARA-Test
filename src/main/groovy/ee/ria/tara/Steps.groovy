@@ -13,7 +13,6 @@ import io.restassured.http.Method
 import io.restassured.response.Response
 import org.apache.http.HttpStatus
 import org.json.JSONObject
-
 import java.text.ParseException
 import java.time.Instant
 
@@ -22,7 +21,6 @@ import static org.hamcrest.Matchers.anyOf
 import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.MatcherAssert.assertThat
-
 
 class Steps {
 

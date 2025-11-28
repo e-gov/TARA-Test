@@ -3,9 +3,13 @@ package ee.ria.tara
 import io.restassured.response.Response
 import org.apache.commons.lang3.StringUtils
 import org.json.JSONObject
-
 import java.security.*
 import java.security.cert.Certificate
+import java.time.Duration
+import java.time.ZonedDateTime
+
+import static org.hamcrest.MatcherAssert.assertThat
+import static org.hamcrest.Matchers.lessThan
 
 
 class Utils {
@@ -94,6 +98,11 @@ class Utils {
 
     static boolean isLocal() {
         return !isRunningInDocker()
+    }
+
+    static verifyTimestampAge(ZonedDateTime timeStamp, long secondsRange) {
+        long timestampAge = Duration.between(timeStamp, ZonedDateTime.now()).abs().seconds
+        assertThat("Timestamp should be within " + secondsRange + "seconds", timestampAge, lessThan(secondsRange))
     }
 }
 

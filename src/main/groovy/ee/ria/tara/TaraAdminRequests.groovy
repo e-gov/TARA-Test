@@ -20,6 +20,18 @@ class TaraAdminRequests {
                 .post(location)
     }
 
+    @Step("Put request with body")
+    static Response putRequest(Flow flow, String location, Object body) {
+        return given()
+                .filter(flow.cookieFilter)
+                .cookie("__Host-XSRF-TOKEN", flow.taraAdminService.xsrfToken)
+                .header("X-XSRF-TOKEN", flow.taraAdminService.xsrfToken)
+                .contentType(ContentType.JSON)
+                .body(body)
+                .urlEncodingEnabled(true)
+                .put(location)
+    }
+
     @Step("Delete request")
     static Response deleteRequest(Flow flow, String location) {
         return given()

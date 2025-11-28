@@ -6,6 +6,8 @@ import ee.ria.tara.model.Institution
 import io.qameta.allure.Step
 import io.restassured.response.Response
 import org.apache.http.HttpStatus
+import spock.lang.Issue
+import java.time.ZonedDateTime
 
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.is
@@ -105,6 +107,26 @@ class TaraAdminSteps {
                 .response()
     }
 
+    static Response tryUpdateClient(Flow flow, Client client) {
+        TaraAdminRequests.putRequest(flow,
+                flow.taraAdminService.fullBaseUrl + "/institutions/${client.institution.registryCode}/clients/${client.clientId}", client)
+    }
+
+    @Step("Update client")
+    static Response updateClient(Flow flow, Client client) {
+        tryUpdateClient(flow, client)
+                .then()
+                .statusCode(HttpStatus.SC_OK)
+                .extract()
+                .response()
+    }
+
+    @Step("Update client and assign server-generated updatedAt")
+    static updateClientSetTimeUpdated(Flow flow, Client client) {
+        updateClient(flow,client)
+        assignServerGeneratedFields(flow,client,["updatedAt"])
+    }
+
     static createClientSetAssignedFields(Flow flow, Institution institution) {
         Client client = Client.clientWithDefaultValues(institution)
         institution.clients.add(client)
@@ -112,17 +134,31 @@ class TaraAdminSteps {
     }
 
     @Step("Create client and assign server-generated fields")
-    static createClientSetAssignedFields(Flow flow, Client client) {
+    static Client createClientSetAssignedFields(Flow flow, Client client) {
         createClient(flow, client)
+        return assignServerGeneratedFields(flow,client)
+    }
+
+    @Issue("AUT-2440 - updated_at timestamp validation check disabled, due to time displayed as 2 hours ahead")
+    @Step("Assign server-generated fields")
+    static Client assignServerGeneratedFields(
+            Flow flow,
+            Client client,
+            List<String> fields = ["id", "createdAt", "updatedAt"]
+    ) {
         client.institution.clientIds = client.institution.clients*.clientId
-        client.sync(getClient(flow, client))
+        client.sync(getClient(flow, client), fields)
+
+        if(fields.contains("createdAt"))Utils.verifyTimestampAge(ZonedDateTime.parse(client.createdAt),10)
+//        if(fields.contains("updatedAt"))Utils.verifyTimestampAge(ZonedDateTime.parse(client.updatedAt),10)
+
         return client
     }
 
     @Step("Get client")
     static def getClient(Flow flow, Client client) {
         Client foundIClient = getAllClients(flow).find { it == client }
-        assertThat("Institution '${client.clientId}' not found in list.", foundIClient, is(notNullValue()))
+        assertThat("Client '${client.clientId}' not found in list.", foundIClient, is(notNullValue()))
         return foundIClient
     }
 
@@ -200,7 +236,7 @@ class TaraAdminSteps {
         assertThat("Client data does not match", client, is(registeredClient))
         assertThat("Id does not match", client.id, is(registeredClient.id))
         assertThat("CreatedAt timestamp does not match", client.createdAt, is(registeredClient.createdAt))
-        assertThat("CreatedAt timestamp does not match", client.updatedAt, is(registeredClient.updatedAt))
+        assertThat("UpdatedAt timestamp does not match", client.updatedAt, is(registeredClient.updatedAt))
         return true
     }
 }

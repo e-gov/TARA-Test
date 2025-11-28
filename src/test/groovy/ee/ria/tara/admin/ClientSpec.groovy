@@ -4,6 +4,7 @@ import ee.ria.tara.Flow
 import ee.ria.tara.TaraAdminSteps
 import ee.ria.tara.TaraSpecification
 import ee.ria.tara.model.Client
+import ee.ria.tara.model.ClientSecretExportSettings
 import ee.ria.tara.model.Institution
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
@@ -49,6 +50,59 @@ class ClientSpec extends TaraSpecification {
         assertThat(registeredClient.id, is(notNullValue()))
         assertThat(registeredClient.createdAt, is(notNullValue()))
         assertThat(registeredClient.updatedAt, is(notNullValue()))
+
+        cleanup:
+        TaraAdminSteps.deleteInstitutionWithClients(flow, institution)
+    }
+
+    @Issue("Test does not work in local environment.")
+    @Feature("TARA_MGMT")
+    def "Client registration succeeds when sending secret fails"() {
+        given:
+        Institution institution = TaraAdminSteps.createInstitutionSetAssignedFields(flow)
+        Client client = Client.clientWithDefaultValues(institution)
+        client.clientSecretExportSettings = new ClientSecretExportSettings(
+                recipientIdCode: "38001085718",
+                recipientEmail: "invalid@invalidmail.com"
+        )
+
+        when:
+        Response response = TaraAdminSteps.tryCreateClient(flow, client)
+
+        then:
+        response.then()
+                .statusCode(500)
+                .body(equalTo("Klientrakendus salvestatud, aga saladuse saatmine emailiga ebaõnnestus, proovi mõne aja pärast uuesti."))
+
+        TaraAdminSteps.assignServerGeneratedFields(flow,client)
+        TaraAdminSteps.verifyClient(flow, client)
+
+        cleanup:
+        TaraAdminSteps.deleteInstitutionWithClients(flow, institution)
+    }
+
+    @Issue("Test does not work in local environment.")
+    @Feature("TARA_MGMT")
+    def "Sending secret fails for already created client and does not affect client data"() {
+        given:
+        Institution institution = TaraAdminSteps.createInstitutionSetAssignedFields(flow)
+        Client client = Client.clientWithDefaultValues(institution)
+        TaraAdminSteps.createClientSetAssignedFields(flow, client)
+
+        when:
+        client.clientSecretExportSettings = new ClientSecretExportSettings(
+                recipientIdCode: "38001085718",
+                recipientEmail: "invalid@invalidmail.com"
+        )
+        Response response = TaraAdminSteps.tryUpdateClient(flow, client)
+
+        then:
+        response.then()
+                .statusCode(500)
+                .body(equalTo("Klientrakendus salvestatud, aga saladuse saatmine emailiga ebaõnnestus, proovi mõne aja pärast uuesti."))
+
+        TaraAdminSteps.assignServerGeneratedFields(flow,client,["updatedAt"])
+        TaraAdminSteps.verifyClient(flow, client)
 
         cleanup:
         TaraAdminSteps.deleteInstitutionWithClients(flow, institution)
