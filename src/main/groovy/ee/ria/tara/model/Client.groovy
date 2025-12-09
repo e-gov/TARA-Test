@@ -1,22 +1,17 @@
 package ee.ria.tara.model
 
-
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonProperty.Access
-import ee.ria.tara.Utils
 import groovy.transform.Canonical
 import groovy.transform.EqualsAndHashCode
-import spock.lang.Issue
-
-import java.time.ZonedDateTime
 
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.is
 
-@EqualsAndHashCode(excludes = ['id', 'createdAt', 'updatedAt', 'institution','clientSecretExportSettings'])
+@EqualsAndHashCode(excludes = ['id', 'createdAt', 'updatedAt', 'institution', 'clientSecretExportSettings'])
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 class Client {
@@ -42,7 +37,6 @@ class Client {
     Set<String> scope
     @JsonProperty(value = "_systemTest_secret", access = Access.WRITE_ONLY)
     String secret
-    String description
     @JsonProperty("client_contacts")
     Set<ClientContact> clientContacts
     @JsonProperty("eidas_requester_id")
@@ -51,6 +45,26 @@ class Client {
     String createdAt
     @JsonProperty("updated_at")
     String updatedAt
+
+    @JsonProperty("client_url")
+    String clientUrl
+    @JsonProperty("access_token_jwt_enabled")
+    String accessTokenJwtEnabled
+    String description
+    @JsonProperty("access_token_audience_uris")
+    Set<String> accessTokenAudienceUris
+    @JsonProperty("info_notification_emails")
+    Set<String> infoNotificationEmails
+    @JsonProperty("is_user_consent_required")
+    String isUserConsentRequired
+    @JsonProperty("mid_settings")
+    MidSettings midSettings
+    @JsonProperty("smartid_settings")
+    SmartidSettings smartidSettings
+    @JsonProperty("minimum_acr_value")
+    String minimumAcrValue
+    @JsonProperty("sla_notification_emails")
+    Set<String> slaNotificationEmails
 
     @JsonIgnore
     Institution institution
@@ -80,7 +94,7 @@ class Client {
                 redirectUris: ["https://www.example.com/edasi", "https://www.example.ee/portal"],
                 tokenRequestAllowedIpAddresses: ["0.0.0.0/0", "::/0"],
                 tokenEndpointAuthMethod: "client_secret_basic",
-                scope: ["openid", "idcard", "mid", "smartid", "eidas", "eidasonly", "eidas:country:*", "email", "phone"],
+                scope: ["openid", "idcard", "mid", "smartid", "eidas", "eidasonly", "eidas:country:*", "email", "phone", "legalperson"],
 
                 clientContacts: [
                         new ClientContact(name: "Uuno Udu", email: "uuno@tugi.ee", phone: "+370876543", department: "AIA"),
@@ -93,12 +107,25 @@ class Client {
     }
 
     String getRedirectUri() {
-        redirectUris.first()
+        redirectUris ? redirectUris.first() : null
     }
 
     void sync(Client source, List<String> fields) {
         assertThat("Clients should match before sync", this, is(source))
-        fields.each {field -> this."$field" = source."$field"}
+        fields.each { field -> this."$field" = source."$field" }
+    }
+
+    void applyServerDefaults() {
+        this.with {
+            clientName = clientName ?: new ClientName()
+            clientContacts = clientContacts ?: []
+            accessTokenJwtEnabled = accessTokenJwtEnabled ?: false
+            accessTokenAudienceUris = accessTokenAudienceUris ?: []
+            infoNotificationEmails = infoNotificationEmails ?: []
+            midSettings = midSettings ?: new MidSettings()
+            smartidSettings = smartidSettings ?: new SmartidSettings()
+            slaNotificationEmails = slaNotificationEmails ?: []
+        }
     }
 }
 
@@ -149,4 +176,26 @@ class ClientSecretExportSettings {
     String recipientEmail
     @JsonProperty("recipient_id_code")
     String recipientIdCode
+}
+
+@Canonical
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
+class MidSettings {
+    @JsonProperty("relying_party_UUID")
+    String relyingPartyUUID
+    @JsonProperty("relying_party_name")
+    String relyingPartyName
+}
+
+@Canonical
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
+class SmartidSettings {
+    @JsonProperty("relying_party_UUID")
+    String relyingPartyUUID
+    @JsonProperty("relying_party_name")
+    String relyingPartyName
+    @JsonProperty("should_use_additional_verification_code_check")
+    String shouldUseAdditionalVerificationCodeCheck
 }

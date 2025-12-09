@@ -1,6 +1,5 @@
 package ee.ria.tara
 
-
 import ee.ria.tara.model.Client
 import ee.ria.tara.model.Institution
 import io.qameta.allure.Step
@@ -122,21 +121,21 @@ class TaraAdminSteps {
     }
 
     @Step("Update client and assign server-generated updatedAt")
-    static updateClientSetTimeUpdated(Flow flow, Client client) {
-        updateClient(flow,client)
-        assignServerGeneratedFields(flow,client,["updatedAt"])
+    static updateClientSetAssignedFields(Flow flow, Client client) {
+        updateClient(flow, client)
+        assignServerGeneratedFields(flow, client, ["updatedAt"])
     }
 
-    static createClientSetAssignedFields(Flow flow, Institution institution) {
+    static createDefaultClientSetAssignedFields(Flow flow, Institution institution) {
         Client client = Client.clientWithDefaultValues(institution)
-        institution.clients.add(client)
         createClientSetAssignedFields(flow, client)
     }
 
     @Step("Create client and assign server-generated fields")
     static Client createClientSetAssignedFields(Flow flow, Client client) {
         createClient(flow, client)
-        return assignServerGeneratedFields(flow,client)
+        client.institution.clients.add(client)
+        return assignServerGeneratedFields(flow, client)
     }
 
     @Issue("AUT-2440 - updated_at timestamp validation check disabled, due to time displayed as 2 hours ahead")
@@ -147,9 +146,11 @@ class TaraAdminSteps {
             List<String> fields = ["id", "createdAt", "updatedAt"]
     ) {
         client.institution.clientIds = client.institution.clients*.clientId
+
+        client.applyServerDefaults()
         client.sync(getClient(flow, client), fields)
 
-        if(fields.contains("createdAt"))Utils.verifyTimestampAge(ZonedDateTime.parse(client.createdAt),10)
+        if (fields.contains("createdAt")) Utils.verifyTimestampAge(ZonedDateTime.parse(client.createdAt), 10)
 //        if(fields.contains("updatedAt"))Utils.verifyTimestampAge(ZonedDateTime.parse(client.updatedAt),10)
 
         return client

@@ -37,7 +37,7 @@ class Institution {
     String updatedAt
 
     @JsonIgnore
-    List<Client> clients
+    Set<Client> clients
 
     static institutionWithDefaultValues() {
         institutionWithDefaultValues("6${RandomStringUtils.random(7, false, true)}")

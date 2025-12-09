@@ -65,7 +65,7 @@ class InstitutionSpec extends TaraSpecification {
     def "Delete institution with associated client fails"() {
         given:
         Institution institution = TaraAdminSteps.createInstitutionSetAssignedFields(flow)
-        TaraAdminSteps.createClientSetAssignedFields(flow, institution)
+        TaraAdminSteps.createDefaultClientSetAssignedFields(flow, institution)
 
         when: "deleting institution witt "
         Response deleteInstitutionResponse = TaraAdminSteps.tryDeleteInstitution(flow, institution)
