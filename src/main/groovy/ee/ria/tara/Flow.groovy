@@ -67,8 +67,9 @@ class LoginService extends BaseService {
     String idCardEndpointUsername
     String idCardEndpointPassword
 
-    @Lazy fullWebEidInitUrl = "${baseUrl}${webEidInitUrl}"
-    @Lazy fullWebEidLoginUrl = "${baseUrl}${webEidLoginUrl}"
+    @Lazy webEidBaseUrl = ConfigHolder.getTestConf().env() == "dev-local" ? fullBaseUrl : baseUrl
+    @Lazy fullWebEidInitUrl = "${webEidBaseUrl}${webEidInitUrl}"
+    @Lazy fullWebEidLoginUrl = "${webEidBaseUrl}${webEidLoginUrl}"
 
     @Lazy fullInitUrl = "${fullBaseUrl}${initUrl}"
     @Lazy fullMidInitUrl = "${fullBaseUrl}${midInitUrl}"
@@ -125,9 +126,9 @@ class OidcService extends BaseService {
     String configurationUrl
     Map cookies = [:]
 
-    @Lazy fullAuthorizationUrl = "${baseUrl}${authorizationUrl}"
-    @Lazy fullJwksUrl = "${baseUrl}${jwksUrl}"
-    @Lazy fullConfigurationUrl = "${baseUrl}${configurationUrl}"
+    @Lazy fullAuthorizationUrl = "${fullBaseUrl}${authorizationUrl}"
+    @Lazy fullJwksUrl = "${fullBaseUrl}${jwksUrl}"
+    @Lazy fullConfigurationUrl = "${fullBaseUrl}${configurationUrl}"
 
     OidcService(OidcServiceConf conf) {
         super(conf)

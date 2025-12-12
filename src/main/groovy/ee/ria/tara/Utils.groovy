@@ -1,5 +1,7 @@
 package ee.ria.tara
 
+import com.microsoft.playwright.Page
+import ee.ria.tara.model.Client
 import io.restassured.response.Response
 import org.apache.commons.lang3.StringUtils
 import org.json.JSONObject
@@ -103,6 +105,20 @@ class Utils {
     static verifyTimestampAge(ZonedDateTime timeStamp, long secondsRange) {
         long timestampAge = Duration.between(timeStamp, ZonedDateTime.now()).abs().seconds
         assertThat("Timestamp should be within " + secondsRange + "seconds", timestampAge, lessThan(secondsRange))
+    }
+
+    static String getTaraLoginUrl(Flow flow, Client client = null) {
+        client ?: ClientStore.mockPublic
+        Map paramsMap = OpenIdUtils.getAuthorizationParametersWithClient(flow, client)
+        def queryString = paramsMap.collect { k, v ->
+            "${URLEncoder.encode(k, "UTF-8")}=${URLEncoder.encode(v, "UTF-8")}"
+        }
+                .join("&")
+        return "${flow.oidcService.fullAuthorizationUrl}?${queryString}"
+    }
+
+    static boolean isMobile(Page page) {
+        return page.viewportSize().width <= 800
     }
 }
 

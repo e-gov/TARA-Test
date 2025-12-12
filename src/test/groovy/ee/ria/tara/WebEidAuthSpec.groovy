@@ -39,6 +39,42 @@ class WebEidAuthSpec extends TaraSpecification {
         assertThat("Correct authentication method", claims.getClaim("amr"), equalTo(["idcard"]))
     }
 
+
+    def "dummy"() {
+        given:
+        def pkcs11LibPath = "C:/Program Files/OpenSC Project/OpenSC/pkcs11/opensc-pkcs11.dll"
+        def pin = "1234"
+    }
+
+    def "Authenticate with ID-Card. TEST of ESTEID2025 chain certificate"() {
+        given:
+        Steps.startAuthenticationInTara(flow)
+
+        when:
+        Response initWebEid = Requests.postRequest(flow, flow.loginService.fullWebEidInitUrl)
+
+        // TODO: Replace this line
+        String signAuthValue = Utils.signAuthenticationValue(flow, flow.loginService.webEidBaseUrl, initWebEid.jsonPath().get("nonce"))
+
+        JSONObject authToken = Utils.getWebEidAuthTokenParameters(flow, signAuthValue)
+        Requests.postRequestWithJsonBody(flow, flow.loginService.fullWebEidLoginUrl, authToken)
+
+        Response acceptResponse = Requests.postRequest(flow, flow.loginService.fullAuthAcceptUrl)
+        Response loginVerifier = Steps.loginVerifier(flow, acceptResponse)
+        Response consentResponse = Steps.followRedirectWithSessionId(flow, loginVerifier)
+        Response consentVerifier = Steps.followRedirectWithCookies(flow, consentResponse, flow.oidcService.cookies)
+        String authorizationCode = Utils.getParamValueFromResponseHeader(consentVerifier, "code")
+        flow.setCode(authorizationCode)
+        Response tokenResponse = Requests.webTokenBasicRequest(flow, authorizationCode, flow.clientId, flow.clientSecret, flow.redirectUri)
+
+        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.jsonPath().get("id_token")).JWTClaimsSet
+
+        then:
+        assertThat("Correct audience", claims.audience[0], equalTo(flow.oidcClientPublic.clientId))
+        assertThat("Correct subject", claims.subject, equalTo("EE38001085718"))
+        assertThat("Correct authentication method", claims.getClaim("amr"), equalTo(["idcard"]))
+    }
+
     def "Init Web eID authentication"() {
         given:
         Steps.startAuthenticationInTara(flow)
@@ -324,7 +360,7 @@ class WebEidAuthSpec extends TaraSpecification {
     private static authenticationFlowToWebEidParams(Flow flow, String keyStore = "src/test/resources/joeorg_auth_EC.p12") {
         Steps.startAuthenticationInTara(flow)
         Response initWebEid = Requests.postRequest(flow, flow.loginService.fullWebEidInitUrl)
-        String signAuthValue = Utils.signAuthenticationValue(flow, flow.loginService.baseUrl, initWebEid.jsonPath().get("nonce"), keyStore)
+        String signAuthValue = Utils.signAuthenticationValue(flow, flow.loginService.webEidBaseUrl, initWebEid.jsonPath().get("nonce"), keyStore)
         JSONObject authToken = Utils.getWebEidAuthTokenParameters(flow, signAuthValue)
         return authToken
     }

@@ -162,7 +162,7 @@ class Steps {
     static Response authenticateWithWebEid(Flow flow, boolean clientSecretBasic = true) {
 
         Response initWebEid = Requests.postRequest(flow, flow.loginService.fullWebEidInitUrl)
-        String signAuthValue = Utils.signAuthenticationValue(flow, flow.loginService.baseUrl, initWebEid.jsonPath().get("nonce"))
+        String signAuthValue = Utils.signAuthenticationValue(flow, flow.loginService.webEidBaseUrl, initWebEid.jsonPath().get("nonce"))
         JSONObject authToken = Utils.getWebEidAuthTokenParameters(flow, signAuthValue)
         Requests.postRequestWithJsonBody(flow, flow.loginService.fullWebEidLoginUrl, authToken)
 

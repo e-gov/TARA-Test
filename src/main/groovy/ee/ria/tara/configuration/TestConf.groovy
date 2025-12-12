@@ -10,4 +10,10 @@ interface TestConf extends Config {
     Boolean isLocal()
 
     String adminSetupPath()
+
+    String env()
+
+    Boolean debug()
+
+    Boolean pwTrace()
 }

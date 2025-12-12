@@ -26,6 +26,8 @@
         <json.version>20250517</json.version>
         <aeonbits.owner.version>1.0.12</aeonbits.owner.version>
         <slf4j.version>2.0.17</slf4j.version>
+        <playwright.version>1.54.0</playwright.version>
+        <allure-playwright.version>1.1.0</allure-playwright.version>
 
         <!-- Plugin versions -->
         <maven.surefire.plugin.version>3.5.3</maven.surefire.plugin.version>
@@ -92,6 +94,19 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
             <version>${slf4j.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.microsoft.playwright</groupId>
+            <artifactId>playwright</artifactId>
+            <version>${playwright.version}</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/io.github.uchagani/allure-playwright-java -->
+        <dependency>
+            <groupId>io.github.uchagani</groupId>
+            <artifactId>allure-playwright-java</artifactId>
+            <version>${allure-playwright.version}</version>
         </dependency>
         <!-- End testframe dependencies -->
 
