@@ -6,6 +6,10 @@ enum Actuator {
     READINESS("/actuator/health/readiness"),
     PROMETHEUS("/actuator/prometheus"),
 
+    PROMETHEUS_OIDCSERVICE("/admin/metrics/prometheus"),
+    LIVENESS_OIDCSERVICE("/health/alive"),
+    READINESS_OIDCSERVICE("/health/ready"),
+
     final String endpoint
 
     Actuator(String endpoint) {

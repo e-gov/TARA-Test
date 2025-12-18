@@ -128,6 +128,7 @@ class OidcService extends BaseService {
     @Lazy fullAuthorizationUrl = "${baseUrl}${authorizationUrl}"
     @Lazy fullJwksUrl = "${baseUrl}${jwksUrl}"
     @Lazy fullConfigurationUrl = "${baseUrl}${configurationUrl}"
+    @Lazy fullNodeUrlPrometheus = "${nodeProtocol}://${nodeHost}${Utils.portCheck("4445")}"
 
     OidcService(OidcServiceConf conf) {
         super(conf)

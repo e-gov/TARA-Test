@@ -12,7 +12,7 @@ import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.Matchers.is
 
-class ActuatorSpec extends TaraSpecification {
+class MonitoringSpec extends TaraSpecification {
 
     def setup() {
         flow.cookieFilter = new CookieFilter()
@@ -21,9 +21,12 @@ class ActuatorSpec extends TaraSpecification {
     @Feature("HEALTH_MONITORING_ENDPOINT")
     @Feature("HEALTH_MONITORING_ENDPOINT_DEPENDENCIES")
     @Feature("HEALTH_MONITORING_STATUS")
-    def "Verify #service /actuator/prometheus response"() {
+    def "Verify #service Prometheus response"() {
         when:
-        Response response = Steps.getPrometheus(service.fullNodeUrl)
+        Response response = switch (service) {
+            case OidcService -> Steps.getActuatorEndpoint(service.fullNodeUrlPrometheus, Actuator.PROMETHEUS_OIDCSERVICE)
+            default -> Steps.getPrometheus(service.fullNodeUrl)
+        }
 
         then:
         response.then()
@@ -31,7 +34,7 @@ class ActuatorSpec extends TaraSpecification {
                 .body(containsString("process_start_time_seconds"))
 
         where:
-        service << [ServiceUrls.LOGIN_SERVICE, ServiceUrls.INPROXY_SERVICE, ServiceUrls.TARA_ADMIN_SERVICE, ServiceUrls.DEMO_CLIENT]
+        service << [ServiceUrls.LOGIN_SERVICE, ServiceUrls.INPROXY_SERVICE, ServiceUrls.TARA_ADMIN_SERVICE, ServiceUrls.DEMO_CLIENT, ServiceUrls.OIDC_SERVICE]
     }
 
     @Feature("HEALTH_MONITORING_ENDPOINT")
@@ -49,7 +52,7 @@ class ActuatorSpec extends TaraSpecification {
         ServiceUrls.LOGIN_SERVICE      | Actuator.HEALTH    | "oidcServer"
         ServiceUrls.LOGIN_SERVICE      | Actuator.READINESS | "oidcServer"
 
-        ServiceUrls.INPROXY_SERVICE   | Actuator.HEALTH | "admin"
+        ServiceUrls.INPROXY_SERVICE    | Actuator.HEALTH    | "admin"
 
         ServiceUrls.TARA_ADMIN_SERVICE | Actuator.HEALTH    | "db"
         ServiceUrls.TARA_ADMIN_SERVICE | Actuator.HEALTH    | "ldap"
@@ -62,10 +65,14 @@ class ActuatorSpec extends TaraSpecification {
     @Feature("HEALTH_MONITORING_ENDPOINT_DEPENDENCIES")
     @Feature("HEALTH_MONITORING_STATUS")
     def "Verify #service actuator #endpoint status"() {
+        given:
+        def contentType = service instanceof OidcService ? "application/json; charset=utf-8" : "application/vnd.spring-boot.actuator"
+        def status = service instanceof OidcService ? "ok" : "UP"
+
         expect:
         Steps.getActuatorEndpoint(service.fullNodeUrl, endpoint).then()
-                .contentType("application/vnd.spring-boot.actuator")
-                .body("status", is("UP"))
+                .contentType(contentType)
+                .body("status", is(status))
 
         where:
         service                        | endpoint
@@ -73,7 +80,7 @@ class ActuatorSpec extends TaraSpecification {
         ServiceUrls.LOGIN_SERVICE      | Actuator.READINESS
         ServiceUrls.LOGIN_SERVICE      | Actuator.LIVENESS
 
-        ServiceUrls.INPROXY_SERVICE   | Actuator.HEALTH
+        ServiceUrls.INPROXY_SERVICE    | Actuator.HEALTH
         ServiceUrls.INPROXY_SERVICE    | Actuator.READINESS
         ServiceUrls.INPROXY_SERVICE    | Actuator.LIVENESS
 
@@ -81,17 +88,27 @@ class ActuatorSpec extends TaraSpecification {
         ServiceUrls.TARA_ADMIN_SERVICE | Actuator.READINESS
         ServiceUrls.TARA_ADMIN_SERVICE | Actuator.LIVENESS
 
+        ServiceUrls.OIDC_SERVICE       | Actuator.READINESS_OIDCSERVICE
+        ServiceUrls.OIDC_SERVICE       | Actuator.LIVENESS_OIDCSERVICE
+
         ServiceUrls.DEMO_CLIENT        | Actuator.HEALTH
         ServiceUrls.DEMO_CLIENT        | Actuator.READINESS
         ServiceUrls.DEMO_CLIENT        | Actuator.LIVENESS
     }
 
+    @Issue("Not able to check OIDC service error 'path'='/notfound'")
     @Feature("HEALTH_MONITORING_ENDPOINT")
     def "#service actuator #endpoint cannot be accessed through proxy"() {
         expect:
-        Steps.tryGetActuatorEndpoint(service.fullBaseUrl, endpoint).then()
-                .statusCode(HttpStatus.SC_NOT_FOUND)
-                .body("path", is("/notfound"))
+        switch (service) {
+            case OidcService -> Steps.tryGetActuatorEndpoint(service.fullBaseUrl, endpoint).then()
+                    .statusCode(HttpStatus.SC_NOT_FOUND)
+//                    .body("path", is("/notfound"))
+// Why does not OIDC response 'path' have "/notfound" value like for actuator endpoints?
+            default -> Steps.tryGetActuatorEndpoint(service.fullBaseUrl, endpoint).then()
+                    .statusCode(HttpStatus.SC_NOT_FOUND)
+                    .body("path", is("/notfound"))
+        }
 
         where:
         service                   | endpoint
@@ -99,5 +116,9 @@ class ActuatorSpec extends TaraSpecification {
         ServiceUrls.LOGIN_SERVICE | Actuator.READINESS
         ServiceUrls.LOGIN_SERVICE | Actuator.LIVENESS
         ServiceUrls.LOGIN_SERVICE | Actuator.PROMETHEUS
+
+        ServiceUrls.OIDC_SERVICE  | Actuator.READINESS_OIDCSERVICE
+        ServiceUrls.OIDC_SERVICE  | Actuator.LIVENESS_OIDCSERVICE
+        ServiceUrls.OIDC_SERVICE  | Actuator.PROMETHEUS_OIDCSERVICE
     }
 }
