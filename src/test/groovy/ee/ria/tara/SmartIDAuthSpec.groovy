@@ -173,9 +173,8 @@ class SmartIDAuthSpec extends TaraSpecification {
         idCode        | label                                             || errorMessage
         "30403039917" | "USER_REFUSED"                                    || "Kasutaja katkestas autentimise<span translate=\"no\" lang=\"en\"> Smart-ID </span>rakenduses."
         "30403039928" | "USER_REFUSED_DISPLAYTEXTANDPIN"                  || "Kasutaja katkestas<span translate=\"no\" lang=\"en\"> Smart-ID </span>rakenduses PIN koodi sisestamise."
-        "30403039939" | "USER_REFUSED_VC_CHOICE"                          || "Kasutaja katkestas<span translate=\"no\" lang=\"en\"> Smart-ID </span>rakenduses kontrollkoodi valiku."
         "30403039946" | "USER_REFUSED_CONFIRMATIONMESSAGE"                || "Kasutaja katkestas autentimise<span translate=\"no\" lang=\"en\"> Smart-ID </span>rakenduses kinnitusekraanil."
-        "30403039950" | "USER_REFUSED_CONFIRMATIONMESSAGE_WITH_VC_CHOICE" || "Kasutaja katkestas autentimise<span translate=\"no\" lang=\"en\"> Smart-ID </span>rakenduses kontrollkoodi kinnituskraanil."
+        "30403039950" | "USER_REFUSED_CONFIRMATIONMESSAGE_WITH_VC_CHOICE" || "Kasutaja katkestas<span translate=\"no\" lang=\"en\"> Smart-ID </span>rakenduses kontrollkoodi valiku."
         "30403039972" | "WRONG_VC"                                        || "Kasutaja valis<span translate=\"no\" lang=\"en\"> Smart-ID </span>rakenduses vale kontrollkoodi."
     }
 
@@ -196,9 +195,8 @@ class SmartIDAuthSpec extends TaraSpecification {
         idCode        | label                                             || errorMessage
         "30403039917" | "USER_REFUSED"                                    || "User cancelled authentication in the<span translate=\"no\" lang=\"en\"> Smart-ID </span>app."
         "30403039928" | "USER_REFUSED_DISPLAYTEXTANDPIN"                  || "User cancelled PIN code entry in the<span translate=\"no\" lang=\"en\"> Smart-ID </span>app."
-        "30403039939" | "USER_REFUSED_VC_CHOICE"                          || "User cancelled verification code choice in the<span translate=\"no\" lang=\"en\"> Smart-ID </span>app."
         "30403039946" | "USER_REFUSED_CONFIRMATIONMESSAGE"                || "User cancelled authentication on the confirmation screen in the<span translate=\"no\" lang=\"en\"> Smart-ID </span>app."
-        "30403039950" | "USER_REFUSED_CONFIRMATIONMESSAGE_WITH_VC_CHOICE" || "User cancelled authentication on the verification code choice confirmation screen in the<span translate=\"no\" lang=\"en\"> Smart-ID </span>app."
+        "30403039950" | "USER_REFUSED_CONFIRMATIONMESSAGE_WITH_VC_CHOICE" || "User cancelled verification code choice in the<span translate=\"no\" lang=\"en\"> Smart-ID </span>app."
         "30403039972" | "WRONG_VC"                                        || "User chose the wrong verification code in the<span translate=\"no\" lang=\"en\"> Smart-ID </span>app."
     }
 
@@ -219,9 +217,8 @@ class SmartIDAuthSpec extends TaraSpecification {
         idCode        | label                                             || errorMessage
         "30403039917" | "USER_REFUSED"                                    || "Пользователь прервал аутентификацию в приложении<span translate=\"no\" lang=\"en\"> Smart-ID</span>."
         "30403039928" | "USER_REFUSED_DISPLAYTEXTANDPIN"                  || "Пользователь отменил ввод PIN-кода в приложении<span translate=\"no\" lang=\"en\"> Smart-ID</span>."
-        "30403039939" | "USER_REFUSED_VC_CHOICE"                          || "Пользователь отменил выбор кода подтверждения в приложении<span translate=\"no\" lang=\"en\"> Smart-ID</span>."
         "30403039946" | "USER_REFUSED_CONFIRMATIONMESSAGE"                || "Пользователь отменил аутентификацию на экране подтверждения в приложении<span translate=\"no\" lang=\"en\"> Smart-ID</span>."
-        "30403039950" | "USER_REFUSED_CONFIRMATIONMESSAGE_WITH_VC_CHOICE" || "Пользователь отменил аутентификацию на экране подтверждения контрольного кода в приложении<span translate=\"no\" lang=\"en\"> Smart-ID</span>."
+        "30403039950" | "USER_REFUSED_CONFIRMATIONMESSAGE_WITH_VC_CHOICE" || "Пользователь отменил выбор кода подтверждения в приложении<span translate=\"no\" lang=\"en\"> Smart-ID</span>."
         "30403039972" | "WRONG_VC"                                        || "Пользователь выбрал неправильный код подтверждения в приложении<span translate=\"no\" lang=\"en\"> Smart-ID</span>."
     }
 
