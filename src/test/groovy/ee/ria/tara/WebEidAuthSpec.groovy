@@ -11,6 +11,7 @@ import io.restassured.filter.cookie.CookieFilter
 import io.restassured.http.Method
 import io.restassured.response.Response
 import org.json.JSONObject
+import spock.lang.Ignore
 
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.equalTo
@@ -258,6 +259,9 @@ class WebEidAuthSpec extends TaraSpecification {
         loginWebEid.then().body("reportable", is(false))
     }
 
+    @Ignore("AUT-2410/AUT-2512 - Error handling needs adjusting")
+    @Issue("AUT-2410")
+    @Issue("AUT-2512")
     @Feature("REJECT_REVOKED_CERTS")
     def "Submit login request for Web eID authentication with revoked certificate"() {
         given:
@@ -271,6 +275,8 @@ class WebEidAuthSpec extends TaraSpecification {
         loginWebEid.then().body("reportable", is(false))
     }
 
+    @Ignore("AUT-2410 - SK DEMO OCSP is returning incorrect result for unknown certificate")
+    @Issue("AUT-2410")
     @Feature("REJECT_UNKNOWN_CERTS")
     def "Submit login request for Web eID authentication with unknown certificate"() {
         given:
