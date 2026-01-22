@@ -424,7 +424,7 @@ class AuthenticationSpec extends TaraSpecification {
         Response initLoginSession = Steps.startAuthenticationInTara(flow)
         Steps.verifyResponseHeaders(initLoginSession)
         assertThat(initLoginSession.getDetailedCookie("__Host-SESSION").toString(), containsString("HttpOnly"))
-        assertThat(initLoginSession.getDetailedCookie("__Host-SESSION").toString(), containsString("SameSite=Strict"))
+        assertThat(initLoginSession.getDetailedCookie("__Host-SESSION").toString(), containsString("SameSite=Lax"))
         Response midInit = Requests.startMidAuthentication(flow, "60001017716", "59100366")
         Steps.verifyResponseHeaders(midInit)
         Response midPollResult = Steps.pollMidResponse(flow)

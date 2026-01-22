@@ -47,7 +47,7 @@ class Steps {
         flow.setLocale(initLogin.getCookie("__Host-LOCALE"))
         // TODO initLogin.body("input", contains("_csrf"))
         if (initLogin.body.asString().contains("_csrf")) { // TARA2-121
-            flow.setCsrf(initLogin.htmlPath().get("**.find {it.@name == '_csrf'}.@value"))
+            flow.setCsrf(initLogin.htmlPath().get("**.find {it.@name == '_csrf'}.@content"))
         }
         return initLogin
     }
@@ -213,7 +213,7 @@ class Steps {
     static Response initLoginSession(Flow flow, Response response, Map paramsMap) {
         Response initResponse = Requests.getRequestWithParams(flow, response.getHeader("location"), paramsMap)
         flow.setSessionId(initResponse.getCookie("__Host-SESSION"))
-        flow.setCsrf(initResponse.htmlPath().get("**.find {it.@name == '_csrf'}.@value"))
+        flow.setCsrf(initResponse.htmlPath().get("**.find {it.@name == '_csrf'}.@content"))
         return initResponse
     }
 
