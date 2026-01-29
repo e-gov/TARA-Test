@@ -51,9 +51,6 @@ class LoginService extends BaseService {
     String midCancelUrl
     String webEidInitUrl
     String webEidLoginUrl
-    String sidInitUrl
-    String sidPollUrl
-    String sidCancelUrl
     String authAcceptUrl
     String authRejectUrl
     String consentUrl
@@ -74,9 +71,21 @@ class LoginService extends BaseService {
     @Lazy fullMidInitUrl = "${fullBaseUrl}${midInitUrl}"
     @Lazy fullMidPollUrl = "${fullBaseUrl}${midPollUrl}"
     @Lazy fullMidCancelUrl = "${fullBaseUrl}${midCancelUrl}"
-    @Lazy fullSidInitUrl = "${fullBaseUrl}${sidInitUrl}"
-    @Lazy fullSidPollUrl = "${fullBaseUrl}${sidPollUrl}"
-    @Lazy fullSidCancelUrl = "${fullBaseUrl}${sidCancelUrl}"
+
+    // SID
+    @Lazy sidBaseUrl = "${fullBaseUrl}/auth/sid"
+    @Lazy sidInitUrl = "${sidBaseUrl}/init"
+    @Lazy sidPollUrl = "${sidBaseUrl}/poll"
+    @Lazy sidCancelUrl = "${sidBaseUrl}/poll/cancel"
+    @Lazy sidQRCodeInitUrl = "${sidBaseUrl}/qr-code/init"
+    @Lazy sidQRCodePollUrl = "${sidBaseUrl}/qr-code/poll"
+    @Lazy sidQRCodeCancelUrl = "${sidBaseUrl}/qr-code/cancel"
+    @Lazy sidWeb2AppInitUrl = "${sidBaseUrl}/web2app/init"
+    @Lazy sidWeb2AppPollUrl = "${sidBaseUrl}/web2app/poll"
+    @Lazy sidWeb2AppCallbackUrl = "${sidBaseUrl}/web2app/callback"
+    @Lazy sidWeb2AppCallbackPollUrl = "${sidBaseUrl}/web2app/callback/poll"
+    @Lazy sidWeb2AppCallbackPollCancelUrl = "${sidBaseUrl}/web2app/callback/poll/cancel"
+
     @Lazy fullAuthAcceptUrl = "${fullBaseUrl}${authAcceptUrl}"
     @Lazy fullAuthRejectUrl = "${fullBaseUrl}${authRejectUrl}"
     @Lazy fullConsentUrl = "${fullBaseUrl}${consentUrl}"
@@ -95,9 +104,6 @@ class LoginService extends BaseService {
         this.midCancelUrl = conf.midCancelUrl()
         this.webEidInitUrl = conf.webEidInitUrl()
         this.webEidLoginUrl = conf.webEidLoginUrl()
-        this.sidInitUrl = conf.sidInitUrl()
-        this.sidPollUrl = conf.sidPollUrl()
-        this.sidCancelUrl = conf.sidCancelUrl()
         this.authAcceptUrl = conf.authAcceptUrl()
         this.authRejectUrl = conf.authRejectUrl()
         this.consentUrl = conf.consentUrl()

@@ -31,12 +31,6 @@ interface LoginServiceConf extends Config {
 
     String webEidLoginUrl()
 
-    String sidInitUrl()
-
-    String sidPollUrl()
-
-    String sidCancelUrl()
-
     String authAcceptUrl()
 
     String authRejectUrl()

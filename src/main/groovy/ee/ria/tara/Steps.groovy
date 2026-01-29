@@ -183,7 +183,7 @@ class Steps {
     static Response initSidAuthSession(Flow flow, Object idCode) {
         Map formParamsMap = ["_csrf": flow.csrf,
                              idCode : idCode]
-        return Requests.postRequestWithParams(flow, flow.loginService.fullSidInitUrl, formParamsMap)
+        return Requests.postRequestWithParams(flow, flow.loginService.sidInitUrl, formParamsMap)
     }
 
     @Step("Polling Smart-ID authentication response")

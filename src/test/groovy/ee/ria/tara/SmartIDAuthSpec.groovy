@@ -74,7 +74,7 @@ class SmartIDAuthSpec extends TaraSpecification {
                 .params([idCode: "40404049996",
                          _csrf : flow.csrf])
                 .cookies(cookie)
-                .post(flow.loginService.fullSidInitUrl)
+                .post(flow.loginService.sidInitUrl)
 
         then:
         ErrorValidator.validate(response, ErrorMessage.INVALID_CSRF_TOKEN)
@@ -97,7 +97,7 @@ class SmartIDAuthSpec extends TaraSpecification {
                 .params([idCode: "40404049996",
                          _csrf : flow.csrf])
                 .cookies(["__Host-SESSION": flow.sessionId])
-                .request(requestType, flow.loginService.fullSidInitUrl)
+                .request(requestType, flow.loginService.sidInitUrl)
         then:
         ErrorValidator.validate(response, ErrorMessage.INTERNAL_ERROR)
 
@@ -120,7 +120,7 @@ class SmartIDAuthSpec extends TaraSpecification {
                 .params(_csrf: flow.csrf)
                 .params(params)
                 .cookies("__Host-SESSION": flow.sessionId)
-                .post(flow.loginService.fullSidInitUrl)
+                .post(flow.loginService.sidInitUrl)
 
         then:
         ErrorValidator.validate(response, errorMessage)
@@ -283,7 +283,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         when: "request polling with invalid session cookie"
         Response response = given()
                 .cookies(cookie)
-                .get(flow.loginService.fullSidPollUrl)
+                .get(flow.loginService.sidPollUrl)
         then:
         ErrorValidator.validate(response, ErrorMessage.SESSION_NOT_FOUND)
 
@@ -305,7 +305,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         Response response = given()
                 .cookies("__Host-SESSION": flow.sessionId)
                 .params([_csrf: flow.csrf])
-                .request(requestType, flow.loginService.fullSidPollUrl)
+                .request(requestType, flow.loginService.sidPollUrl)
 
         then:
         ErrorValidator.validate(response, ErrorMessage.INTERNAL_ERROR)
@@ -326,7 +326,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         Steps.initSidAuthSession(flow, "40404049996")
 
         when:
-        Response response = Requests.postRequest(flow, flow.loginService.fullSidCancelUrl)
+        Response response = Requests.postRequest(flow, flow.loginService.sidCancelUrl)
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(302))
@@ -345,7 +345,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         Steps.initSidAuthSession(flow, "40404049996")
 
         when:
-        Response response = Requests.postRequest(flow, flow.loginService.fullSidCancelUrl)
+        Response response = Requests.postRequest(flow, flow.loginService.sidCancelUrl)
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(302))
@@ -361,7 +361,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         when: "Cancel Smart-ID authentication with invalid session cookie"
         Response response = given()
                 .cookies(cookie)
-                .post(flow.loginService.fullSidCancelUrl)
+                .post(flow.loginService.sidCancelUrl)
 
         then:
         ErrorValidator.validate(response, ErrorMessage.INVALID_CSRF_TOKEN)
@@ -384,7 +384,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         Response response = given()
                 .params([_csrf: flow.csrf])
                 .cookies(["__Host-SESSION": flow.sessionId])
-                .request(requestType, flow.loginService.fullSidCancelUrl)
+                .request(requestType, flow.loginService.sidCancelUrl)
 
         then:
         ErrorValidator.validate(response, ErrorMessage.INTERNAL_ERROR)
