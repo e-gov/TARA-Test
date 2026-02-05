@@ -1,5 +1,6 @@
 package ee.ria.tara
 
+import ee.ria.tara.configuration.ConfigHolder
 import io.qameta.allure.Step
 import io.qameta.allure.restassured.AllureRestAssured
 import io.restassured.http.ContentType
@@ -47,7 +48,7 @@ class Requests {
     }
 
     @Step("Smart-ID response poll request")
-    static Response pollSid(Flow flow) {
+    static Response pollSid(Flow flow, String url) {
         return given()
                 .filter(flow.cookieFilter)
                 .cookies(["__Host-SESSION": flow.sessionId,
@@ -55,7 +56,7 @@ class Requests {
                 .log().cookies()
                 .urlEncodingEnabled(true)
                 .redirects().follow(false)
-                .get(flow.loginService.fullSidPollUrl)
+                .get(url)
     }
 
     @Step("Follow redirect request")
@@ -227,5 +228,14 @@ class Requests {
                 .then()
                 .log().cookies()
                 .extract().response()
+    }
+
+    @Step("Submit device link to device-link mock")
+    static Response postDeviceLinkToMock(Map body) {
+        return given()
+                .contentType(ContentType.JSON)
+                .body(body)
+                .urlEncodingEnabled(true)
+                .post(ConfigHolder.testConf.deviceLinkMockUrl())
     }
 }

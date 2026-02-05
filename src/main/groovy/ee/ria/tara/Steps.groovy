@@ -13,6 +13,7 @@ import io.restassured.http.Method
 import io.restassured.response.Response
 import org.apache.http.HttpStatus
 import org.json.JSONObject
+
 import java.text.ParseException
 import java.time.Instant
 
@@ -143,21 +144,6 @@ class Steps {
         return consentResponse
     }
 
-    @Step("Authenticate with Smart-ID")
-    static Response authenticateWithSid(Flow flow, String idCode) {
-        Response sidInit = initSidAuthSession(flow, idCode)
-        assertThat("Correct HTTP status code", sidInit.statusCode, is(200))
-        Response sidPollResult = pollSidResponse(flow)
-        assertThat("Correct HTTP status code", sidPollResult.statusCode, is(200))
-        assertThat(sidPollResult.jsonPath().getString("status"), is("COMPLETED"))
-        Response acceptResponse = Requests.postRequest(flow, flow.loginService.fullAuthAcceptUrl)
-        assertThat("Correct HTTP status code", acceptResponse.statusCode, is(302))
-        Response oidcServiceResponse = loginVerifier(flow, acceptResponse)
-        assertThat("Correct HTTP status code", oidcServiceResponse.statusCode, is(302))
-        Response consentResponse = followRedirectWithSessionId(flow, oidcServiceResponse)
-        return consentResponse
-    }
-
     @Step("Authenticate with Web eID")
     static Response authenticateWithWebEid(Flow flow, boolean clientSecretBasic = true) {
 
@@ -177,28 +163,6 @@ class Steps {
         } else {
             return Requests.webTokenPostRequest(flow, authorizationCode)
         }
-    }
-
-    @Step("Initialize Smart-ID authentication session")
-    static Response initSidAuthSession(Flow flow, Object idCode) {
-        Map formParamsMap = ["_csrf": flow.csrf,
-                             idCode : idCode]
-        return Requests.postRequestWithParams(flow, flow.loginService.sidInitUrl, formParamsMap)
-    }
-
-    @Step("Polling Smart-ID authentication response")
-    static Response pollSidResponse(Flow flow, long pollingIntevalMillis = 2000L) {
-        int counter = 0
-        Response response = null
-        while (counter < 20) {
-            response = Requests.pollSid(flow)
-            if (response.jsonPath().get("status") != "PENDING") {
-                break
-            }
-            ++counter
-            sleep(pollingIntevalMillis)
-        }
-        return response
     }
 
     @Step("OIDC login verifier request")

@@ -10,4 +10,8 @@ interface TestConf extends Config {
     Boolean isLocal()
 
     String adminSetupPath()
+
+    String sidDeviceLinkBase()
+
+    String deviceLinkMockUrl()
 }

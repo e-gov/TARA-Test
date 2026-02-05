@@ -6,6 +6,7 @@ import ee.ria.tara.model.Client
 import ee.ria.tara.model.ErrorMessage
 import ee.ria.tara.model.LoA
 import ee.ria.tara.model.OidcError
+import ee.ria.tara.step.SidSteps
 import ee.ria.tara.util.ErrorValidator
 import io.qameta.allure.Feature
 import io.qameta.allure.Issue
@@ -59,7 +60,7 @@ class AuthenticationSpec extends TaraSpecification {
     def "Request authentication with Smart-ID: #certificate certificate chain"() {
         given:
         Steps.startAuthenticationInTara(flow)
-        Response midAuthResponse = Steps.authenticateWithSid(flow, idCode)
+        Response midAuthResponse = SidSteps.authenticateWithSidNotificationFlow(flow, idCode)
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
 
         when:
@@ -97,7 +98,7 @@ class AuthenticationSpec extends TaraSpecification {
     def "Request authentication with Smart-ID"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
-        Response sidAuthResponse = Steps.authenticateWithSid(flow, "40404049996")
+        Response sidAuthResponse = SidSteps.authenticateWithSidNotificationFlow(flow, "40404049996")
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, sidAuthResponse)
 
         when:
@@ -114,7 +115,7 @@ class AuthenticationSpec extends TaraSpecification {
     def "Authenticate with Smart-ID with custom relying party name and UUID"() {
         given:
         Steps.startAuthenticationInTaraWithClient(flow, ClientStore.mockRelyingParty)
-        Response sidAuthResponse = Steps.authenticateWithSid(flow, "40404049996")
+        Response sidAuthResponse = SidSteps.authenticateWithSidNotificationFlow(flow, "40404049996")
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, sidAuthResponse)
 
         when:

@@ -3,6 +3,7 @@ package ee.ria.tara
 import com.nimbusds.jose.jwk.JWKSet
 import ee.ria.tara.model.LoA
 import ee.ria.tara.model.OidcError
+import ee.ria.tara.step.SidSteps
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.http.Method
@@ -11,8 +12,8 @@ import org.apache.http.HttpStatus
 
 import java.time.Instant
 
-import static org.hamcrest.Matchers.is
 import static org.hamcrest.MatcherAssert.assertThat
+import static org.hamcrest.Matchers.is
 
 class OidcUserInfoRequestSpec extends TaraSpecification {
 
@@ -226,7 +227,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         given:
         Steps.startAuthenticationInTara(flow, "openid email")
 //Smart-ID number 40404049996 is not marked in SK smart-id-documentation https://github.com/SK-EID/smart-id-documentation/wiki/Environment-technical-parameters#test-accounts-for-automated-testing
-        Response sidAuthResponse = Steps.authenticateWithSid(flow, "40404049996")
+        Response sidAuthResponse = SidSteps.authenticateWithSidNotificationFlow(flow, "40404049996")
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, sidAuthResponse)
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
         String accessToken = tokenResponse.jsonPath().getString("access_token")
@@ -255,7 +256,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         given:
         Steps.startAuthenticationInTara(flow, "openid phone")
 //Smart-ID number 40404049996 is not marked in SK smart-id-documentation https://github.com/SK-EID/smart-id-documentation/wiki/Environment-technical-parameters#test-accounts-for-automated-testing
-        Response sidAuthResponse = Steps.authenticateWithSid(flow, "40404049996")
+        Response sidAuthResponse = SidSteps.authenticateWithSidNotificationFlow(flow, "40404049996")
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, sidAuthResponse)
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
         String accessToken = tokenResponse.jsonPath().getString("access_token")
@@ -283,7 +284,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         given:
         Steps.startAuthenticationInTara(flow, "openid")
 //Smart-ID number 40404049996 is not marked in SK smart-id-documentation https://github.com/SK-EID/smart-id-documentation/wiki/Environment-technical-parameters#test-accounts-for-automated-testing
-        Response sidAuthResponse = Steps.authenticateWithSid(flow, "40404049996")
+        Response sidAuthResponse = SidSteps.authenticateWithSidNotificationFlow(flow, "40404049996")
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, sidAuthResponse)
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
         String accessToken = tokenResponse.jsonPath().getString("access_token")

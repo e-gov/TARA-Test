@@ -95,6 +95,8 @@ Description of values:
 | democlient.port                      | 31443                                                                                                                                | Demo client service port.                                     |
 | test.isLocal                         | true                                                                                                                                 | Allows enabling local-only adjustments.                       |
 | test.restAssured.consoleLogging      | true                                                                                                                                 | Enables console logging for rest-assured.                     |
+| test.sidDeviceLinkBase               | https://sid.demo.sk.ee/device-link                                                                                                   | Smart-ID device-link base URL.                                |
+| test.deviceLinkMockUrl               | https://sid.demo.sk.ee/mock/device-link                                                                                              | Smart-ID device-link mock URL.                                |
 | test.adminSetupPath                  | src/test/resources/admin-setup                                                                                                       | Path to test clients configurations.                          |
 
 ## Executing tests
