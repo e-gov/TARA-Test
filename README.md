@@ -39,65 +39,65 @@ Description of values:
 
 **test** - Tara test configurations.
 
-| Parameter                            | Default                                                                                                                              | Description                                                   |
-|--------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------|
-| oidcservice.protocol                 | https                                                                                                                                | Service protocol.                                             |
-| oidcservice.host                     | oidc-service                                                                                                                         | Service URL.                                                  |
-| oidcservice.port                     | 8443                                                                                                                                 | Service port.                                                 |
-| oidcservice.node.protocol            | https                                                                                                                                | OIDC service node protocol.                                   |
-| oidcservice.node.host                | oidc-service-backend                                                                                                                 | OIDC service node URL.                                        |
-| oidcservice.node.port                | 8444                                                                                                                                 | OIDC service node port.                                       |
-| oidcservice.authenticationRequestUrl | /oauth2/auth                                                                                                                         | OIDC flow start endpoint.                                     |
-| oidcservice.configurationUrl         | /.well-known/openid-configuration                                                                                                    | OIDC metadata endpoint.                                       |
-| oidcservice.jwksUrl                  | /.well-known/jwks.json                                                                                                               | Signing key info endpoint.                                    |
-| loginservice.protocol                | https                                                                                                                                | Service protocol.                                             |
-| loginservice.host                    | login-service-backend                                                                                                                | Service URL.                                                  |
-| loginservice.port                    | 8444                                                                                                                                 | Service port.                                                 |
-| loginservice.node.protocol           | https                                                                                                                                | Login service node protocol.                                  |
-| loginservice.node.host               | login-service-backend                                                                                                                | Login service node URL.                                       |
-| loginservice.node.port               | 8444                                                                                                                                 | Login service node port.                                      |
-| loginservice.initUrl                 | /auth/init                                                                                                                           | Authentication start endpoint in login service.               |
-| loginservice.midInitUrl              | /auth/mid/init                                                                                                                       | Mobile-ID start endpoint.                                     |
-| loginservice.midPollUrl              | /auth/mid/poll                                                                                                                       | Mobile-ID status polling endpoint.                            |
-| loginservice.midCancelUrl            | /auth/mid/poll/cancel                                                                                                                | Mobile-ID cancel endpoint.                                    |
-| loginservice.webEidInitUrl           | /auth/id/init                                                                                                                        | ID-card start endpoint.                                       |
-| loginservice.webEidLoginUrl          | /auth/id/login                                                                                                                       | ID-card authentication endpoint for submitting Web eID token. |
-| loginservice.authAcceptUrl           | /auth/accept                                                                                                                         | Authentication accept endpoint.                               |
-| loginservice.authRejectUrl           | /auth/reject                                                                                                                         | Authentication reject endpoint.                               |
-| loginservice.errorUrl                | /oidc-error                                                                                                                          | Error status endpoint.                                        |
-| loginservice.eidasInitUrl            | /auth/eidas/init                                                                                                                     | eIDAS authentication start endpoint.                          |
-| loginservice.eidasCallbackUrl        | /auth/eidas/callback                                                                                                                 | eIDAS authentication return endpoint.                         |
-| loginservice.authLegalInitUrl        | /auth/legalperson/init                                                                                                               | Legal person authentication start endpoint.                   |
-| loginservice.authLegalPersonUrl      | /auth/legalperson                                                                                                                    | Legal person selection endpoint.                              |
-| loginservice.authLegalConfirmUrl     | /auth/legalperson/confirm                                                                                                            | Legal person confirmation endpoint.                           |
-| loginservice.consentUrl              | /auth/consent                                                                                                                        | Authentication consent selection endpoint.                    |
-| loginservice.consentConfirmUrl       | /auth/consent/confirm                                                                                                                | Authentication consent confirmation endpoint                  |
-| loginservice.id.username             | f5                                                                                                                                   | Basic authentication username, used in ID-Card tests          |
-| loginservice.id.password             | changeme                                                                                                                             | Basic authentication password, used in ID-Card tests          |
-| ca-proxyservice.protocol             | https                                                                                                                                | Service protocol.                                             |
-| ca-proxyservice.host                 | eidas-caproxy                                                                                                                        | Service URL.                                                  |
-| ca-proxyservice.port                 | 8080                                                                                                                                 | Service port.                                                 |
-| ca-proxyservice.consentUrl           | /SpecificProxyService/AfterCitizenConsentResponse                                                                                    | Authentication consent endpoint.                              |
-| idp.protocol                         | https                                                                                                                                | Service protocol.                                             |
-| idp.host                             | eidas-caproxy                                                                                                                        | Service URL.                                                  |
-| idp.port                             | 8081                                                                                                                                 | Service port.                                                 |
-| idp.responseUrl                      | /IdP/Response                                                                                                                        | Authentication response endpoint.                             |
-| adminservice.protocol                | https                                                                                                                                | Service protocol.                                             |
-| adminservice.host                    | admin-service                                                                                                                        | Service URL.                                                  |
-| adminservice.port                    | 8445                                                                                                                                 | Service port.                                                 |
-| adminservice.username                |                                                                                                                                      | Admin service username.                                       |
-| adminservice.password                |                                                                                                                                      | Admin service password.                                       |
-| inproxyservice.protocol              | https                                                                                                                                | Inproxy service protocol.                                     |
-| inproxyservice.host                  | inproxy-service                                                                                                                      | Inproxy service URL.                                          |
-| inproxyservice.port                  | 8444                                                                                                                                 | Inproxy service port.                                         |
-| democlient.protocol                  | https                                                                                                                                | Demo client service protocol.                                 |
-| democlient.host                      | client                                                                                                                               | Demo client service URL.                                      |
-| democlient.port                      | 31443                                                                                                                                | Demo client service port.                                     |
-| test.isLocal                         | true                                                                                                                                 | Allows enabling local-only adjustments.                       |
-| test.restAssured.consoleLogging      | true                                                                                                                                 | Enables console logging for rest-assured.                     |
-| test.sidDeviceLinkBase               | https://sid.demo.sk.ee/device-link                                                                                                   | Smart-ID device-link base URL.                                |
-| test.deviceLinkMockUrl               | https://sid.demo.sk.ee/mock/device-link                                                                                              | Smart-ID device-link mock URL.                                |
-| test.adminSetupPath                  | src/test/resources/admin-setup                                                                                                       | Path to test clients configurations.                          |
+| Parameter                            | Default                                           | Description                                                          |
+|--------------------------------------|---------------------------------------------------|----------------------------------------------------------------------|
+| oidcservice.protocol                 | https                                             | Service protocol.                                                    |
+| oidcservice.host                     | oidc-service                                      | Service URL.                                                         |
+| oidcservice.port                     | 8443                                              | Service port.                                                        |
+| oidcservice.node.protocol            | https                                             | OIDC service node protocol.                                          |
+| oidcservice.node.host                | oidc-service-backend                              | OIDC service node URL.                                               |
+| oidcservice.node.port                | 8444                                              | OIDC service node port.                                              |
+| oidcservice.authenticationRequestUrl | /oauth2/auth                                      | OIDC flow start endpoint.                                            |
+| oidcservice.configurationUrl         | /.well-known/openid-configuration                 | OIDC metadata endpoint.                                              |
+| oidcservice.jwksUrl                  | /.well-known/jwks.json                            | Signing key info endpoint.                                           |
+| loginservice.protocol                | https                                             | Service protocol.                                                    |
+| loginservice.host                    | login-service-backend                             | Service URL.                                                         |
+| loginservice.port                    | 8444                                              | Service port.                                                        |
+| loginservice.node.protocol           | https                                             | Login service node protocol.                                         |
+| loginservice.node.host               | login-service-backend                             | Login service node URL.                                              |
+| loginservice.node.port               | 8444                                              | Login service node port.                                             |
+| loginservice.initUrl                 | /auth/init                                        | Authentication start endpoint in login service.                      |
+| loginservice.midInitUrl              | /auth/mid/init                                    | Mobile-ID start endpoint.                                            |
+| loginservice.midPollUrl              | /auth/mid/poll                                    | Mobile-ID status polling endpoint.                                   |
+| loginservice.midCancelUrl            | /auth/mid/poll/cancel                             | Mobile-ID cancel endpoint.                                           |
+| loginservice.webEidInitUrl           | /auth/id/init                                     | ID-card start endpoint.                                              |
+| loginservice.webEidLoginUrl          | /auth/id/login                                    | ID-card authentication endpoint for submitting Web eID token.        |
+| loginservice.authAcceptUrl           | /auth/accept                                      | Authentication accept endpoint.                                      |
+| loginservice.authRejectUrl           | /auth/reject                                      | Authentication reject endpoint.                                      |
+| loginservice.errorUrl                | /oidc-error                                       | Error status endpoint.                                               |
+| loginservice.eidasInitUrl            | /auth/eidas/init                                  | eIDAS authentication start endpoint.                                 |
+| loginservice.eidasCallbackUrl        | /auth/eidas/callback                              | eIDAS authentication return endpoint.                                |
+| loginservice.authLegalInitUrl        | /auth/legalperson/init                            | Legal person authentication start endpoint.                          |
+| loginservice.authLegalPersonUrl      | /auth/legalperson                                 | Legal person selection endpoint.                                     |
+| loginservice.authLegalConfirmUrl     | /auth/legalperson/confirm                         | Legal person confirmation endpoint.                                  |
+| loginservice.consentUrl              | /auth/consent                                     | Authentication consent selection endpoint.                           |
+| loginservice.consentConfirmUrl       | /auth/consent/confirm                             | Authentication consent confirmation endpoint                         |
+| loginservice.id.username             | f5                                                | Basic authentication username, used in ID-Card tests                 |
+| loginservice.id.password             | changeme                                          | Basic authentication password, used in ID-Card tests                 |
+| ca-proxyservice.protocol             | https                                             | Service protocol.                                                    |
+| ca-proxyservice.host                 | eidas-caproxy                                     | Service URL.                                                         |
+| ca-proxyservice.port                 | 8080                                              | Service port.                                                        |
+| ca-proxyservice.consentUrl           | /SpecificProxyService/AfterCitizenConsentResponse | Authentication consent endpoint.                                     |
+| idp.protocol                         | https                                             | Service protocol.                                                    |
+| idp.host                             | eidas-caproxy                                     | Service URL.                                                         |
+| idp.port                             | 8081                                              | Service port.                                                        |
+| idp.responseUrl                      | /IdP/Response                                     | Authentication response endpoint.                                    |
+| adminservice.protocol                | https                                             | Service protocol.                                                    |
+| adminservice.host                    | admin-service                                     | Service URL.                                                         |
+| adminservice.port                    | 8445                                              | Service port.                                                        |
+| adminservice.username                |                                                   | Admin service username.                                              |
+| adminservice.password                |                                                   | Admin service password.                                              |
+| inproxyservice.protocol              | https                                             | Inproxy service protocol.                                            |
+| inproxyservice.host                  | inproxy-service                                   | Inproxy service URL.                                                 |
+| inproxyservice.port                  | 8444                                              | Inproxy service port.                                                |
+| democlient.protocol                  | https                                             | Demo client service protocol.                                        |
+| democlient.host                      | client                                            | Demo client service URL.                                             |
+| democlient.port                      | 31443                                             | Demo client service port.                                            |
+| test.isLocal                         | true                                              | Allows enabling local-only adjustments.                              |
+| test.restAssured.consoleLogging      | true                                              | Enables console logging for rest-assured.                            |
+| test.sidDeviceLinkBase               | https://sid.demo.sk.ee/device-link                | Smart-ID device-link base URL (iOS Universal Link/Android App Link). |
+| test.deviceLinkMockUrl               | https://sid.demo.sk.ee/mock/device-link           | Smart-ID device-link mock URL.                                       |
+| test.adminSetupPath                  | src/test/resources/admin-setup                    | Path to test clients configurations.                                 |
 
 ## Executing tests
 

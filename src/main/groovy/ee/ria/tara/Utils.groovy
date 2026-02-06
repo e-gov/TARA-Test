@@ -2,7 +2,10 @@ package ee.ria.tara
 
 import io.restassured.response.Response
 import org.apache.commons.lang3.StringUtils
+import org.apache.http.client.utils.URLEncodedUtils
 import org.json.JSONObject
+
+import java.nio.charset.StandardCharsets
 import java.security.*
 import java.security.cert.Certificate
 import java.time.Duration
@@ -103,6 +106,11 @@ class Utils {
     static verifyTimestampAge(ZonedDateTime timeStamp, long secondsRange) {
         long timestampAge = Duration.between(timeStamp, ZonedDateTime.now()).abs().seconds
         assertThat("Timestamp should be within " + secondsRange + "seconds", timestampAge, lessThan(secondsRange))
+    }
+
+    static Map<String, String> parseQueryParams(String url) {
+        URLEncodedUtils.parse(new URI(url), StandardCharsets.UTF_8)
+                .collectEntries { [(it.name): it.value] }
     }
 }
 

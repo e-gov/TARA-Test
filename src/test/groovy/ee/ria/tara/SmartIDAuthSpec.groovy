@@ -25,7 +25,7 @@ class SmartIDAuthSpec extends TaraSpecification {
     }
 
     @Feature("SID_AUTH_SPECIAL_ACCOUNTS")
-    def "Authenticate with Smart-id account: #label"() {
+    def "Authenticate with Smart-ID account: #label"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
         Response sidAuthResponse = SidSteps.authenticateWithSidNotificationFlow(flow, idCode)
@@ -36,11 +36,11 @@ class SmartIDAuthSpec extends TaraSpecification {
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.jsonPath().get("id_token")).JWTClaimsSet
 
         then:
-        assertThat("Correct audience", claims.audience[0], is(ClientStore.mockPublic.clientId))
-        assertThat("Correct subject", claims.subject, is("EE" + idCode))
-        assertThat("Correct given name", claims.getJSONObjectClaim("profile_attributes")["given_name"], is(givenName))
-        assertThat("Correct family game", claims.getJSONObjectClaim("profile_attributes")["family_name"], is(familyName))
-        assertThat("Correct date of birth", claims.getJSONObjectClaim("profile_attributes")["date_of_birth"], is(dateOfBirth))
+        assertThat("Incorrect audience", claims.audience[0], is(ClientStore.mockPublic.clientId))
+        assertThat("Incorrect subject", claims.subject, is("EE" + idCode))
+        assertThat("Incorrect given name", claims.getJSONObjectClaim("profile_attributes")["given_name"], is(givenName))
+        assertThat("Incorrect family game", claims.getJSONObjectClaim("profile_attributes")["family_name"], is(familyName))
+        assertThat("Incorrect date of birth", claims.getJSONObjectClaim("profile_attributes")["date_of_birth"], is(dateOfBirth))
 
         where:
         idCode        || givenName | familyName  | dateOfBirth  | label
@@ -59,10 +59,10 @@ class SmartIDAuthSpec extends TaraSpecification {
         Response response = SidSteps.initSidAuthSession(flow, "40404049996")
 
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(200))
-        assertThat("Correct Content-Type", response.contentType, is("text/html;charset=UTF-8"))
+        assertThat("Incorrect HTTP status code", response.statusCode, is(200))
+        assertThat("Incorrect Content-Type", response.contentType, is("text/html;charset=UTF-8"))
         String controlCode = response.htmlPath().getString("**.find { p -> p.@class == 'control-code' }.text()")
-        assertThat("Verification code exists", controlCode.size(), is(4))
+        assertThat("Verification code is not a 4-digit value", controlCode.size(), is(4))
     }
 
     @Feature("SID_AUTH_INIT_ENDPOINT")
@@ -85,6 +85,28 @@ class SmartIDAuthSpec extends TaraSpecification {
         [:]                           | "no cookie"
         ["__Host-SESSION": null]      | "empty cookie"
         ["__Host-SESSION": "1234567"] | "incorrect cookie value"
+    }
+
+    def "Initialize Smart-ID authentication with invalid csrf token: #reason"() {
+        given:
+        Steps.startAuthenticationInTara(flow, "openid smartid")
+
+        when: "initialize Smart-ID authentication with invalid csrf token"
+        Response response = given()
+                .params([idCode: "40404049996"])
+                .cookies(["__Host-SESSION": flow.sessionId])
+                .params(params)
+                .post(flow.loginService.sidInitUrl)
+
+        then:
+        ErrorValidator.validate(response, ErrorMessage.INVALID_CSRF_TOKEN)
+
+        where:
+        params             | reason
+        [:]                | "no csrf"
+        [_csrf: null]      | "null"
+        [_csrf: ""]        | "empty string"
+        [_csrf: "1234567"] | "incorrect token value"
     }
 
     @Issue("AUT-630")
@@ -254,9 +276,9 @@ class SmartIDAuthSpec extends TaraSpecification {
         Response response = Requests.pollSid(flow, flow.loginService.sidPollUrl)
 
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(200))
-        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct Mobile-ID status", response.jsonPath().getString("status"), is("PENDING"))
+        assertThat("Incorrect HTTP status code", response.statusCode, is(200))
+        assertThat("Incorrect Content-Type", response.contentType, is("application/json;charset=UTF-8"))
+        assertThat("Incorrect Mobile-ID status", response.jsonPath().getString("status"), is("PENDING"))
     }
 
     @Feature("SID_AUTH_STATUS_CHECK_ENDPOINT")
@@ -270,9 +292,9 @@ class SmartIDAuthSpec extends TaraSpecification {
         Response response = SidSteps.pollSidNotificationSessionStatus(flow)
 
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(200))
-        assertThat("Correct Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Correct Mobile-ID status", response.jsonPath().getString("status"), is("COMPLETED"))
+        assertThat("Incorrect HTTP status code", response.statusCode, is(200))
+        assertThat("Incorrect Content-Type", response.contentType, is("application/json;charset=UTF-8"))
+        assertThat("Incorrect Mobile-ID status", response.jsonPath().getString("status"), is("COMPLETED"))
     }
 
     @Feature("SID_AUTH_STATUS_CHECK_ENDPOINT")
@@ -330,8 +352,8 @@ class SmartIDAuthSpec extends TaraSpecification {
         Response response = Requests.postRequest(flow, flow.loginService.sidCancelUrl)
 
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(302))
-        assertThat("Correct location header", response.header("location"), is(flow.loginService.initUrl + "?login_challenge=" + flow.loginChallenge + "&lang=et"))
+        assertThat("Incorrect HTTP status code", response.statusCode, is(302))
+        assertThat("Incorrect location header", response.header("location"), is(flow.loginService.initUrl + "?login_challenge=" + flow.loginChallenge + "&lang=et"))
     }
 
     @Feature("DISALLOW_IFRAMES")
@@ -349,7 +371,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         Response response = Requests.postRequest(flow, flow.loginService.sidCancelUrl)
 
         then:
-        assertThat("Correct HTTP status code", response.statusCode, is(302))
+        assertThat("Incorrect HTTP status code", response.statusCode, is(302))
         Steps.verifyResponseHeaders(response)
     }
 
@@ -372,6 +394,28 @@ class SmartIDAuthSpec extends TaraSpecification {
         [:]                           | "no cookie"
         ["__Host-SESSION": null]      | "empty cookie"
         ["__Host-SESSION": "1234567"] | "incorrect cookie value"
+    }
+
+    def "Cancel Smart-ID authentication with invalid csrf token: #reason"() {
+        given:
+        Steps.startAuthenticationInTara(flow, "openid smartid")
+        SidSteps.initSidAuthSession(flow, "40404049996")
+
+        when: "Cancel Smart-ID authentication with invalid csrf token"
+        Response response = given()
+                .cookies(["__Host-SESSION": flow.sessionId])
+                .params(params)
+                .post(flow.loginService.sidCancelUrl)
+
+        then:
+        ErrorValidator.validate(response, ErrorMessage.INVALID_CSRF_TOKEN)
+
+        where:
+        params             | reason
+        [:]                | "no csrf"
+        [_csrf: null]      | "null"
+        [_csrf: ""]        | "empty string"
+        [_csrf: "1234567"] | "incorrect token value"
     }
 
     @Issue("AUT-630")

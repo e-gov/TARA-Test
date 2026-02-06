@@ -59,6 +59,7 @@ enum ErrorMessage {
 
     // Additional errors
     DUPLICATE_PARAMETERS(HttpStatus.SC_BAD_REQUEST, "Multiple request parameters with the same name not allowed"),
+    MISSING_PARAMETERS(HttpStatus.SC_BAD_REQUEST, "Required request parameter '{0}' for method parameter type String is not present"),
 
     final int statusCode
     final String message

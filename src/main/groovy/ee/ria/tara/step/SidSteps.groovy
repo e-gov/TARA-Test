@@ -6,8 +6,9 @@ import ee.ria.tara.Steps
 import io.qameta.allure.Step
 import io.restassured.response.Response
 import org.apache.http.HttpStatus
-import org.hamcrest.MatcherAssert
-import org.hamcrest.Matchers
+import spock.util.concurrent.PollingConditions
+
+import static org.hamcrest.Matchers.equalTo
 
 class SidSteps {
 
@@ -17,31 +18,34 @@ class SidSteps {
 
     @Step("Authenticate with Smart-ID push notification flow")
     static Response authenticateWithSidNotificationFlow(Flow flow, String idCode) {
-        Response sidInit = initSidAuthSession(flow, idCode)
-        MatcherAssert.assertThat("Correct HTTP status code", sidInit.statusCode, Matchers.is(200))
-        Response sidPollResult = pollSidNotificationSessionStatus(flow)
-        MatcherAssert.assertThat("Correct HTTP status code", sidPollResult.statusCode, Matchers.is(200))
-        MatcherAssert.assertThat(sidPollResult.jsonPath().getString("status"), Matchers.is("COMPLETED"))
+        initSidAuthSession(flow, idCode)
+                .then()
+                .statusCode(HttpStatus.SC_OK)
+        pollSidNotificationSessionStatus(flow)
+                .then()
+                .statusCode(HttpStatus.SC_OK)
+                .body("status", equalTo("COMPLETED"))
         return authenticateWithSidCommon(flow)
     }
 
     @Step("Authenticate with Smart-ID QR code flow")
-    static Response authenticateWithSidQRFlow(Flow flow, String documentNumber) {
-        initSidQRCodeAuthSession(flow)
-        String deviceLink = getSidQRCodeDeviceLink(flow)
-        initQrCodeMock(flow, documentNumber, deviceLink)
-        Response sidPollResult = pollSidQRCodeSessionStatus(flow)
-        MatcherAssert.assertThat("Correct HTTP status code", sidPollResult.statusCode, Matchers.is(200))
-        MatcherAssert.assertThat(sidPollResult.jsonPath().getString("status"), Matchers.is("COMPLETED"))
+    static Response authenticateWithSidQrFlow(Flow flow, String documentNumber) {
+        initSidQrCodeAuthSession(flow)
+        String deviceLink = getSidQrCodeDeviceLink(flow)
+        initSidQrCodeMockAuth(flow, documentNumber, deviceLink)
+        pollSidQrCodeSessionStatus(flow)
+                .then()
+                .statusCode(HttpStatus.SC_OK)
+                .body("status", equalTo("COMPLETED"))
         return authenticateWithSidCommon(flow)
     }
 
     @Step("Authenticate with Smart-ID Web2App flow")
     static Response authenticateWithSidWeb2AppFlow(Flow flow, String documentNumber) {
-        Response response = initSidWeb2AppAuthSession(flow)
-        String deviceLink = response.getHeader("location")
+        Response authInitResponse = initSidWeb2AppAuthSession(flow)
+        String deviceLink = authInitResponse.jsonPath().getString("deviceLink")
         // TODO: currently fails, waiting mock adjustments
-        initWeb2AppMock(flow, documentNumber, deviceLink)
+        initSidWeb2AppMockAuth(flow, documentNumber, deviceLink)
         // TODO: perform callback, waiting mock adjustments
         //  Test if this call is required or can go straight to poll?
 
@@ -51,19 +55,19 @@ class SidSteps {
                       sessionSecretDigest  : "TODO: get sessionSecretDigest",
                       userChallengeVerifier: "TODO: get userChallengeVerifier"
         ]
-        Response sidPollResult = pollSidWeb2AppSessionStatusAfterCallback(flow, params)
-        MatcherAssert.assertThat("Correct HTTP status code", sidPollResult.statusCode, Matchers.is(200))
-        MatcherAssert.assertThat(sidPollResult.jsonPath().getString("status"), Matchers.is("COMPLETED"))
+        pollSidWeb2AppSessionStatusAfterCallback(flow, params)
+                .then()
+                .statusCode(HttpStatus.SC_OK)
+                .body("status", equalTo("COMPLETED"))
         return authenticateWithSidCommon(flow)
     }
 
-    static authenticateWithSidCommon(Flow flow) {
+    static Response authenticateWithSidCommon(Flow flow) {
         Response acceptResponse = Requests.postRequest(flow, flow.loginService.fullAuthAcceptUrl)
-        MatcherAssert.assertThat("Correct HTTP status code", acceptResponse.statusCode, Matchers.is(302))
+        acceptResponse.then().statusCode(HttpStatus.SC_MOVED_TEMPORARILY)
         Response oidcServiceResponse = Steps.loginVerifier(flow, acceptResponse)
-        MatcherAssert.assertThat("Correct HTTP status code", oidcServiceResponse.statusCode, Matchers.is(302))
-        Response consentResponse = Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
-        return consentResponse
+        oidcServiceResponse.then().statusCode(HttpStatus.SC_MOVED_TEMPORARILY)
+        return Steps.followRedirectWithSessionId(flow, oidcServiceResponse)
     }
 
     /* ============================================================
@@ -80,18 +84,16 @@ class SidSteps {
     }
 
     @Step("Initialize Smart-ID device link cross-device authentication")
-    static Response initSidQRCodeAuthSession(Flow flow) {
-        Response response = Requests.postRequest(flow, flow.loginService.sidQRCodeInitUrl)
+    static Response initSidQrCodeAuthSession(Flow flow) {
+        Response response = Requests.postRequest(flow, flow.loginService.sidQrCodeInitUrl)
         response.then().statusCode(HttpStatus.SC_OK)
         return response
     }
 
     @Step("Initialize Smart-ID device link same-device authentication")
     static Response initSidWeb2AppAuthSession(Flow flow) {
-        Response response = Requests.getRequest(flow, flow.loginService.sidWeb2AppInitUrl)
-        // TODO: AUT-2567
-//         Response response = Requests.postRequest(flow, flow.loginService.sidWeb2AppInitUrl)
-        response.then().statusCode(HttpStatus.SC_SEE_OTHER)
+        Response response = Requests.postRequest(flow, flow.loginService.sidWeb2AppInitUrl)
+        response.then().statusCode(HttpStatus.SC_OK)
         return response
     }
 
@@ -105,9 +107,9 @@ class SidSteps {
         }
     }
 
-    static Response pollSidQRCodeSessionStatus(Flow flow, long pollingIntevalMillis = 2000L) {
+    static Response pollSidQrCodeSessionStatus(Flow flow, long pollingIntevalMillis = 2000L) {
         return pollSidWhilePending(pollingIntevalMillis) {
-            Requests.pollSid(flow, flow.loginService.sidQRCodePollUrl)
+            Requests.pollSid(flow, flow.loginService.sidQrCodePollUrl)
         }
     }
 
@@ -129,28 +131,30 @@ class SidSteps {
         Response response = null
         while (counter < 20) {
             response = request.call()
-            if (response.jsonPath().get("status") != "PENDING") {
+            if (response.jsonPath().getString("status") != "PENDING") {
                 break
             }
             ++counter
             sleep(pollingIntevalMillis)
         }
         return response
+
+
     }
 
     /* ============================================================
        DEVICE-LINK MOCK INTERACTIONS
        ============================================================ */
 
-    static Response initQrCodeMock(Flow flow, String documentNumber, String deviceLink) {
-        return initMockFlow(flow, documentNumber, deviceLink, "QR")
+    static Response initSidQrCodeMockAuth(Flow flow, String documentNumber, String deviceLink) {
+        return initSidDeviceLinkMockAuth(flow, documentNumber, deviceLink, "QR")
     }
 
-    static Response initWeb2AppMock(Flow flow, String documentNumber, String deviceLink) {
-        return initMockFlow(flow, documentNumber, deviceLink, "Web2App")
+    static Response initSidWeb2AppMockAuth(Flow flow, String documentNumber, String deviceLink) {
+        return initSidDeviceLinkMockAuth(flow, documentNumber, deviceLink, "Web2App")
     }
 
-    static Response initMockFlow(Flow flow, String documentNumber, String deviceLink, String flowType) {
+    static Response initSidDeviceLinkMockAuth(Flow flow, String documentNumber, String deviceLink, String flowType) {
         String cookie = flow.cookieFilter.cookieStore.cookies
                 .find { it.name == "__Host-SESSION" }
                 ?.value
@@ -172,17 +176,16 @@ class SidSteps {
        HELPERS
        ============================================================ */
 
-    static String getSidQRCodeDeviceLink(Flow flow) {
-        int counter = 0
-        Response response = null
-        while (counter < 20) {
-            response = Requests.pollSid(flow, flow.loginService.sidQRCodePollUrl)
-            if (response.jsonPath().get("deviceLink") != null) {
-                break
-            }
-            ++counter
-            sleep(100)
+    static String getSidQrCodeDeviceLink(Flow flow) {
+        def conditions = new PollingConditions(timeout: 3, delay: 0.1)
+        String deviceLink = null
+
+        conditions.eventually {
+            def response = Requests.pollSid(flow, flow.loginService.sidQrCodePollUrl)
+            deviceLink = response.jsonPath().getString("deviceLink")
+            assert deviceLink != null
         }
-        return response.path("deviceLink")
+
+        return deviceLink
     }
 }
