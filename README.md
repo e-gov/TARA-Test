@@ -8,6 +8,7 @@ Tests for TARA (both Hydra OIDC and Estonian specific login service component)
 
 * Java 21 JDK
 * SUT (TARA) - either deployed or running locally (in docker).
+* Network access to sid.demo.sk.ee:443
 * Fetch the tests:
   `git clone https://github.com/e-gov/TARA-Test`
 

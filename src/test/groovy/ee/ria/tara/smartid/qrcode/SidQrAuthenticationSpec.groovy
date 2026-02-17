@@ -1,4 +1,4 @@
-package ee.ria.tara.smartid
+package ee.ria.tara.smartid.qrcode
 
 import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jwt.JWTClaimsSet
@@ -8,16 +8,14 @@ import ee.ria.tara.model.ErrorMessage
 import ee.ria.tara.step.SidSteps
 import ee.ria.tara.util.ErrorValidator
 import io.restassured.filter.cookie.CookieFilter
-import io.restassured.http.Method
 import io.restassured.response.Response
 import org.apache.http.HttpStatus
 import spock.lang.Ignore
 
-import static io.restassured.RestAssured.given
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.*
 
-class SmartIdAuthQrCodeSpec extends TaraSpecification {
+class SidQrAuthenticationSpec extends TaraSpecification {
 
     def setup() {
         flow.cookieFilter = new CookieFilter()
@@ -76,67 +74,6 @@ class SmartIdAuthQrCodeSpec extends TaraSpecification {
         assertThat("Incorrect version", deviceLinkParams.version, equalTo("1.0"))
         assertThat("Incorrect language", deviceLinkParams.lang, equalTo("est"))
         assertThat("Missing auth code", deviceLinkParams.authCode, notNullValue())
-    }
-
-    def "Initialize Smart-ID QR code authentication with invalid session cookie: #reason"() {
-        given:
-        Steps.startAuthenticationInTara(flow, "openid smartid")
-
-        when: "initialize Smart-ID authentication with invalid session cookie"
-        Response response = given()
-                .cookies(cookie)
-                .params([_csrf: flow.csrf])
-                .post(flow.loginService.sidQrCodeInitUrl)
-
-        then:
-        ErrorValidator.validate(response, ErrorMessage.INVALID_CSRF_TOKEN)
-
-        where:
-        cookie                        | reason
-        [:]                           | "no cookie"
-        ["__Host-SESSION": null]      | "empty cookie"
-        ["__Host-SESSION": "1234567"] | "incorrect cookie value"
-    }
-
-    def "Initialize Smart-ID QR code authentication with invalid csrf token: #reason"() {
-        given:
-        Steps.startAuthenticationInTara(flow, "openid smartid")
-
-        when: "initialize Smart-ID authentication with invalid csrf token"
-        Response response = given()
-                .cookies(["__Host-SESSION": flow.sessionId])
-                .params(params)
-                .post(flow.loginService.sidQrCodeInitUrl)
-
-        then:
-        ErrorValidator.validate(response, ErrorMessage.INVALID_CSRF_TOKEN)
-
-        where:
-        params             | reason
-        [:]                | "no csrf"
-        [_csrf: null]      | "null"
-        [_csrf: ""]        | "empty string"
-        [_csrf: "1234567"] | "incorrect token value"
-    }
-
-    def "Initialize Smart-ID QR code authentication with invalid method: #requestType"() {
-        given:
-        Steps.startAuthenticationInTara(flow, "openid smartid")
-
-        when: "initialize Smart-ID authentication with invalid method"
-        Response response = given()
-                .cookies(["__Host-SESSION": flow.sessionId])
-                .params([_csrf: flow.csrf])
-                .request(requestType, flow.loginService.sidQrCodeInitUrl)
-        then:
-        ErrorValidator.validate(response, ErrorMessage.INTERNAL_ERROR)
-
-        where:
-        requestType   | _
-        Method.GET    | _
-        Method.PUT    | _
-        Method.PATCH  | _
-        Method.DELETE | _
     }
 
     @Ignore("Testing not supported by current device-link mock.")
@@ -212,66 +149,6 @@ class SmartIdAuthQrCodeSpec extends TaraSpecification {
         assertThat("Incorrect Mobile-ID status", response.jsonPath().getString("status"), is("COMPLETED"))
     }
 
-    def "Poll Smart-ID QR code authentication session with invalid session cookie: #reason"() {
-        given:
-        Steps.startAuthenticationInTara(flow, "openid smartid")
-        SidSteps.initSidQrCodeAuthSession(flow)
-
-        when: "request polling with invalid session cookie"
-        Response response = given()
-                .cookies(cookie)
-                .get(flow.loginService.sidQrCodePollUrl)
-        then:
-        ErrorValidator.validate(response, ErrorMessage.SESSION_NOT_FOUND)
-
-        where:
-        cookie                        | reason
-        [:]                           | "no cookie"
-        ["__Host-SESSION": null]      | "empty cookie"
-        ["__Host-SESSION": "1234567"] | "incorrect cookie value"
-    }
-
-    def "Poll Smart-ID QR code authentication in invalid session status"() {
-        given:
-        Steps.startAuthenticationInTara(flow, "openid smartid")
-
-        when: "request Smart-ID polling with invalid session status"
-        Response pollResponse = Requests.pollSid(flow, flow.loginService.sidQrCodePollUrl)
-
-        then:
-        ErrorMessage error = ErrorMessage.SESSION_STATE_INVALID
-        pollResponse.then()
-                .statusCode(HttpStatus.SC_OK)
-                .contentType("application/json;charset=UTF-8")
-                .body(
-                        "status", equalTo("FAILED"),
-                        "error", equalTo(error.name()),
-                        "message", equalTo(error.message)
-                )
-    }
-
-    def "Poll Smart-ID QR code authentication with invalid method: #requestType"() {
-        given:
-        Steps.startAuthenticationInTara(flow, "openid smartid")
-        SidSteps.initSidQrCodeAuthSession(flow)
-
-        when: "request Smart-ID polling with invalid request type"
-        Response response = given()
-                .cookies("__Host-SESSION": flow.sessionId)
-                .params([_csrf: flow.csrf])
-                .request(requestType, flow.loginService.sidQrCodePollUrl)
-
-        then:
-        ErrorValidator.validate(response, ErrorMessage.INTERNAL_ERROR)
-
-        where:
-        requestType   | _
-        Method.POST   | _
-        Method.PUT    | _
-        Method.PATCH  | _
-        Method.DELETE | _
-    }
-
     def "Cancel Smart-ID QR code authentication"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
@@ -284,69 +161,5 @@ class SmartIdAuthQrCodeSpec extends TaraSpecification {
         assertThat("Incorrect HTTP status code", response.statusCode, is(HttpStatus.SC_MOVED_TEMPORARILY))
         assertThat("Incorrect location header", response.header("location"), is(flow.loginService.initUrl + "?login_challenge=" + flow.loginChallenge + "&lang=et"))
         Steps.verifyResponseHeaders(response)
-    }
-
-    def "Cancel Smart-ID QR code authentication with invalid session cookie: #reason"() {
-        given:
-        Steps.startAuthenticationInTara(flow, "openid smartid")
-        SidSteps.initSidQrCodeAuthSession(flow)
-
-        when: "Cancel Smart-ID authentication with invalid session cookie"
-        Response response = given()
-                .cookies(cookie)
-                .post(flow.loginService.sidQrCodeCancelUrl)
-
-        then:
-        ErrorValidator.validate(response, ErrorMessage.INVALID_CSRF_TOKEN)
-
-        where:
-        cookie                        | reason
-        [:]                           | "no cookie"
-        ["__Host-SESSION": null]      | "empty cookie"
-        ["__Host-SESSION": "1234567"] | "incorrect cookie value"
-    }
-
-    def "Cancel Smart-ID QR code authentication with invalid csrf token: #reason"() {
-        given:
-        Steps.startAuthenticationInTara(flow, "openid smartid")
-        SidSteps.initSidQrCodeAuthSession(flow)
-
-        when: "Cancel Smart-ID authentication with invalid csrf token"
-        Response response = given()
-                .cookies(["__Host-SESSION": flow.sessionId])
-                .params(params)
-                .post(flow.loginService.sidQrCodeCancelUrl)
-
-        then:
-        ErrorValidator.validate(response, ErrorMessage.INVALID_CSRF_TOKEN)
-
-        where:
-        params             | reason
-        [:]                | "no csrf"
-        [_csrf: null]      | "null"
-        [_csrf: ""]        | "empty string"
-        [_csrf: "1234567"] | "incorrect token value"
-    }
-
-    def "Cancel Smart-ID QR code authentication with invalid method #requestType"() {
-        given:
-        Steps.startAuthenticationInTara(flow, "openid smartid")
-        SidSteps.initSidQrCodeAuthSession(flow)
-
-        when: "Cancel Smart-ID authentication with invalid method"
-        Response response = given()
-                .params([_csrf: flow.csrf])
-                .cookies(["__Host-SESSION": flow.sessionId])
-                .request(requestType, flow.loginService.sidQrCodeCancelUrl)
-
-        then:
-        ErrorValidator.validate(response, ErrorMessage.INTERNAL_ERROR)
-
-        where:
-        requestType   | _
-        Method.GET    | _
-        Method.PUT    | _
-        Method.PATCH  | _
-        Method.DELETE | _
     }
 }

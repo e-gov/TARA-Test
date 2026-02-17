@@ -82,6 +82,7 @@ class LoginService extends BaseService {
     @Lazy sidQrCodeCancelUrl = "${sidBaseUrl}/qr-code/cancel"
     @Lazy sidWeb2AppInitUrl = "${sidBaseUrl}/web2app/init"
     @Lazy sidWeb2AppPollUrl = "${sidBaseUrl}/web2app/poll"
+    @Lazy sidWeb2AppPollCancelUrl = "${sidBaseUrl}/web2app/poll/cancel"
     @Lazy sidWeb2AppCallbackUrl = "${sidBaseUrl}/web2app/callback"
     @Lazy sidWeb2AppCallbackPollUrl = "${sidBaseUrl}/web2app/callback/poll"
     @Lazy sidWeb2AppCallbackPollCancelUrl = "${sidBaseUrl}/web2app/callback/poll/cancel"

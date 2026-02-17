@@ -188,4 +188,12 @@ class SidSteps {
 
         return deviceLink
     }
+
+    static Map sidWeb2AppCallbackPollDefaultParams(flow) {
+        [_csrf                : flow.csrf,
+         value                : "test",
+         sessionSecretDigest  : "test",
+         userChallengeVerifier: "test"
+        ]
+    }
 }

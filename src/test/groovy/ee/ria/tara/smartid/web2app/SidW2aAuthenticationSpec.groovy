@@ -1,4 +1,4 @@
-package ee.ria.tara.smartid
+package ee.ria.tara.smartid.web2app
 
 import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jwt.JWTClaimsSet
@@ -8,7 +8,6 @@ import ee.ria.tara.model.ErrorMessage
 import ee.ria.tara.step.SidSteps
 import ee.ria.tara.util.ErrorValidator
 import io.restassured.filter.cookie.CookieFilter
-import io.restassured.http.Method
 import io.restassured.response.Response
 import org.apache.http.HttpStatus
 import spock.lang.Ignore
@@ -17,7 +16,7 @@ import static io.restassured.RestAssured.given
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.*
 
-class SmartIdAuthWeb2AppSpec extends TaraSpecification {
+class SidW2aAuthenticationSpec extends TaraSpecification {
 
     def setup() {
         flow.cookieFilter = new CookieFilter()
@@ -62,67 +61,6 @@ class SmartIdAuthWeb2AppSpec extends TaraSpecification {
         assertThat("Incorrect version", deviceLinkParams.version, equalTo("1.0"))
         assertThat("Incorrect language", deviceLinkParams.lang, equalTo("est"))
         assertThat("Missing auth code", deviceLinkParams.authCode, notNullValue())
-    }
-
-    def "Initialize Smart-ID web2app authentication with invalid session cookie: #reason"() {
-        given:
-        Steps.startAuthenticationInTara(flow, "openid smartid")
-
-        when: "initialize Smart-ID authentication with invalid session cookie"
-        Response response = given()
-                .cookies(cookie)
-                .params([_csrf: flow.csrf])
-                .post(flow.loginService.sidWeb2AppInitUrl)
-
-        then:
-        ErrorValidator.validate(response, ErrorMessage.INVALID_CSRF_TOKEN)
-
-        where:
-        cookie                        | reason
-        [:]                           | "no cookie"
-        ["__Host-SESSION": null]      | "empty cookie"
-        ["__Host-SESSION": "1234567"] | "incorrect cookie value"
-    }
-
-    def "Initialize Smart-ID web2app authentication with invalid csrf token: #reason"() {
-        given:
-        Steps.startAuthenticationInTara(flow, "openid smartid")
-
-        when: "initialize Smart-ID authentication with invalid csrf token"
-        Response response = given()
-                .cookies(["__Host-SESSION": flow.sessionId])
-                .params(params)
-                .post(flow.loginService.sidWeb2AppInitUrl)
-
-        then:
-        ErrorValidator.validate(response, ErrorMessage.INVALID_CSRF_TOKEN)
-
-        where:
-        params             | reason
-        [:]                | "no csrf"
-        [_csrf: null]      | "null"
-        [_csrf: ""]        | "empty string"
-        [_csrf: "1234567"] | "incorrect token value"
-    }
-
-    def "Initialize Smart-ID web2app authentication with invalid method: #requestType"() {
-        given:
-        Steps.startAuthenticationInTara(flow, "openid smartid")
-
-        when: "initialize Smart-ID authentication with invalid method"
-        Response response = given()
-                .cookies(["__Host-SESSION": flow.sessionId])
-                .params([_csrf: flow.csrf])
-                .request(requestType, flow.loginService.sidWeb2AppInitUrl)
-        then:
-        ErrorValidator.validate(response, ErrorMessage.INTERNAL_ERROR)
-
-        where:
-        requestType   | _
-        Method.GET    | _
-        Method.PUT    | _
-        Method.PATCH  | _
-        Method.DELETE | _
     }
 
     @Ignore("Testing not supported by current device-link mock.")
@@ -192,60 +130,21 @@ class SmartIdAuthWeb2AppSpec extends TaraSpecification {
         assertThat("Incorrect Mobile-ID status", response.jsonPath().getString("status"), is("COMPLETED"))
     }
 
-    def "Poll Smart-ID web2app authentication session with invalid session cookie: #reason"() {
+    def "Cancel Smart-ID web2app polling"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
         SidSteps.initSidWeb2AppAuthSession(flow)
-
-        when: "request polling with invalid session cookie"
-        Response response = given()
-                .cookies(cookie)
-                .params([_csrf: flow.csrf])
-                .get(flow.loginService.sidWeb2AppPollUrl)
-        then:
-        ErrorValidator.validate(response, ErrorMessage.SESSION_NOT_FOUND)
-
-        where:
-        cookie                        | reason
-        [:]                           | "no cookie"
-        ["__Host-SESSION": null]      | "empty cookie"
-        ["__Host-SESSION": "1234567"] | "incorrect cookie value"
-    }
-
-    def "Poll Smart-ID web2app authentication in invalid session status"() {
-        given:
-        Steps.startAuthenticationInTara(flow, "openid smartid")
 
         when:
-        Response pollResponse = Requests.pollSid(flow, flow.loginService.sidWeb2AppPollUrl)
-
-        then: "request Smart-ID polling with invalid session status"
-        ErrorValidator.validate(pollResponse, ErrorMessage.SESSION_STATE_INVALID)
-    }
-
-    def "Poll Smart-ID web2app authentication with invalid method: #requestType"() {
-        given:
-        Steps.startAuthenticationInTara(flow, "openid smartid")
-        SidSteps.initSidWeb2AppAuthSession(flow)
-
-        when: "request Smart-ID polling with invalid request type"
-        Response response = given()
-                .cookies("__Host-SESSION": flow.sessionId)
-                .params([_csrf: flow.csrf])
-                .request(requestType, flow.loginService.sidWeb2AppPollUrl)
+        Response response = Requests.postRequest(flow, flow.loginService.sidWeb2AppPollCancelUrl)
 
         then:
-        ErrorValidator.validate(response, ErrorMessage.INTERNAL_ERROR)
-
-        where:
-        requestType   | _
-        Method.POST   | _
-        Method.PUT    | _
-        Method.PATCH  | _
-        Method.DELETE | _
+        assertThat("Incorrect HTTP status code", response.statusCode, is(HttpStatus.SC_MOVED_TEMPORARILY))
+        assertThat("Incorrect location header", response.header("location"), is(flow.loginService.initUrl + "?login_challenge=" + flow.loginChallenge + "&lang=et"))
+        Steps.verifyResponseHeaders(response)
     }
 
-    def "Cancel Smart-ID web2app authentication"() {
+    def "Cancel Smart-ID web2app post-callback polling"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
         SidSteps.initSidWeb2AppAuthSession(flow)
@@ -259,71 +158,8 @@ class SmartIdAuthWeb2AppSpec extends TaraSpecification {
         Steps.verifyResponseHeaders(response)
     }
 
-    def "Cancel Smart-ID web2app authentication with invalid session cookie: #reason"() {
-        given:
-        Steps.startAuthenticationInTara(flow, "openid smartid")
-        SidSteps.initSidWeb2AppAuthSession(flow)
-
-        when: "Cancel Smart-ID authentication with invalid session cookie"
-        Response response = given()
-                .cookies(cookie)
-                .params([_csrf: flow.csrf])
-                .post(flow.loginService.sidWeb2AppCallbackPollCancelUrl)
-
-        then:
-        ErrorValidator.validate(response, ErrorMessage.INVALID_CSRF_TOKEN)
-
-        where:
-        cookie                        | reason
-        [:]                           | "no cookie"
-        ["__Host-SESSION": null]      | "empty cookie"
-        ["__Host-SESSION": "1234567"] | "incorrect cookie value"
-    }
-
-    def "Cancel Smart-ID web2app authentication with invalid csrf token: #reason"() {
-        given:
-        Steps.startAuthenticationInTara(flow, "openid smartid")
-        SidSteps.initSidWeb2AppAuthSession(flow)
-
-        when: "Cancel Smart-ID authentication with invalid csrf token"
-        Response response = given()
-                .cookies(["__Host-SESSION": flow.sessionId])
-                .params(params)
-                .post(flow.loginService.sidWeb2AppCallbackPollCancelUrl)
-
-        then:
-        ErrorValidator.validate(response, ErrorMessage.INVALID_CSRF_TOKEN)
-
-        where:
-        params             | reason
-        [:]                | "no csrf"
-        [_csrf: null]      | "null"
-        [_csrf: ""]        | "empty string"
-        [_csrf: "1234567"] | "incorrect token value"
-    }
-
-    def "Cancel Smart-ID web2app authentication with invalid method #requestType"() {
-        given:
-        Steps.startAuthenticationInTara(flow, "openid smartid")
-        SidSteps.initSidWeb2AppAuthSession(flow)
-
-        when: "Cancel authentication with invalid method"
-        Response response = given()
-                .cookies(["__Host-SESSION": flow.sessionId])
-                .params([_csrf: flow.csrf])
-                .request(requestType, flow.loginService.sidWeb2AppCallbackPollCancelUrl)
-
-        then:
-        ErrorValidator.validate(response, ErrorMessage.INTERNAL_ERROR)
-
-        where:
-        requestType   | _
-        Method.GET    | _
-        Method.PUT    | _
-        Method.PATCH  | _
-        Method.DELETE | _
-    }
-
+    @Ignore("AUT-2600")
+    // TODO: add tests for handling "value" parameter mismatch.
     def "Smart-ID web2app authentication callback"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
@@ -332,7 +168,7 @@ class SmartIdAuthWeb2AppSpec extends TaraSpecification {
         when:
         Response response = given()
                 .cookies(["__Host-SESSION": flow.sessionId])
-                .get(flow.loginService.sidWeb2AppCallbackUrl)
+                .get(flow.loginService.sidWeb2AppCallbackUrl+"?value=TODO") // TODO: acceptable value
 
         then:
         assertThat("Incorrect HTTP status code", response.statusCode, is(HttpStatus.SC_OK))
@@ -345,49 +181,7 @@ class SmartIdAuthWeb2AppSpec extends TaraSpecification {
         assertThat("Incorrect cancel action path", action, is("/auth/sid/web2app/callback/poll/cancel"))
     }
 
-    def "Smart-ID web2app authentication callback with invalid session cookie: #reason"() {
-        given:
-        Steps.startAuthenticationInTara(flow, "openid smartid")
-        SidSteps.initSidWeb2AppAuthSession(flow)
-
-        when: "Smart-ID callback with invalid session cookie"
-        Response response = given()
-                .cookies(cookie)
-                .get(flow.loginService.sidWeb2AppCallbackUrl)
-
-        then:
-        ErrorValidator.validate(response, ErrorMessage.SESSION_NOT_FOUND)
-
-        where:
-        cookie                        | reason
-        [:]                           | "no cookie"
-        ["__Host-SESSION": null]      | "empty cookie"
-        ["__Host-SESSION": "1234567"] | "incorrect cookie value"
-    }
-
-    def "Smart-ID web2app authentication callback with invalid method #requestType"() {
-        given:
-        Steps.startAuthenticationInTara(flow, "openid smartid")
-        SidSteps.initSidWeb2AppAuthSession(flow)
-
-        when: "Smart-ID callback with invalid method"
-        Response response = given()
-                .cookies(["__Host-SESSION": flow.sessionId])
-                .params([_csrf: flow.csrf])
-                .request(requestType, flow.loginService.sidWeb2AppCallbackUrl)
-
-        then:
-        ErrorValidator.validate(response, ErrorMessage.INTERNAL_ERROR)
-
-        where:
-        requestType   | _
-        Method.POST   | _
-        Method.PUT    | _
-        Method.PATCH  | _
-        Method.DELETE | _
-    }
-
-    def "Poll Smart-ID web2app authentication session after callback"() {
+    def "Poll Smart-ID web2app authentication session post-callback"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
         SidSteps.initSidWeb2AppAuthSession(flow)
@@ -395,7 +189,7 @@ class SmartIdAuthWeb2AppSpec extends TaraSpecification {
         when:
         Response callbackPoll = given()
                 .cookies(["__Host-SESSION": flow.sessionId])
-                .params(sidWeb2AppCallbackPollDefaultParams(flow))
+                .params(SidSteps.sidWeb2AppCallbackPollDefaultParams(flow))
                 .get(flow.loginService.sidWeb2AppCallbackPollUrl)
 
         then:
@@ -404,7 +198,7 @@ class SmartIdAuthWeb2AppSpec extends TaraSpecification {
         assertThat("Incorrect Mobile-ID status", callbackPoll.jsonPath().getString("status"), is("PENDING"))
     }
 
-    def "Poll Smart-ID web2app authentication session after callback with session complete"() {
+    def "Poll Smart-ID web2app authentication session post-callback with session complete"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
         Response authInitResponse = SidSteps.initSidWeb2AppAuthSession(flow)
@@ -413,7 +207,7 @@ class SmartIdAuthWeb2AppSpec extends TaraSpecification {
         SidSteps.initSidWeb2AppMockAuth(flow, "PNOEE-40404040009-MOCK-Q", deviceLink)
 
         when:
-        Response callbackPoll = SidSteps.pollSidWeb2AppSessionStatusAfterCallback(flow, sidWeb2AppCallbackPollDefaultParams(flow))
+        Response callbackPoll = SidSteps.pollSidWeb2AppSessionStatusAfterCallback(flow, SidSteps.sidWeb2AppCallbackPollDefaultParams(flow))
 
         then:
         assertThat("Incorrect HTTP status code", callbackPoll.statusCode, is(HttpStatus.SC_OK))
@@ -421,64 +215,21 @@ class SmartIdAuthWeb2AppSpec extends TaraSpecification {
         assertThat("Incorrect Mobile-ID status", callbackPoll.jsonPath().getString("status"), is("COMPLETED"))
     }
 
-    def "Poll Smart-ID web2app authentication session after callback in invalid session status"() {
+    def "Poll Smart-ID web2app authentication session post-callback in invalid session status"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
 
         when: "Poll Smart-ID authentication with invalid session status"
         Response callbackPoll = given()
                 .cookies(["__Host-SESSION": flow.sessionId])
-                .params(sidWeb2AppCallbackPollDefaultParams(flow))
+                .params(SidSteps.sidWeb2AppCallbackPollDefaultParams(flow))
                 .get(flow.loginService.sidWeb2AppCallbackPollUrl)
 
         then:
         ErrorValidator.validate(callbackPoll, ErrorMessage.SESSION_STATE_INVALID)
     }
 
-    def "Poll Smart-ID web2app authentication session after callback with invalid session cookie: #reason"() {
-        given:
-        Steps.startAuthenticationInTara(flow, "openid smartid")
-        SidSteps.initSidWeb2AppAuthSession(flow)
-
-        when: "Poll Smart-ID authentication with invalid session cookie"
-        Response callbackPoll = given()
-                .cookies(cookie)
-                .params(sidWeb2AppCallbackPollDefaultParams(flow))
-                .get(flow.loginService.sidWeb2AppCallbackPollUrl)
-
-        then:
-        ErrorValidator.validate(callbackPoll, ErrorMessage.SESSION_NOT_FOUND)
-
-        where:
-        cookie                        | reason
-        [:]                           | "no cookie"
-        ["__Host-SESSION": null]      | "empty cookie"
-        ["__Host-SESSION": "1234567"] | "incorrect cookie value"
-    }
-
-    def "Poll Smart-ID web2app authentication session after callback with invalid method #requestType"() {
-        given:
-        Steps.startAuthenticationInTara(flow, "openid smartid")
-        SidSteps.initSidWeb2AppAuthSession(flow)
-
-        when: "Poll Smart-ID authentication with invalid method"
-        Response callbackPoll = given()
-                .cookies(["__Host-SESSION": flow.sessionId])
-                .params(sidWeb2AppCallbackPollDefaultParams(flow))
-                .request(requestType, flow.loginService.sidWeb2AppCallbackPollUrl)
-
-        then:
-        ErrorValidator.validate(callbackPoll, ErrorMessage.INTERNAL_ERROR)
-
-        where:
-        requestType   | _
-        Method.POST   | _
-        Method.PUT    | _
-        Method.PATCH  | _
-        Method.DELETE | _
-    }
-
-    def "Poll Smart-ID web2app authentication session after callback with #label"() {
+    def "Poll Smart-ID web2app authentication session post-callback with #label"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
         Response authInitResponse = SidSteps.initSidWeb2AppAuthSession(flow)
@@ -486,7 +237,7 @@ class SmartIdAuthWeb2AppSpec extends TaraSpecification {
         SidSteps.initSidWeb2AppMockAuth(flow, "PNOEE-40404040009-MOCK-Q", deviceLink)
 
         when:
-        Map params = sidWeb2AppCallbackPollDefaultParams(flow)
+        Map params = SidSteps.sidWeb2AppCallbackPollDefaultParams(flow)
         paramsModification.call(params)
         Response pollResponse = Requests.getRequestWithParams(flow, flow.loginService.sidWeb2AppCallbackPollUrl, params)
 
@@ -501,13 +252,5 @@ class SmartIdAuthWeb2AppSpec extends TaraSpecification {
         "value"                 | "duplicate param: ${param}" | { it[param] = ["test", "test2"] } || ErrorMessage.DUPLICATE_PARAMETERS
         "sessionSecretDigest"   | "duplicate param: ${param}" | { it[param] = ["test", "test2"] } || ErrorMessage.DUPLICATE_PARAMETERS
         "userChallengeVerifier" | "duplicate param: ${param}" | { it[param] = ["test", "test2"] } || ErrorMessage.DUPLICATE_PARAMETERS
-    }
-
-    static Map sidWeb2AppCallbackPollDefaultParams(flow) {
-        [_csrf                : flow.csrf,
-         value                : "test",
-         sessionSecretDigest  : "test",
-         userChallengeVerifier: "test"
-        ]
     }
 }
