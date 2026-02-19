@@ -226,8 +226,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
     def "Verify user info response: auth Smart-ID, email scope"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid email")
-//Smart-ID number 40404049996 is not marked in SK smart-id-documentation https://github.com/SK-EID/smart-id-documentation/wiki/Environment-technical-parameters#test-accounts-for-automated-testing
-        Response sidAuthResponse = SidSteps.authenticateWithSidNotificationFlow(flow, "40404049996")
+        Response sidAuthResponse = SidSteps.authenticateWithSidQrFlow(flow, "PNOEE-40404040009-MOCK-Q")
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, sidAuthResponse)
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
         String accessToken = tokenResponse.jsonPath().getString("access_token")
@@ -240,7 +239,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         assertThat("Correct Content-Type", userInfoResponse.contentType, is("application/json; charset=utf-8"))
         assertThat("Correct amr", userInfoResponse.jsonPath().getList("amr")[0].toString(), is("smartid"))
         assertThat("Correct given name", userInfoResponse.jsonPath().getString("given_name"), is("OK"))
-        assertThat("Correct subject", userInfoResponse.jsonPath().getString("sub"), is("EE40404049996"))
+        assertThat("Correct subject", userInfoResponse.jsonPath().getString("sub"), is("EE40404040009"))
         assertThat("Correct date of birth", userInfoResponse.jsonPath().getString("date_of_birth"), is("1904-04-04"))
         assertThat("Correct family name", userInfoResponse.jsonPath().getString("family_name"), is("TEST"))
         assertThat("No email", userInfoResponse.jsonPath().getString("email"), is(null))
@@ -255,8 +254,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
     def "Verify user info response: auth Smart-ID, phone scope"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid phone")
-//Smart-ID number 40404049996 is not marked in SK smart-id-documentation https://github.com/SK-EID/smart-id-documentation/wiki/Environment-technical-parameters#test-accounts-for-automated-testing
-        Response sidAuthResponse = SidSteps.authenticateWithSidNotificationFlow(flow, "40404049996")
+        Response sidAuthResponse = SidSteps.authenticateWithSidQrFlow(flow, "PNOEE-40404040009-MOCK-Q")
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, sidAuthResponse)
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
         String accessToken = tokenResponse.jsonPath().getString("access_token")
@@ -268,7 +266,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         assertThat("Correct HTTP status code", userInfoResponse.statusCode, is(200))
         assertThat("Correct Content-Type", userInfoResponse.contentType, is("application/json; charset=utf-8"))
         assertThat("Correct given name", userInfoResponse.jsonPath().getString("given_name"), is("OK"))
-        assertThat("Correct subject", userInfoResponse.jsonPath().getString("sub"), is("EE40404049996"))
+        assertThat("Correct subject", userInfoResponse.jsonPath().getString("sub"), is("EE40404040009"))
         assertThat("Correct date of birth", userInfoResponse.jsonPath().getString("date_of_birth"), is("1904-04-04"))
         assertThat("Correct family name", userInfoResponse.jsonPath().getString("family_name"), is("TEST"))
         assertThat("No email", userInfoResponse.jsonPath().getString("email"), is(null))
@@ -283,8 +281,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
     def "Verify user info response: auth Smart-ID, openid scope"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid")
-//Smart-ID number 40404049996 is not marked in SK smart-id-documentation https://github.com/SK-EID/smart-id-documentation/wiki/Environment-technical-parameters#test-accounts-for-automated-testing
-        Response sidAuthResponse = SidSteps.authenticateWithSidNotificationFlow(flow, "40404049996")
+        Response sidAuthResponse = SidSteps.authenticateWithSidQrFlow(flow, "PNOEE-40404040009-MOCK-Q")
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, sidAuthResponse)
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
         String accessToken = tokenResponse.jsonPath().getString("access_token")
@@ -296,7 +293,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         assertThat("Correct HTTP status code", userInfoResponse.statusCode, is(200))
         assertThat("Correct Content-Type", userInfoResponse.contentType, is("application/json; charset=utf-8"))
         assertThat("Correct given name", userInfoResponse.jsonPath().getString("given_name"), is("OK"))
-        assertThat("Correct subject", userInfoResponse.jsonPath().getString("sub"), is("EE40404049996"))
+        assertThat("Correct subject", userInfoResponse.jsonPath().getString("sub"), is("EE40404040009"))
         assertThat("Correct date of birth", userInfoResponse.jsonPath().getString("date_of_birth"), is("1904-04-04"))
         assertThat("Correct family name", userInfoResponse.jsonPath().getString("family_name"), is("TEST"))
         assertThat("No email", userInfoResponse.jsonPath().getString("email"), is(null))

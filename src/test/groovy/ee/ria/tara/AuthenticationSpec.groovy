@@ -15,6 +15,7 @@ import io.restassured.filter.cookie.CookieFilter
 import io.restassured.http.Method
 import io.restassured.response.Response
 import org.apache.http.HttpStatus
+import spock.lang.Ignore
 
 import java.security.InvalidParameterException
 
@@ -60,8 +61,8 @@ class AuthenticationSpec extends TaraSpecification {
     def "Request authentication with Smart-ID: #certificate certificate chain"() {
         given:
         Steps.startAuthenticationInTara(flow)
-        Response midAuthResponse = SidSteps.authenticateWithSidNotificationFlow(flow, idCode)
-        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
+        Response sidAuthResponse = SidSteps.authenticateWithSidQrFlow(flow, documentNumber)
+        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, sidAuthResponse)
 
         when:
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
@@ -72,9 +73,8 @@ class AuthenticationSpec extends TaraSpecification {
         assertThat("Correct subject", claims.subject, is(subject))
 
         where:
-        certificate                           | idCode        || subject
-        "TEST of EID-SK 2016"                 | "40404049996" || "EE" + idCode
-        "TEST of SK ID Solutions EID-Q 2024E" | "40504040001" || "EE" + idCode
+        certificate                           | documentNumber             || subject
+        "TEST of SK ID Solutions EID-Q 2024E" | "PNOEE-40404040009-MOCK-Q" || "EE40404040009"
     }
 
     @Feature("AUTHENTICATION")
@@ -98,7 +98,7 @@ class AuthenticationSpec extends TaraSpecification {
     def "Request authentication with Smart-ID"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
-        Response sidAuthResponse = SidSteps.authenticateWithSidNotificationFlow(flow, "40404049996")
+        Response sidAuthResponse = SidSteps.authenticateWithSidQrFlow(flow, "PNOEE-40404040009-MOCK-Q")
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, sidAuthResponse)
 
         when:
@@ -107,15 +107,16 @@ class AuthenticationSpec extends TaraSpecification {
 
         then:
         assertThat("Correct audience", claims.audience[0], is(ClientStore.mockPublic.clientId))
-        assertThat("Correct subject", claims.subject, is("EE40404049996"))
+        assertThat("Correct subject", claims.subject, is("EE40404040009"))
     }
 
+    @Ignore("RIA DEMO RP account missing access to device-link endpoint")
     @Feature("AUTHENTICATION")
     @Feature("SID_AUTH_INIT_REQUEST")
     def "Authenticate with Smart-ID with custom relying party name and UUID"() {
         given:
         Steps.startAuthenticationInTaraWithClient(flow, ClientStore.mockRelyingParty)
-        Response sidAuthResponse = SidSteps.authenticateWithSidNotificationFlow(flow, "40404049996")
+        Response sidAuthResponse = SidSteps.authenticateWithSidQrFlow(flow, "PNOEE-40404040009-MOCK-Q")
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, sidAuthResponse)
 
         when:
@@ -124,7 +125,7 @@ class AuthenticationSpec extends TaraSpecification {
 
         then:
         assertThat("Correct audience", claims.audience[0], is(ClientStore.mockRelyingParty.clientId))
-        assertThat("Correct subject", claims.subject, is("EE40404049996"))
+        assertThat("Correct subject", claims.subject, is("EE40404040009"))
     }
 
     @Feature("https://e-gov.github.io/TARA-Doku/TechnicalSpecification#41-authentication-request")

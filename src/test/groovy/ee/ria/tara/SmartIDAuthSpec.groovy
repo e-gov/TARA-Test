@@ -11,11 +11,13 @@ import io.restassured.filter.cookie.CookieFilter
 import io.restassured.http.Method
 import io.restassured.response.Response
 import org.apache.http.HttpStatus
+import spock.lang.Ignore
 
 import static io.restassured.RestAssured.given
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.is
 
+@Ignore("Notification flow disabled")
 class SmartIDAuthSpec extends TaraSpecification {
 
     def setup() {
