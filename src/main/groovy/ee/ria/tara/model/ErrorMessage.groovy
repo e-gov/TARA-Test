@@ -48,6 +48,7 @@ enum ErrorMessage {
     SID_SESSION_TIMED_OUT(HttpStatus.SC_BAD_REQUEST, "Kasutaja ei autentinud<span translate=\"no\" lang=\"en\"> Smart-ID </span>rakenduses oodatud aja jooksul. Palun proovige uuesti."),
     SID_DOCUMENT_UNUSABLE(HttpStatus.SC_BAD_REQUEST, "<span translate=\"no\" lang=\"en\">Smart-ID </span>kontoga autentimine ebaõnnestus. Palun kontakteeruge<span translate=\"no\" lang=\"en\"> Smart-ID </span> klienditoega."),
     SID_REQUEST_TIMED_OUT(HttpStatus.SC_BAD_REQUEST, "Autentimise päring<span translate=\"no\" lang=\"en\"> Smart-ID </span>teenusele aegus. Palun proovige mõne aja pärast uuesti."),
+    SID_COUNTRY_NOT_ALLOWED(HttpStatus.SC_OK, "Välisriigi<span translate=\"no\" lang=\"en\"> Smart-ID </span>kontoga otse sisenemine ei ole toetatud. Välisriigi autentimisvahendi kasutamiseks valige sisenemisviis<span translate=\"no\"> \"EU eID\"</span>."),
 
     // EIDAS errors
     EIDAS_AUTHENTICATION_FAILED(HttpStatus.SC_BAD_REQUEST, "eIDAS autentimine ebaõnnestus."),

@@ -280,7 +280,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         then:
         assertThat("Incorrect HTTP status code", response.statusCode, is(200))
         assertThat("Incorrect Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Incorrect Mobile-ID status", response.jsonPath().getString("status"), is("PENDING"))
+        assertThat("Incorrect Smart-ID status", response.jsonPath().getString("status"), is("PENDING"))
     }
 
     @Feature("SID_AUTH_STATUS_CHECK_ENDPOINT")
@@ -296,7 +296,7 @@ class SmartIDAuthSpec extends TaraSpecification {
         then:
         assertThat("Incorrect HTTP status code", response.statusCode, is(200))
         assertThat("Incorrect Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Incorrect Mobile-ID status", response.jsonPath().getString("status"), is("COMPLETED"))
+        assertThat("Incorrect Smart-ID status", response.jsonPath().getString("status"), is("COMPLETED"))
     }
 
     @Feature("SID_AUTH_STATUS_CHECK_ENDPOINT")

@@ -111,7 +111,7 @@ class SidW2aAuthenticationSpec extends TaraSpecification {
         then:
         assertThat("Incorrect HTTP status code", response.statusCode, is(HttpStatus.SC_OK))
         assertThat("Incorrect Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Incorrect Mobile-ID status", response.jsonPath().getString("status"), is("PENDING"))
+        assertThat("Incorrect Smart-ID status", response.jsonPath().getString("status"), is("PENDING"))
     }
 
     def "Poll Smart-ID web2app authentication with session complete"() {
@@ -127,7 +127,7 @@ class SidW2aAuthenticationSpec extends TaraSpecification {
         then:
         assertThat("Incorrect HTTP status code", response.statusCode, is(HttpStatus.SC_OK))
         assertThat("Incorrect Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Incorrect Mobile-ID status", response.jsonPath().getString("status"), is("COMPLETED"))
+        assertThat("Incorrect Smart-ID status", response.jsonPath().getString("status"), is("COMPLETED"))
     }
 
     def "Cancel Smart-ID web2app polling"() {
@@ -195,7 +195,7 @@ class SidW2aAuthenticationSpec extends TaraSpecification {
         then:
         assertThat("Incorrect HTTP status code", callbackPoll.statusCode, is(HttpStatus.SC_OK))
         assertThat("Incorrect Content-Type", callbackPoll.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Incorrect Mobile-ID status", callbackPoll.jsonPath().getString("status"), is("PENDING"))
+        assertThat("Incorrect Smart-ID status", callbackPoll.jsonPath().getString("status"), is("PENDING"))
     }
 
     def "Poll Smart-ID web2app authentication session post-callback with session complete"() {
@@ -212,7 +212,7 @@ class SidW2aAuthenticationSpec extends TaraSpecification {
         then:
         assertThat("Incorrect HTTP status code", callbackPoll.statusCode, is(HttpStatus.SC_OK))
         assertThat("Incorrect Content-Type", callbackPoll.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Incorrect Mobile-ID status", callbackPoll.jsonPath().getString("status"), is("COMPLETED"))
+        assertThat("Incorrect Smart-ID status", callbackPoll.jsonPath().getString("status"), is("COMPLETED"))
     }
 
     def "Poll Smart-ID web2app authentication session post-callback in invalid session status"() {

@@ -41,6 +41,35 @@ class SidQrAuthenticationSpec extends TaraSpecification {
         assertThat("Incorrect date of birth", claims.getJSONObjectClaim("profile_attributes")["date_of_birth"], is("1904-04-04"))
     }
 
+    def "Authentication with Smart-ID QR code not allowed for non-EE account"() {
+        given:
+        Steps.startAuthenticationInTara(flow, "openid smartid")
+        SidSteps.initSidQrCodeAuthSession(flow)
+        String deviceLink = SidSteps.getSidQrCodeDeviceLink(flow)
+        SidSteps.initSidQrCodeMockAuth(flow, account, deviceLink)
+
+        when:
+        Response pollResponse = SidSteps.pollSidQrCodeSessionStatus(flow)
+
+        then:
+        ErrorMessage error = ErrorMessage.SID_COUNTRY_NOT_ALLOWED
+        pollResponse.then()
+                .statusCode(HttpStatus.SC_OK)
+                .contentType("application/json;charset=UTF-8")
+                .body(
+                        "status", equalTo("FAILED"),
+                        "error", equalTo(error.name()),
+                        "message", equalTo(error.message)
+                )
+
+        where:
+        account << [
+                "PNOLT-40404040009-MOCK-Q",
+                "PNOLV-040404-10003-DEMO-Q",
+                "PNOBE-04040400287-MOCK-Q"
+        ]
+    }
+
     def "Initialize Smart-ID QR code authentication"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
@@ -130,7 +159,7 @@ class SidQrAuthenticationSpec extends TaraSpecification {
         then:
         assertThat("Incorrect HTTP status code", response.statusCode, is(HttpStatus.SC_OK))
         assertThat("Incorrect Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Incorrect Mobile-ID status", response.jsonPath().getString("status"), is("PENDING"))
+        assertThat("Incorrect Smart-ID status", response.jsonPath().getString("status"), is("PENDING"))
     }
 
     def "Poll Smart-ID QR code authentication with session complete"() {
@@ -146,7 +175,7 @@ class SidQrAuthenticationSpec extends TaraSpecification {
         then:
         assertThat("Incorrect HTTP status code", response.statusCode, is(HttpStatus.SC_OK))
         assertThat("Incorrect Content-Type", response.contentType, is("application/json;charset=UTF-8"))
-        assertThat("Incorrect Mobile-ID status", response.jsonPath().getString("status"), is("COMPLETED"))
+        assertThat("Incorrect Smart-ID status", response.jsonPath().getString("status"), is("COMPLETED"))
     }
 
     def "Cancel Smart-ID QR code authentication"() {
