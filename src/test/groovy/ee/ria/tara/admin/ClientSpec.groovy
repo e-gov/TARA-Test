@@ -15,6 +15,7 @@ import ee.ria.tara.model.SmartidSettings
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
+import org.apache.commons.lang3.RandomStringUtils
 import org.apache.http.HttpStatus
 import spock.lang.Ignore
 import spock.lang.Issue
@@ -394,19 +395,23 @@ class ClientSpec extends TaraSpecification {
                 .body(equalTo(errorMessage))
 
         where:
-        condition                                       | mutation                                                            || errorMessage
-        "with 21 symbol shortname and GSM-7 characters" | { c -> c.clientShortName.en = "s.name ÜПÖ characters" }             || "Klientrakenduse lühinimetuse lubatud pikkus on kuni 40 tähemärki. Kui lühinimetus sisaldab GSM-7 standardi väliseid tähemärke (nt 'õ', 'š', 'ž' või kirillitsat), on lubatud pikkus kuni 20 tähemärki."
-        "without 'allowed ip addresses'"                | { c -> c.tokenRequestAllowedIpAddresses.clear() }                   || "Vähemalt 1 identsustõendipäringu lubatud IP aadress peab olema defineeritud."
-        "with incorrect 'allowed ip address'"           | { c -> c.tokenRequestAllowedIpAddresses.add("http://192.168.0.1") } || "Kliendi identsustõendipäringu lubatud IP aadresside nimekiri sisaldab ebakorrekselt vormistatud IP aadressi."
-        "without 'redirect uris'"                       | { c -> c.redirectUris.clear() }                                     || "Vähemalt 1 tagasisuunamise url peab olema defineeritud."
-        "without 'scope'"                               | { c -> c.scope.clear() }                                            || "Vähemalt 1 skoop peab olema valitud."
-        "with incorrect 'eIDAS RequesterID'"            | { c -> c.eidasRequesterId = "1234567890" }                          || "eIDAS RequesterID peab olema korrektne URI."
-        "without 'eIDAS RequesterID'"                   | { c -> c.eidasRequesterId = null }                                  || "eIDAS RequesterID on kohustuslik."
+        condition                                             | mutation                                                                  || errorMessage
+        "with too short name"                                 | { c -> c.clientName.et = "n" }                                            || "Klientrakenduse nimi peab olema vähemalt 3 tähemärki."
+        "with too long name"                                  | { c -> c.clientName.et = RandomStringUtils.random(151) }                  || "Klientrakenduse nime maksimaalne lubatud pikkus on 150 tähemärki."
+        "with too short shortname"                            | { c -> c.clientShortName.et = "sn" }                                      || "Klientrakenduse lühinimi peab olema vähemalt 3 tähemärki."
+        "with too long shortname"                             | { c -> c.clientShortName.et = "s.name with too many characters in name" } || "Klientrakenduse lühinimetuse maksimaalne lubatud pikkus on 38 tähemärki."
+        "with too long shortname containing GSM-7 characters" | { c -> c.clientShortName.et = "long s.name with ÜПÖ characters in name" } || "Klientrakenduse lühinimetuse maksimaalne lubatud pikkus on 38 tähemärki."
+        "without 'allowed ip addresses'"                      | { c -> c.tokenRequestAllowedIpAddresses.clear() }                         || "Vähemalt 1 identsustõendipäringu lubatud IP aadress peab olema defineeritud."
+        "with incorrect 'allowed ip address'"                 | { c -> c.tokenRequestAllowedIpAddresses.add("http://192.168.0.1") }       || "Kliendi identsustõendipäringu lubatud IP aadresside nimekiri sisaldab ebakorrekselt vormistatud IP aadressi."
+        "without 'redirect uris'"                             | { c -> c.redirectUris.clear() }                                           || "Vähemalt 1 tagasisuunamise url peab olema defineeritud."
+        "without 'scope'"                                     | { c -> c.scope.clear() }                                                  || "Vähemalt 1 skoop peab olema valitud."
+        "with incorrect 'eIDAS RequesterID'"                  | { c -> c.eidasRequesterId = "1234567890" }                                || "eIDAS RequesterID peab olema korrektne URI."
+        "without 'eIDAS RequesterID'"                         | { c -> c.eidasRequesterId = null }                                        || "eIDAS RequesterID on kohustuslik."
 //        "without 'Token endpoint auth method'"             | { c -> c.tokenEndpointAuthMethod = null }  || //incorrect error message "must not be null"
-        "without 'client id'"                           | { c -> c.clientId = null }                                          || "Klientrakenduse id on puudu."
+        "without 'client id'"                                 | { c -> c.clientId = null }                                                || "Klientrakenduse id on puudu."
         // although it's no possible to create client without 'institution name', it's possible to create client by providing incorrect 'institution name'
-        "without 'institution name'"                    | { c -> c.institutionMetainfo.name = null }                          || "Asutuse nimi peab olema täidetud."
-        "without 'institution registry code'"           | { c -> c.institutionMetainfo.registryCode = null }                  || "Asutus peab olema valitud."
+        "without 'institution name'"                          | { c -> c.institutionMetainfo.name = null }                                || "Asutuse nimi peab olema täidetud."
+        "without 'institution registry code'"                 | { c -> c.institutionMetainfo.registryCode = null }                        || "Asutus peab olema valitud."
 //        "without 'institution type'"                       | { c -> c.institutionMetainfo.type = null }  || //incorrect error message "must not be null"
     }
 
@@ -478,7 +483,7 @@ class ClientSpec extends TaraSpecification {
                         ru: "тестовый клиент ^&öж",
                 ),
                 clientShortName: new ClientShortName(
-                        en: "Tc (short name) 123456789111111111111111",
+                        en: "Tc (short name) 1234567891111111111111",
                         et: "Tk (lühinimi) ^&öжsd",
                         ru: "Т(короткое имя) ^&öж",
                 ),
