@@ -33,7 +33,7 @@ enum ErrorMessage {
     MID_SIM_ERROR(HttpStatus.SC_BAD_REQUEST, "Kasutaja mobiiltelefoni SIM-kaardiga tekkis tõrge."),
     MID_DELIVERY_ERROR(HttpStatus.SC_BAD_REQUEST, "Kasutaja mobiiltelefoni ei saa Mobiil-ID autentimise sõnumeid saata."),
     MID_NOT_MID_CLIENT(HttpStatus.SC_BAD_REQUEST, "Kasutajal pole telefoninumbril Mobiil-ID lepingut."),
-    MID_SIGNATURE_HASH_MISMATCH(HttpStatus.SC_BAD_REQUEST, "Autentimine Mobiil-ID-ga ei õnnestunud. Testi oma Mobiil-ID toimimist DigiDoc4 kliendis <a target=\"_blank\" href=\"https://www.id.ee/artikkel/soovid-arvutis-digiallkirja-anda/\">siin!</a>"),
+    MID_SIGNATURE_HASH_MISMATCH(HttpStatus.SC_BAD_REQUEST, "Autentimine Mobiil-ID-ga ei õnnestunud. Testi oma Mobiil-ID toimimist<span translate=\"no\"> DigiDoc4 </span>kliendis <a target=\"_blank\" href=\"https://www.id.ee/artikkel/soovid-arvutis-digiallkirja-anda/\">siin!</a>"),
 
     // Smart-ID errors (HTML in messages)
     SID_INTERNAL_ERROR(HttpStatus.SC_BAD_REQUEST, "<span translate=\"no\" lang=\"en\">Smart-ID </span>teenuses esinevad tehnilised tõrked. Palun proovige mõne aja pärast uuesti."),
