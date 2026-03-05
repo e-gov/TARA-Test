@@ -49,7 +49,7 @@ enum ErrorMessage {
     SID_DOCUMENT_UNUSABLE(HttpStatus.SC_BAD_REQUEST, "<span translate=\"no\" lang=\"en\">Smart-ID </span>kontoga autentimine ebaõnnestus. Palun kontakteeruge<span translate=\"no\" lang=\"en\"> Smart-ID </span> klienditoega."),
     SID_REQUEST_TIMED_OUT(HttpStatus.SC_BAD_REQUEST, "Autentimise päring<span translate=\"no\" lang=\"en\"> Smart-ID </span>teenusele aegus. Palun proovige mõne aja pärast uuesti."),
     SID_COUNTRY_NOT_ALLOWED(HttpStatus.SC_OK, "Välisriigi<span translate=\"no\" lang=\"en\"> Smart-ID </span>kontoga otse sisenemine ei ole toetatud. Välisriigi autentimisvahendi kasutamiseks valige sisenemisviis<span translate=\"no\"> \"EU eID\"</span>."),
-    SID_WEB2APP_CALLBACK_SESSION_NOT_FOUND(HttpStatus.SC_BAD_REQUEST, "Käesolev leht on avanenud teises brauseris, mis erineb brauserist, millega sisselogimist alustati. Kui Teie nutiseadmes on mitu brauserit, palun veenduge, et alustate sisselogimist samast brauserist kui see, mis avatakse pärast Smart-ID rakenduses PIN1 sisestamist."),
+    SID_WEB2APP_CALLBACK_SESSION_NOT_FOUND(HttpStatus.SC_BAD_REQUEST, "Käesolev leht on avanenud teises veebibrauseris kui see, millega alustasite sisselogimist. Palun veenduge, et brauser, millega sisselogimist alustate, on teie seadmes määratud vaikimisi brauseriks. Privaatne sirvimisrežiim ei ole toetatud. <a target=\"_blank\" href=\"https://www.ria.ee/smart-id-ga-sisenemine-riigi-e-teenustesse\">Vaata lisainfot</a>."),
     SID_WEB2APP_CALLBACK_VALUE_MISMATCH(HttpStatus.SC_BAD_REQUEST, "Olete katkestanud sisselogimise teises aknas."),
 
     // EIDAS errors
