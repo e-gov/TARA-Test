@@ -70,9 +70,10 @@ class SidW2aAuthenticationSpec extends TaraSpecification {
         Response authInitResponse = SidSteps.initSidWeb2AppAuthSession(flow)
         String deviceLink = authInitResponse.jsonPath().getString("deviceLink")
         SidSteps.initSidWeb2AppMockAuth(flow, documentNumber, deviceLink)
+        Map pollQueryParams = [sessionToken: Utils.parseQueryParams(deviceLink).sessionToken]
 
         when:
-        Response pollResponse = SidSteps.pollSidWeb2AppSessionStatus(flow, 3000L)
+        Response pollResponse = SidSteps.pollSidWeb2AppSessionStatus(flow, pollQueryParams, 3000L)
 
         then:
         ErrorValidator.validate(pollResponse, HttpStatus.SC_BAD_REQUEST, errorMessage)
@@ -90,10 +91,12 @@ class SidW2aAuthenticationSpec extends TaraSpecification {
     def "Initialize Smart-ID web2app authentication with scenario: TIMEOUT"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
-        SidSteps.initSidWeb2AppAuthSession(flow)
+        Response authInitResponse = SidSteps.initSidWeb2AppAuthSession(flow)
+        String deviceLink = authInitResponse.jsonPath().getString("deviceLink")
+        Map pollQueryParams = [sessionToken: Utils.parseQueryParams(deviceLink).sessionToken]
 
         when:
-        Response pollResponse = SidSteps.pollSidWeb2AppSessionStatus(flow, 10000L)
+        Response pollResponse = SidSteps.pollSidWeb2AppSessionStatus(flow, pollQueryParams, 10000L)
 
         then:
         ErrorValidator.validate(pollResponse, HttpStatus.SC_BAD_REQUEST, ErrorMessage.SID_SESSION_TIMED_OUT.message)
@@ -103,10 +106,12 @@ class SidW2aAuthenticationSpec extends TaraSpecification {
     def "Poll Smart-ID web2app authentication session"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
-        SidSteps.initSidWeb2AppAuthSession(flow)
+        Response authInitResponse = SidSteps.initSidWeb2AppAuthSession(flow)
+        String deviceLink = authInitResponse.jsonPath().getString("deviceLink")
+        Map queryParams = [sessionToken: Utils.parseQueryParams(deviceLink).sessionToken]
 
         when:
-        Response response = Requests.pollSid(flow, flow.loginService.sidWeb2AppPollUrl)
+        Response response = Requests.getRequestWithParams(flow, flow.loginService.sidWeb2AppPollUrl, queryParams)
 
         then:
         assertThat("Incorrect HTTP status code", response.statusCode, is(HttpStatus.SC_OK))
@@ -120,9 +125,10 @@ class SidW2aAuthenticationSpec extends TaraSpecification {
         Response authInitResponse = SidSteps.initSidWeb2AppAuthSession(flow)
         String deviceLink = authInitResponse.jsonPath().getString("deviceLink")
         SidSteps.initSidWeb2AppMockAuth(flow, "PNOEE-40404040009-MOCK-Q", deviceLink)
+        Map pollQueryParams = [sessionToken: Utils.parseQueryParams(deviceLink).sessionToken]
 
         when:
-        Response response = SidSteps.pollSidWeb2AppSessionStatus(flow)
+        Response response = SidSteps.pollSidWeb2AppSessionStatus(flow, pollQueryParams)
 
         then:
         assertThat("Incorrect HTTP status code", response.statusCode, is(HttpStatus.SC_OK))

@@ -113,9 +113,9 @@ class SidSteps {
         }
     }
 
-    static Response pollSidWeb2AppSessionStatus(Flow flow, long pollingIntevalMillis = 2000L) {
+    static Response pollSidWeb2AppSessionStatus(Flow flow, Map queryParams, long pollingIntevalMillis = 2000L) {
         return pollSidWhilePending(pollingIntevalMillis) {
-            Requests.pollSid(flow, flow.loginService.sidWeb2AppPollUrl)
+            Requests.pollSid(flow, flow.loginService.sidWeb2AppPollUrl, queryParams)
         }
     }
 

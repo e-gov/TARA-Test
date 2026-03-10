@@ -4,6 +4,7 @@ package ee.ria.tara.smartid.web2app
 import ee.ria.tara.Requests
 import ee.ria.tara.Steps
 import ee.ria.tara.TaraSpecification
+import ee.ria.tara.Utils
 import ee.ria.tara.model.ErrorMessage
 import ee.ria.tara.step.SidSteps
 import ee.ria.tara.util.ErrorValidator
@@ -27,6 +28,7 @@ class SidW2aPollEndpointSpec extends TaraSpecification {
         when: "request polling with invalid session cookie"
         Response response = given()
                 .cookies(cookie)
+                .queryParams([sessionToken: "testToken"])
                 .params([_csrf: flow.csrf])
                 .get(flow.loginService.sidWeb2AppPollUrl)
         then:
@@ -39,14 +41,38 @@ class SidW2aPollEndpointSpec extends TaraSpecification {
         ["__Host-SESSION": "1234567"] | "incorrect cookie value"
     }
 
-    def "Poll Smart-ID web2app authentication in invalid session status"() {
+    def "Poll Smart-ID web2app authentication with #label: sessionToken"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
+        SidSteps.initSidWeb2AppAuthSession(flow)
 
         when:
-        Response pollResponse = Requests.pollSid(flow, flow.loginService.sidWeb2AppPollUrl)
+        Response pollResponse = Requests.pollSid(flow, flow.loginService.sidWeb2AppPollUrl, params)
 
-        then: "request Smart-ID polling with invalid session status"
+        then:
+        ErrorValidator.validate(pollResponse, errorMessage, "sessionToken")
+
+        where:
+        label             | params                            || errorMessage
+        "missing param"   | [:]                               || ErrorMessage.MISSING_PARAMETERS
+        "invalid param"   | [sessionToken: "invalidToken"]    || ErrorMessage.SESSION_STATE_INVALID
+        "duplicate param" | [sessionToken: ["test", "test2"]] || ErrorMessage.DUPLICATE_PARAMETERS
+    }
+
+    def "Poll Smart-ID web2app authentication with old sessionToken"() {
+        given:
+        Steps.startAuthenticationInTara(flow, "openid smartid")
+        Response authInitResponse = SidSteps.initSidWeb2AppAuthSession(flow)
+        String deviceLink = authInitResponse.jsonPath().getString("deviceLink")
+        Map queryParams = [sessionToken: Utils.parseQueryParams(deviceLink).sessionToken]
+
+        Steps.startAuthenticationInTara(flow, "openid smartid")
+        SidSteps.initSidWeb2AppAuthSession(flow)
+
+        when:
+        Response pollResponse = Requests.getRequestWithParams(flow, flow.loginService.sidWeb2AppPollUrl, queryParams)
+
+        then:
         ErrorValidator.validate(pollResponse, ErrorMessage.SESSION_STATE_INVALID)
     }
 

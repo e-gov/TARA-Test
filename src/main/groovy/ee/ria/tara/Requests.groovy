@@ -48,15 +48,12 @@ class Requests {
     }
 
     @Step("Smart-ID response poll request")
-    static Response pollSid(Flow flow, String url) {
-        return given()
-                .filter(flow.cookieFilter)
-                .cookies(["__Host-SESSION": flow.sessionId,
-                          "__Host-LOCALE" : flow.locale])
-                .log().cookies()
-                .urlEncodingEnabled(true)
-                .redirects().follow(false)
-                .get(url)
+    static Response pollSid(Flow flow, String url, Map queryParams = null) {
+        if (queryParams != null) {
+            return getRequestWithParams(flow, url, queryParams)
+        } else {
+            return getRequest(flow, url)
+        }
     }
 
     @Step("Follow redirect request")
