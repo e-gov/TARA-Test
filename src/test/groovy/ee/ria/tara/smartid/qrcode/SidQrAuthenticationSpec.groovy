@@ -11,6 +11,7 @@ import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import org.apache.http.HttpStatus
 import spock.lang.Ignore
+import spock.lang.Tag
 
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.*
@@ -23,6 +24,7 @@ class SidQrAuthenticationSpec extends TaraSpecification {
         flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.oidcService.fullJwksUrl))
     }
 
+    @Tag("sid-device-link-mock")
     def "Authenticate with Smart-ID QR code flow"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
@@ -41,6 +43,7 @@ class SidQrAuthenticationSpec extends TaraSpecification {
         assertThat("Incorrect date of birth", claims.getJSONObjectClaim("profile_attributes")["date_of_birth"], is("1904-04-04"))
     }
 
+    @Tag("sid-device-link-mock")
     def "Authentication with Smart-ID QR code not allowed for non-EE account"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
@@ -106,6 +109,7 @@ class SidQrAuthenticationSpec extends TaraSpecification {
     }
 
     @Ignore("Testing not supported by current device-link mock.")
+    @Tag("sid-device-link-mock")
     def "Initialize Smart-ID QR code authentication with scenario: #label et"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid", "et")
@@ -162,6 +166,7 @@ class SidQrAuthenticationSpec extends TaraSpecification {
         assertThat("Incorrect Smart-ID status", response.jsonPath().getString("status"), is("PENDING"))
     }
 
+    @Tag("sid-device-link-mock")
     def "Poll Smart-ID QR code authentication with session complete"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")

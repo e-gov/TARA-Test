@@ -11,6 +11,7 @@ import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import org.apache.http.HttpStatus
 import spock.lang.Ignore
+import spock.lang.Tag
 
 import static io.restassured.RestAssured.given
 import static org.hamcrest.MatcherAssert.assertThat
@@ -25,6 +26,7 @@ class SidW2aAuthenticationSpec extends TaraSpecification {
     }
 
     @Ignore("Testing not supported by current device-link mock.")
+    @Tag("sid-device-link-mock")
     def "Authenticate with Smart-id web2app flow"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
@@ -64,6 +66,7 @@ class SidW2aAuthenticationSpec extends TaraSpecification {
     }
 
     @Ignore("Testing not supported by current device-link mock.")
+    @Tag("sid-device-link-mock")
     def "Initialize Smart-ID web2app authentication with scenario: #label et"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid", "et")
@@ -119,6 +122,7 @@ class SidW2aAuthenticationSpec extends TaraSpecification {
         assertThat("Incorrect Smart-ID status", response.jsonPath().getString("status"), is("PENDING"))
     }
 
+    @Tag("sid-device-link-mock")
     def "Poll Smart-ID web2app authentication with session complete"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
@@ -204,6 +208,7 @@ class SidW2aAuthenticationSpec extends TaraSpecification {
         assertThat("Incorrect Smart-ID status", callbackPoll.jsonPath().getString("status"), is("PENDING"))
     }
 
+    @Tag("sid-device-link-mock")
     def "Poll Smart-ID web2app authentication session post-callback with session complete"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
@@ -235,6 +240,7 @@ class SidW2aAuthenticationSpec extends TaraSpecification {
         ErrorValidator.validate(callbackPoll, ErrorMessage.SESSION_STATE_INVALID)
     }
 
+    @Tag("sid-device-link-mock")
     def "Poll Smart-ID web2app authentication session post-callback with #label"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")

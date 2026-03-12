@@ -15,7 +15,7 @@ import io.restassured.filter.cookie.CookieFilter
 import io.restassured.http.Method
 import io.restassured.response.Response
 import org.apache.http.HttpStatus
-import spock.lang.Ignore
+import spock.lang.Tag
 
 import java.security.InvalidParameterException
 
@@ -57,6 +57,7 @@ class AuthenticationSpec extends TaraSpecification {
         "TEST of SK ID Solutions EID-Q 2021E" | "51307149560" | "69930366"  || "EE" + idCode
     }
 
+    @Tag("sid-device-link-mock")
     @Feature("AUTHENTICATION")
     def "Request authentication with Smart-ID: #certificate certificate chain"() {
         given:
@@ -94,6 +95,7 @@ class AuthenticationSpec extends TaraSpecification {
         assertThat("Correct subject", claims.subject, is("EE60001017869"))
     }
 
+    @Tag("sid-device-link-mock")
     @Feature("AUTHENTICATION")
     def "Request authentication with Smart-ID"() {
         given:
@@ -110,7 +112,7 @@ class AuthenticationSpec extends TaraSpecification {
         assertThat("Correct subject", claims.subject, is("EE40404040009"))
     }
 
-    @Ignore("RIA DEMO RP account missing access to device-link endpoint")
+    @Tag("sid-device-link-mock")
     @Feature("AUTHENTICATION")
     @Feature("SID_AUTH_INIT_REQUEST")
     def "Authenticate with Smart-ID with custom relying party name and UUID"() {

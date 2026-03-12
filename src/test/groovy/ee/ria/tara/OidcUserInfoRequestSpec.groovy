@@ -9,6 +9,7 @@ import io.restassured.filter.cookie.CookieFilter
 import io.restassured.http.Method
 import io.restassured.response.Response
 import org.apache.http.HttpStatus
+import spock.lang.Tag
 
 import java.time.Instant
 
@@ -219,6 +220,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         assertThat("No email_verified", userInfoResponse.jsonPath().getString("email_verified"), is(null))
     }
 
+    @Tag("sid-device-link-mock")
     @Feature("OIDC_USERINFO_ENDPOINT")
     @Feature("OIDC_USERINFO_RESPONSE_OK")
     @Feature("OIDC_USERINFO_CLAIMS")
@@ -248,6 +250,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         assertThat("No phone_number_verified", userInfoResponse.jsonPath().getString("phone_number_verified"), is(null))
     }
 
+    @Tag("sid-device-link-mock")
     @Feature("OIDC_USERINFO_ENDPOINT")
     @Feature("OIDC_USERINFO_RESPONSE_OK")
     @Feature("OIDC_USERINFO_CLAIMS")
@@ -275,6 +278,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         assertThat("No phone_number_verified", userInfoResponse.jsonPath().getString("phone_number_verified"), is(null))
     }
 
+    @Tag("sid-device-link-mock")
     @Feature("OIDC_USERINFO_ENDPOINT")
     @Feature("OIDC_USERINFO_RESPONSE_OK")
     @Feature("OIDC_USERINFO_CLAIMS")
