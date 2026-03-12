@@ -1,5 +1,6 @@
 package ee.ria.tara.smartid.web2app
 
+import ee.ria.tara.Requests
 import ee.ria.tara.Steps
 import ee.ria.tara.TaraSpecification
 import ee.ria.tara.model.ErrorMessage
@@ -59,17 +60,21 @@ class SidW2aCallbackEndpointSpec extends TaraSpecification {
         Method.DELETE | _
     }
 
-    def "Smart-ID web2app authentication callback with mismatching value parameter"() {
+    def "Smart-ID web2app authentication callback with #label: value"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
         SidSteps.initSidWeb2AppAuthSession(flow)
 
         when:
-        Response response = given()
-                .cookies(["__Host-SESSION": flow.sessionId])
-                .get(flow.loginService.sidWeb2AppCallbackUrl + "?value=randomValue")
+        Response response = Requests.getRequestWithParams(flow, flow.loginService.sidWeb2AppCallbackUrl, params)
 
         then:
-        ErrorValidator.validate(response, ErrorMessage.SID_WEB2APP_CALLBACK_VALUE_MISMATCH)
+        ErrorValidator.validate(response, errorMessage, "value")
+
+        where:
+        label             | params                     || errorMessage
+        "missing param"   | [:]                        || ErrorMessage.MISSING_PARAMETERS
+        "invalid param"   | [value: "invalidValue"]    || ErrorMessage.SID_WEB2APP_CALLBACK_VALUE_MISMATCH
+        "duplicate param" | [value: ["test", "test2"]] || ErrorMessage.DUPLICATE_PARAMETERS
     }
 }

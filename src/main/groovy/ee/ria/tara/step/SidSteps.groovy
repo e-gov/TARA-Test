@@ -44,12 +44,12 @@ class SidSteps {
     static Response authenticateWithSidWeb2AppFlow(Flow flow, String documentNumber) {
         Response authInitResponse = initSidWeb2AppAuthSession(flow)
         String deviceLink = authInitResponse.jsonPath().getString("deviceLink")
-        // TODO: currently fails, waiting mock adjustments
+        // TODO AUT-2509: currently fails, waiting mock adjustments
         initSidWeb2AppMockAuth(flow, documentNumber, deviceLink)
-        // TODO: perform callback, waiting mock adjustments
+        // TODO AUT-2509: perform callback, waiting mock adjustments
         //  Test if this call is required or can go straight to poll?
 
-        // TODO: get parameters from mock response?
+        // TODO AUT-2509: get parameters from wiremock
         Map params = [_csrf                : flow.csrf,
                       value                : "TODO: get value",
                       sessionSecretDigest  : "TODO: get sessionSecretDigest",

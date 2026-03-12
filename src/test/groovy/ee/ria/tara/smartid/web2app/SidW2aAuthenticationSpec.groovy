@@ -25,7 +25,7 @@ class SidW2aAuthenticationSpec extends TaraSpecification {
         flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.oidcService.fullJwksUrl))
     }
 
-    @Ignore("Testing not supported by current device-link mock.")
+    @Ignore("AUT-2509")
     @Tag("sid-device-link-mock")
     def "Authenticate with Smart-id web2app flow"() {
         given:
@@ -96,7 +96,7 @@ class SidW2aAuthenticationSpec extends TaraSpecification {
         assertThat("Missing auth code", deviceLinkParams.authCode, notNullValue())
     }
 
-    @Ignore("Testing not supported by current device-link mock.")
+    @Ignore("AUT-2509")
     @Tag("sid-device-link-mock")
     def "Initialize Smart-ID web2app authentication with scenario: #label et"() {
         given:
@@ -199,8 +199,7 @@ class SidW2aAuthenticationSpec extends TaraSpecification {
         Steps.verifyResponseHeaders(response)
     }
 
-    @Ignore("AUT-2600")
-    // TODO: add tests for handling "value" parameter mismatch.
+    @Ignore("AUT-2509")
     def "Smart-ID web2app authentication callback"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
@@ -209,7 +208,7 @@ class SidW2aAuthenticationSpec extends TaraSpecification {
         when:
         Response response = given()
                 .cookies(["__Host-SESSION": flow.sessionId])
-                .get(flow.loginService.sidWeb2AppCallbackUrl+"?value=TODO") // TODO: acceptable value
+                .get(flow.loginService.sidWeb2AppCallbackUrl + "?value=TODO") // TODO: acceptable value
 
         then:
         assertThat("Incorrect HTTP status code", response.statusCode, is(HttpStatus.SC_OK))
