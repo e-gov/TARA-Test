@@ -45,7 +45,7 @@ enum ErrorMessage {
     SID_USER_REFUSED_AUTH(HttpStatus.SC_BAD_REQUEST, "Kasutaja katkestas autentimise<span translate=\"no\" lang=\"en\"> Smart-ID </span>rakenduses."),
     SID_USER_REFUSED_CONFIRMATION(HttpStatus.SC_BAD_REQUEST, "Kasutaja katkestas autentimise<span translate=\"no\" lang=\"en\"> Smart-ID </span>rakenduses kinnitusekraanil."),
     SID_USER_REFUSED_CONFIRMATION_VC(HttpStatus.SC_BAD_REQUEST, "Kasutaja katkestas autentimise<span translate=\"no\" lang=\"en\"> Smart-ID </span>rakenduses kontrollkoodi kinnituskraanil."),
-    SID_SESSION_TIMED_OUT(HttpStatus.SC_BAD_REQUEST, "Kasutaja ei autentinud<span translate=\"no\" lang=\"en\"> Smart-ID </span>rakenduses oodatud aja jooksul. Palun proovige uuesti."),
+    SID_SESSION_TIMEOUT(HttpStatus.SC_BAD_REQUEST, "Kasutaja ei autentinud<span translate=\"no\" lang=\"en\"> Smart-ID </span>rakenduses oodatud aja jooksul. Palun proovige uuesti."),
     SID_DOCUMENT_UNUSABLE(HttpStatus.SC_BAD_REQUEST, "<span translate=\"no\" lang=\"en\">Smart-ID </span>kontoga autentimine ebaõnnestus. Palun kontakteeruge<span translate=\"no\" lang=\"en\"> Smart-ID </span> klienditoega."),
     SID_REQUEST_TIMED_OUT(HttpStatus.SC_BAD_REQUEST, "Autentimise päring<span translate=\"no\" lang=\"en\"> Smart-ID </span>teenusele aegus. Palun proovige mõne aja pärast uuesti."),
     SID_COUNTRY_NOT_ALLOWED(HttpStatus.SC_OK, "Välisriigi<span translate=\"no\" lang=\"en\"> Smart-ID </span>kontoga otse sisenemine ei ole toetatud. Välisriigi autentimisvahendi kasutamiseks valige sisenemisviis<span translate=\"no\"> \"EU eID\"</span>."),

@@ -262,7 +262,7 @@ class SmartIDAuthSpec extends TaraSpecification {
 
         where:
         login_locale || errorMessage
-        "et"         || ErrorMessage.SID_SESSION_TIMED_OUT.message
+        "et"         || ErrorMessage.SID_SESSION_TIMEOUT.message
         "en"         || "User did not authenticate in the<span translate=\"no\" lang=\"en\"> Smart-ID </span>app within the required time. Please try again."
         "ru"         || "Пользователь не прошел аутентификацию в приложении<span translate=\"no\" lang=\"en\"> Smart-ID </span>в течение требуемого времени. Пожалуйста, попробуйте еще раз."
     }

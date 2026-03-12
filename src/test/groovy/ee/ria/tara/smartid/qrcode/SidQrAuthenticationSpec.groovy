@@ -141,13 +141,13 @@ class SidQrAuthenticationSpec extends TaraSpecification {
         Response pollResponse = SidSteps.pollSidQrCodeSessionStatus(flow, 10000L)
 
         then:
-        ErrorMessage error = ErrorMessage.SID_SESSION_TIMED_OUT
+        ErrorMessage error = ErrorMessage.SID_SESSION_TIMEOUT
         pollResponse.then()
                 .statusCode(HttpStatus.SC_OK)
                 .contentType("application/json;charset=UTF-8")
                 .body(
                         "status", equalTo("FAILED"),
-                        "error", equalTo("SID_SESSION_TIMEOUT"),
+                        "error", equalTo(error.name()),
                         "message", equalTo(error.message)
                 )
     }

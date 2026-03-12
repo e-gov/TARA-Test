@@ -133,7 +133,7 @@ class SidW2aAuthenticationSpec extends TaraSpecification {
         Response pollResponse = SidSteps.pollSidWeb2AppSessionStatus(flow, pollQueryParams, 10000L)
 
         then:
-        ErrorValidator.validate(pollResponse, HttpStatus.SC_BAD_REQUEST, ErrorMessage.SID_SESSION_TIMED_OUT.message)
+        ErrorValidator.validate(pollResponse, ErrorMessage.SID_SESSION_TIMEOUT)
         pollResponse.then().body("reportable", is(false))
     }
 
