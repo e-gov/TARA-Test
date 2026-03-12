@@ -8,6 +8,7 @@ import io.qameta.allure.Issue
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.http.Method
 import io.restassured.response.Response
+import spock.lang.Tag
 
 import static io.restassured.RestAssured.given
 import static org.hamcrest.MatcherAssert.assertThat
@@ -23,6 +24,7 @@ class LegalPersonAuthSpec extends TaraSpecification {
         flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.oidcService.fullJwksUrl))
     }
 
+    @Tag("business-register")
     @Feature("LEGAL_PERSON_AUTH_START_ENDPOINT")
     def "Legal persons authentication request should return correct legal person name"() {
         given:
@@ -39,6 +41,7 @@ class LegalPersonAuthSpec extends TaraSpecification {
         assertThat("Legal person identifier present", legalPersonIdentifiers, not((hasSize(0))))
     }
 
+    @Tag("business-register")
     @Feature("DISALLOW_IFRAMES")
     @Feature("CSP_ENABLED")
     @Feature("HSTS_ENABLED")

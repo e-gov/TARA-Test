@@ -300,7 +300,9 @@ class Steps {
 
     @Step("Load legal persons list")
     static Response loadLegalPersonsList(Flow flow) {
-        return Requests.getRequest(flow, flow.loginService.fullAuthLegalPersonUrl)
+        Response response = Requests.getRequest(flow, flow.loginService.fullAuthLegalPersonUrl)
+        response.then().statusCode(HttpStatus.SC_OK)
+        return response
     }
 
     @Step("Select legal person and confirm it")

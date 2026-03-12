@@ -11,11 +11,13 @@ import io.restassured.http.Method
 import io.restassured.response.Response
 import org.apache.commons.lang3.RandomStringUtils
 import org.apache.http.HttpStatus
+import spock.lang.Tag
 
 import static io.restassured.RestAssured.given
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.is
 
+@Tag("business-register")
 class LegalPersonAuthConfirmSpec extends TaraSpecification {
 
     def setup() {
