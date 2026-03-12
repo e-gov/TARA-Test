@@ -49,7 +49,7 @@ class SidQrAuthenticationSpec extends TaraSpecification {
         Steps.startAuthenticationInTara(flow, "openid smartid")
         SidSteps.initSidQrCodeAuthSession(flow)
         String deviceLink = SidSteps.getSidQrCodeDeviceLink(flow)
-        SidSteps.initSidQrCodeMockAuth(flow, account, deviceLink)
+        SidSteps.initSidQrCodeMockAuth(flow, documentNumber, deviceLink)
 
         when:
         Response pollResponse = SidSteps.pollSidQrCodeSessionStatus(flow)
@@ -66,7 +66,7 @@ class SidQrAuthenticationSpec extends TaraSpecification {
                 )
 
         where:
-        account << [
+        documentNumber << [
                 "PNOLT-40404040009-MOCK-Q",
                 "PNOLV-040404-10003-DEMO-Q",
                 "PNOBE-04040400287-MOCK-Q"

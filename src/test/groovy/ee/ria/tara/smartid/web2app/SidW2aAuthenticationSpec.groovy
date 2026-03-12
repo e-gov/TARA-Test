@@ -45,6 +45,37 @@ class SidW2aAuthenticationSpec extends TaraSpecification {
         assertThat("Incorrect date of birth", claims.getJSONObjectClaim("profile_attributes")["date_of_birth"], is("1904-04-04"))
     }
 
+    @Ignore("AUT-2662")
+    @Tag("sid-device-link-mock")
+    def "Authentication with Smart-ID web2app not allowed for non-EE account"() {
+        given:
+        Steps.startAuthenticationInTara(flow, "openid smartid")
+        Response authInitResponse = SidSteps.initSidWeb2AppAuthSession(flow)
+        String deviceLink = authInitResponse.jsonPath().getString("deviceLink")
+        SidSteps.initSidWeb2AppMockAuth(flow, documentNumber, deviceLink)
+
+        when:
+        Response pollResponse = SidSteps.pollSidQrCodeSessionStatus(flow)
+
+        then:
+        ErrorMessage error = ErrorMessage.SID_COUNTRY_NOT_ALLOWED
+        pollResponse.then()
+                .statusCode(HttpStatus.SC_OK)
+                .contentType("application/json;charset=UTF-8")
+                .body(
+                        "status", equalTo("FAILED"),
+                        "error", equalTo(error.name()),
+                        "message", equalTo(error.message)
+                )
+
+        where:
+        documentNumber << [
+                "PNOLT-40404040009-MOCK-Q",
+                "PNOLV-040404-10003-DEMO-Q",
+                "PNOBE-04040400287-MOCK-Q"
+        ]
+    }
+
     def "Initialize Smart-ID web2app authentication returns valid device link"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
