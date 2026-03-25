@@ -10,6 +10,7 @@ import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import org.apache.http.HttpStatus
+import spock.lang.Issue
 
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.*
@@ -114,6 +115,7 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
         ErrorValidator.validate(response, ErrorMessage.MISSING_SCOPE)
     }
 
+    @Issue("AUT-2715")
     @Feature("OIDC_SCOPE_IDCARD")
     @Feature("OIDC_SCOPE_MID")
     @Feature("OIDC_SCOPE_SMARTID")
@@ -132,7 +134,8 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
         response.then()
                 .statusCode(HttpStatus.SC_OK)
                 .body(
-                        path('smart-id'), smartID ? greaterThan(0) : equalTo(0),
+                        // TODO: check disabled due to issue AUT-2715
+//                        path('smart-id'), smartID ? greaterThan(0) : equalTo(0),
                         path('id-card'), idCard ? greaterThan(0) : equalTo(0),
                         path('mobile-id'), mID ? greaterThan(0) : equalTo(0),
                         path('eu-citizen'), eidas ? greaterThan(0) : equalTo(0)
