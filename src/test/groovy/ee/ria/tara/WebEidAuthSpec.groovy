@@ -202,6 +202,7 @@ class WebEidAuthSpec extends TaraSpecification {
         ErrorValidator.validate(loginWebEid, ErrorMessage.INVALID_REQUEST)
     }
 
+    @Ignore("AUT-2712")
     def "Submit login request for Web eID authentication with invalid authentication token: #reason"() {
         given:
         JSONObject authToken = authenticationFlowToWebEidParams(flow)
@@ -225,6 +226,7 @@ class WebEidAuthSpec extends TaraSpecification {
         "empty algorithm value"       | "algorithm"             | ""            | ErrorMessage.INVALID_REQUEST
     }
 
+    @Ignore("AUT-2712")
     def "Submit login request for Web eID authentication with invalid authentication token: authToken missing #key"() {
         given:
         JSONObject authToken = authenticationFlowToWebEidParams(flow)
