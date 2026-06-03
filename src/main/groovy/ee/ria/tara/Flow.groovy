@@ -2,11 +2,9 @@ package ee.ria.tara
 
 import com.nimbusds.jose.jwk.JWKSet
 import ee.ria.tara.configuration.*
-import groovy.transform.Canonical
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.path.json.JsonPath
 
-@Canonical
 abstract class BaseService {
     String protocol
     String host
@@ -43,7 +41,6 @@ abstract class BaseService {
     }
 }
 
-@Canonical
 class LoginService extends BaseService {
     String initUrl
     String midInitUrl
@@ -125,7 +122,6 @@ class LoginService extends BaseService {
     }
 }
 
-@Canonical
 class OidcService extends BaseService {
     String authorizationUrl
     String jwksUrl
@@ -149,7 +145,6 @@ class OidcService extends BaseService {
     }
 }
 
-@Canonical
 class ForeignIdpProvider extends BaseService {
     String responseUrl
 
@@ -161,7 +156,6 @@ class ForeignIdpProvider extends BaseService {
     }
 }
 
-@Canonical
 class ForeignProxyService extends BaseService {
     String consentUrl
 
@@ -173,7 +167,6 @@ class ForeignProxyService extends BaseService {
     }
 }
 
-@Canonical
 class TaraAdminService extends BaseService {
     String username
     String password
@@ -192,7 +185,6 @@ class TaraAdminService extends BaseService {
     }
 }
 
-@Canonical
 class InproxyService extends BaseService {
 
     InproxyService(InproxyServiceConf conf) {
@@ -205,7 +197,20 @@ class InproxyService extends BaseService {
     }
 }
 
-@Canonical
+class OcspCrlService extends BaseService {
+
+    @Lazy ocspUrl = "${fullBaseUrl}/ocsp"
+
+    OcspCrlService(OcspCrlServiceConf conf) {
+        super(conf)
+    }
+
+    @Override
+    String toString() {
+        return "OcspCrl service"
+    }
+}
+
 class DemoClient extends BaseService {
 
     DemoClient(DemoClientConf conf) {
@@ -218,7 +223,6 @@ class DemoClient extends BaseService {
     }
 }
 
-@Canonical
 class Flow {
     OidcService oidcService
     LoginService loginService
@@ -226,6 +230,7 @@ class Flow {
     ForeignProxyService foreignProxyService
     TaraAdminService taraAdminService
     InproxyService inproxyService
+    OcspCrlService ocspCrlService
 
     CookieFilter cookieFilter
     String clientId
@@ -255,5 +260,6 @@ class Flow {
         this.foreignProxyService = new ForeignProxyService(ConfigHolder.caProxyService)
         this.taraAdminService = new TaraAdminService(ConfigHolder.adminService)
         this.inproxyService = new InproxyService(ConfigHolder.inproxyService)
+        this.ocspCrlService = new OcspCrlService(ConfigHolder.ocspCrlService)
     }
 }

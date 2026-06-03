@@ -13,6 +13,7 @@ class ConfigHolder {
     private static final ForeignIdpConf foreignIdp = readConf(ForeignIdpConf, "idp")
     private static final AdminServiceConf adminService = readConf(AdminServiceConf, "adminservice")
     private static final InproxyServiceConf inproxyService = readConf(InproxyServiceConf, "inproxyservice")
+    private static final OcspCrlServiceConf ocspCrlService = readConf(OcspCrlServiceConf, "ocspcrlservice")
     private static final DemoClientConf demoClientConf = readConf(DemoClientConf, "democlient")
     private static final TestConf testConf = readConf(TestConf, "test")
 
@@ -42,6 +43,8 @@ class ConfigHolder {
     static AdminServiceConf getAdminService() { adminService }
 
     static InproxyServiceConf getInproxyService() { inproxyService }
+
+    static OcspCrlServiceConf getOcspCrlService() { ocspCrlService }
 
     static DemoClientConf getDemoClient() { demoClientConf }
 

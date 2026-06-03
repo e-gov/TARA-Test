@@ -10,5 +10,6 @@ class ServiceUrls {
     static final ForeignProxyService FOREIGN_PROXY_SERVICE = new ForeignProxyService(ConfigHolder.caProxyService)
     static final TaraAdminService TARA_ADMIN_SERVICE = new TaraAdminService(ConfigHolder.adminService)
     static final InproxyService INPROXY_SERVICE = new InproxyService(ConfigHolder.inproxyService)
+    static final OcspCrlService OCSPCRL_SERVICE = new OcspCrlService(ConfigHolder.ocspCrlService)
     static final DemoClient DEMO_CLIENT = new DemoClient(ConfigHolder.demoClient)
 }
