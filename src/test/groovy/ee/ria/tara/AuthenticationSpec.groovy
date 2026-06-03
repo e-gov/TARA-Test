@@ -155,6 +155,7 @@ class AuthenticationSpec extends TaraSpecification {
         null        | LoA.HIGH
     }
 
+    @Tag("eidas")
     @Feature("AUTHENTICATION")
     def "Eidas authentication #loa Loa request with minimum_acr_value undefined and with acr_values parameter '#acrValues'"() {
         given:
@@ -181,6 +182,7 @@ class AuthenticationSpec extends TaraSpecification {
         LoA.HIGH        | LoA.HIGH        || LoA.HIGH
     }
 
+    @Tag("eidas")
     @Feature("AUTHENTICATION")
     def "Eidas authentication with Loa '#loa' succeeds with both minimum_acr_value and acr_values equal to #minimumAcrValue"() {
         given:
@@ -212,6 +214,7 @@ class AuthenticationSpec extends TaraSpecification {
         LoA.HIGH        | LoA.HIGH        || LoA.HIGH
     }
 
+    @Tag("eidas")
     @Feature("AUTHENTICATION")
     def "Authentication request with undefined acr_values defaults to minimum_acr_value '#minimumAcrValue' and succeeds for eIDAS LoA '#loa'"() {
         given:
@@ -242,6 +245,7 @@ class AuthenticationSpec extends TaraSpecification {
         LoA.HIGH        | LoA.HIGH        || LoA.HIGH
     }
 
+    @Tag("eidas")
     @Feature("AUTHENTICATION")
     def "Eidas authentication #loa Loa request succeeds with minimum_acr_value undefined and with acr_values undefined"() {
         given:
@@ -296,6 +300,7 @@ class AuthenticationSpec extends TaraSpecification {
         LoA.HIGH        | LoA.SUBSTANTIAL
     }
 
+    @Tag("eidas")
     @Feature("AUTHENTICATION")
     def "Eidas authentication with insufficient Loa '#loa' fails with minimum_acr_value '#minimumAcrValue' and acr_values '#acrValues'"() {
         given:
@@ -359,6 +364,7 @@ class AuthenticationSpec extends TaraSpecification {
         "medium"  | _
     }
 
+    @Tag("eidas")
     @Feature("AUTHENTICATION")
     def "Request authentication with eIDAS with privet sector client"() {
         given:
@@ -401,6 +407,7 @@ class AuthenticationSpec extends TaraSpecification {
         assertThat(claims.getJSONObjectClaim("profile_attributes")["given_name"], is("MARY ÄNN"))
     }
 
+    @Tag("eidas")
     @Feature("AUTHENTICATION")
     def "Request authentication with Eidas. Low level of assurance."() {
         given:
