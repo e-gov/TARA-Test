@@ -14,4 +14,8 @@ interface TestConf extends Config {
     String sidDeviceLinkBase()
 
     String deviceLinkMockUrl()
+
+    String idCardIssuerCertsPath()
+
+    String ocspResponderCertPath()
 }

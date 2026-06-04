@@ -5,9 +5,12 @@ import org.apache.commons.lang3.StringUtils
 import org.apache.http.client.utils.URLEncodedUtils
 import org.json.JSONObject
 
+import javax.security.auth.x500.X500Principal
 import java.nio.charset.StandardCharsets
 import java.security.*
 import java.security.cert.Certificate
+import java.security.cert.CertificateFactory
+import java.security.cert.X509Certificate
 import java.time.Duration
 import java.time.ZonedDateTime
 
@@ -111,6 +114,44 @@ class Utils {
     static Map<String, String> parseQueryParams(String url) {
         URLEncodedUtils.parse(new URI(url), StandardCharsets.UTF_8)
                 .collectEntries { [(it.name): it.value] }
+    }
+
+    static X509Certificate getCertificateFromKeystore(String keyStorePath, String password, String alias) {
+        KeyStore keyStore = KeyStore.getInstance("PKCS12")
+        new FileInputStream(keyStorePath).withCloseable { fis ->
+            keyStore.load(fis, password.toCharArray())
+        }
+        return keyStore.getCertificate(alias) as X509Certificate
+    }
+
+    // Loads an X.509 certificate from a PEM file.
+    static X509Certificate loadCertificate(String pemPath) {
+        String content = new File(pemPath).text
+        int begin = content.indexOf("-----BEGIN CERTIFICATE-----")
+        int end = content.indexOf("-----END CERTIFICATE-----")
+        if (begin < 0 || end < 0) {
+            throw new IllegalStateException("No PEM certificate block found in: ${pemPath}")
+        }
+        String pem = content.substring(begin, end + "-----END CERTIFICATE-----".length())
+        return CertificateFactory.getInstance("X.509")
+                .generateCertificate(new ByteArrayInputStream(pem.getBytes("UTF-8"))) as X509Certificate
+    }
+
+    // Finds CA certificate by issuer principal among the *.cer.pem files in a directory.
+    static X509Certificate getIssuerCertificate(String certsDir, X500Principal issuer) {
+        File dir = new File(certsDir)
+        File[] pems = dir.listFiles()
+        if (pems == null) {
+            throw new IllegalStateException("Issuer certificate directory not found: ${dir.absolutePath}")
+        }
+        for (File pem : pems.sort()) {
+            if (!pem.name.endsWith(".cer.pem")) continue
+            X509Certificate candidate = loadCertificate(pem.absolutePath)
+            if (candidate.subjectX500Principal == issuer && candidate.basicConstraints >= 0) {
+                return candidate
+            }
+        }
+        throw new IllegalStateException("Issuer certificate not found in ${dir.absolutePath} for ${issuer}")
     }
 }
 

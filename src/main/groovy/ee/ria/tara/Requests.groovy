@@ -1,8 +1,10 @@
 package ee.ria.tara
 
 import ee.ria.tara.configuration.ConfigHolder
+import ee.ria.tara.model.Issuer
 import io.qameta.allure.Step
 import io.qameta.allure.restassured.AllureRestAssured
+import io.restassured.RestAssured
 import io.restassured.http.ContentType
 import io.restassured.http.Method
 import io.restassured.path.json.JsonPath
@@ -11,6 +13,7 @@ import io.restassured.specification.RequestSpecification
 import org.json.JSONObject
 
 import static io.restassured.RestAssured.given
+import static io.restassured.config.EncoderConfig.encoderConfig
 
 class Requests {
 
@@ -234,5 +237,17 @@ class Requests {
                 .body(body)
                 .urlEncodingEnabled(true)
                 .post(ConfigHolder.testConf.deviceLinkMockUrl())
+    }
+
+    @Step("Post OCSP request")
+    static Response postOcspRequest(Flow flow, byte[] body, Issuer issuer) {
+        return given()
+                .config(RestAssured.config()
+                        .encoderConfig(encoderConfig()
+                                .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
+                .contentType("application/ocsp-request")
+                .accept("application/ocsp-response")
+                .body(body)
+                .request(Method.POST, flow.ocspCrlService.ocspUrl + "/" + issuer.path)
     }
 }
