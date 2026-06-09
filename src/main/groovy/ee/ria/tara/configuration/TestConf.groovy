@@ -7,6 +7,8 @@ interface TestConf extends Config {
     @Key("restAssured.consoleLogging")
     Boolean restAssuredConsoleLogging()
 
+    String env()
+
     Boolean isLocal()
 
     String adminSetupPath()
