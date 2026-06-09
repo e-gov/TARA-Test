@@ -100,6 +100,8 @@ Description of values:
 | test.sidDeviceLinkBase               | https://sid.demo.sk.ee/device-link                | Smart-ID device-link base URL (iOS Universal Link/Android App Link).     |
 | test.deviceLinkMockUrl               | https://sid.demo.sk.ee/mock/device-link           | Smart-ID device-link mock URL.                                           |
 | test.adminSetupPath                  | src/test/resources/admin-setup                    | Path to test clients configurations.                                     |
+| test.idCardIssuerCertsPath           | src/test/resources/certs                          | Path to ID-card issuer certificates.                                     |
+| test.ocspResponderCertPath           | src/test/resources/certs/ocsp.cer.pem             | Path to OCSP responder certificate.                                      |
 
 ## Executing tests
 
