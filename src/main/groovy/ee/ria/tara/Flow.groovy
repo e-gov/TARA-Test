@@ -71,9 +71,6 @@ class LoginService extends BaseService {
 
     // SID
     @Lazy sidBaseUrl = "${fullBaseUrl}/auth/sid"
-    @Lazy sidInitUrl = "${sidBaseUrl}/init"
-    @Lazy sidPollUrl = "${sidBaseUrl}/poll"
-    @Lazy sidCancelUrl = "${sidBaseUrl}/poll/cancel"
     @Lazy sidQrCodeInitUrl = "${sidBaseUrl}/qr-code/init"
     @Lazy sidQrCodePollUrl = "${sidBaseUrl}/qr-code/poll"
     @Lazy sidQrCodeCancelUrl = "${sidBaseUrl}/qr-code/cancel"

@@ -16,18 +16,6 @@ class SidSteps {
        AUTHENTICATION FLOWS
        ============================================================ */
 
-    @Step("Authenticate with Smart-ID push notification flow")
-    static Response authenticateWithSidNotificationFlow(Flow flow, String idCode) {
-        initSidAuthSession(flow, idCode)
-                .then()
-                .statusCode(HttpStatus.SC_OK)
-        pollSidNotificationSessionStatus(flow)
-                .then()
-                .statusCode(HttpStatus.SC_OK)
-                .body("status", equalTo("COMPLETED"))
-        return authenticateWithSidCommon(flow)
-    }
-
     @Step("Authenticate with Smart-ID QR code flow")
     static Response authenticateWithSidQrFlow(Flow flow, String documentNumber) {
         initSidQrCodeAuthSession(flow)
@@ -74,15 +62,6 @@ class SidSteps {
        SESSION INITIALIZATION
        ============================================================ */
 
-    @Step("Initialize Smart-ID push notification authentication")
-    static Response initSidAuthSession(Flow flow, Object idCode) {
-        Map formParamsMap = ["_csrf": flow.csrf,
-                             idCode : idCode]
-        Response response = Requests.postRequestWithParams(flow, flow.loginService.sidInitUrl, formParamsMap)
-        response.then().statusCode(HttpStatus.SC_OK)
-        return response
-    }
-
     @Step("Initialize Smart-ID device link cross-device authentication")
     static Response initSidQrCodeAuthSession(Flow flow) {
         Response response = Requests.postRequest(flow, flow.loginService.sidQrCodeInitUrl)
@@ -100,12 +79,6 @@ class SidSteps {
     /* ============================================================
        POLLING
        ============================================================ */
-
-    static Response pollSidNotificationSessionStatus(Flow flow, long pollingIntevalMillis = 2000L) {
-        return pollSidWhilePending(pollingIntevalMillis) {
-            Requests.pollSid(flow, flow.loginService.sidPollUrl)
-        }
-    }
 
     static Response pollSidQrCodeSessionStatus(Flow flow, long pollingIntevalMillis = 2000L) {
         return pollSidWhilePending(pollingIntevalMillis) {
