@@ -38,12 +38,13 @@ class MobileIDAuthSpec extends TaraSpecification {
     @Feature("MID_INIT_ENDPOINT")
     def "Initialize Mobile-ID authentication with invalid session cookie: #reason"() {
         given:
-        Steps.startAuthenticationInTara(flow, "openid smartid")
+        Steps.startAuthenticationInTara(flow)
 
         when: "initialize Mobile-ID authentication with invalid session cookie"
         Response response = given()
-                .params([idCode: "40404049996",
-                         _csrf : flow.csrf])
+                .params([idCode         : "60001017716",
+                         telephoneNumber: "59100366",
+                         _csrf          : flow.csrf])
                 .cookies(cookie)
                 .post(flow.loginService.fullMidInitUrl)
 

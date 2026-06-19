@@ -157,6 +157,23 @@ class AuthenticationSpec extends TaraSpecification {
 
     @Tag("eidas")
     @Feature("AUTHENTICATION")
+    def "Request authentication with eIDAS"() {
+        given:
+        Steps.startAuthenticationInTara(flow, "openid eidas")
+        Response authenticationFinishedResponse = EidasSteps.initAuthenticationSessionGetFinishedResponse(flow, LoA.HIGH)
+
+        when:
+        Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
+        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.jsonPath().get("id_token")).JWTClaimsSet
+
+        then:
+        assertThat("Correct audience", claims.audience[0], is(ClientStore.mockPublic.clientId))
+        assertThat("Correct authentication method", claims.getStringArrayClaim("amr")[0], is("eidas"))
+        assertThat("Correct subject", claims.subject, is("CA12345"))
+    }
+
+    @Tag("eidas")
+    @Feature("AUTHENTICATION")
     def "Eidas authentication #loa Loa request with minimum_acr_value undefined and with acr_values parameter '#acrValues'"() {
         given:
         Steps.startAuthenticationInTaraWithAcr(flow, acrValues)
