@@ -5,9 +5,11 @@ import org.apache.commons.lang3.StringUtils
 import org.apache.http.client.utils.URLEncodedUtils
 import org.json.JSONObject
 
-import javax.security.auth.x500.X500Principal
 import java.nio.charset.StandardCharsets
-import java.security.*
+import java.security.KeyStore
+import java.security.MessageDigest
+import java.security.PrivateKey
+import java.security.Signature
 import java.security.cert.Certificate
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
@@ -16,7 +18,6 @@ import java.time.ZonedDateTime
 
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.lessThan
-
 
 class Utils {
 
@@ -48,13 +49,30 @@ class Utils {
         return formParams
     }
 
-    static signAuthenticationValue(Flow flow, String origin, String challenge, String keyStore = "src/test/resources/joeorg_auth_EC.p12", String keyStorePassword = "1234") {
-        //Read keystore and keys
-        KeyStore store = KeyStore.getInstance("PKCS12")
+    static signAuthenticationValue(Flow flow, String origin, String challenge, byte[] p12Bytes, String keyStorePassword = "1234") {
+        KeyStore keyStore = KeyStore.getInstance("PKCS12")
         char[] password = keyStorePassword.toCharArray()
-        store.load(new FileInputStream(keyStore), password)
-        Certificate certificate = store.getCertificate("1")
-        PrivateKey privateKey = (PrivateKey) store.getKey("1", password)
+        new ByteArrayInputStream(p12Bytes).withCloseable { is ->
+            keyStore.load(is, password)
+        }
+        signAuthenticationValue(flow, origin, challenge, keyStore, password)
+    }
+
+    static signAuthenticationValue(Flow flow, String origin, String challenge, String keyStorePath = "src/test/resources/EE38001085718_auth_EC_TEST_of_ESTEID2018.p12", String keyStorePassword = "1234") {
+        KeyStore keyStore = KeyStore.getInstance("PKCS12")
+        char[] password = keyStorePassword.toCharArray()
+        keyStore.load(new FileInputStream(keyStorePath), password)
+        signAuthenticationValue(flow, origin, challenge, keyStore, password)
+    }
+
+    static signAuthenticationValue(Flow flow, String origin, String challenge, KeyStore keyStore, char[] password) {
+        //Read keys
+        String alias = keyStore.aliases().find { keyStore.isKeyEntry(it) }
+        if (alias == null) {
+            throw new IllegalStateException("No key entry found in keystore")
+        }
+        Certificate certificate = keyStore.getCertificate(alias)
+        PrivateKey privateKey = (PrivateKey) keyStore.getKey(alias, password)
 
         //Set authentication certificate to flow for authToken unverifiedCertificate value
         flow.setAuthCertificate(Base64.getEncoder().encodeToString(certificate.getEncoded()))
@@ -116,12 +134,32 @@ class Utils {
                 .collectEntries { [(it.name): it.value] }
     }
 
-    static X509Certificate getCertificateFromKeystore(String keyStorePath, String password, String alias) {
+    static X509Certificate[] getCertificateChainFromKeystore(String keyStorePath, String password) {
         KeyStore keyStore = KeyStore.getInstance("PKCS12")
         new FileInputStream(keyStorePath).withCloseable { fis ->
             keyStore.load(fis, password.toCharArray())
         }
-        return keyStore.getCertificate(alias) as X509Certificate
+        return getCertificateChainFromKeystore(keyStore)
+    }
+
+    static X509Certificate[] getCertificateChainFromKeystore(byte[] p12Bytes, String password) {
+        KeyStore keyStore = KeyStore.getInstance("PKCS12")
+        new ByteArrayInputStream(p12Bytes).withCloseable { is ->
+            keyStore.load(is, password.toCharArray())
+        }
+        return getCertificateChainFromKeystore(keyStore)
+    }
+
+    static X509Certificate[] getCertificateChainFromKeystore(KeyStore keyStore) {
+        String alias = keyStore.aliases().find { keyStore.isKeyEntry(it) }
+        if (alias == null) {
+            throw new IllegalStateException("No key entry found in keystore")
+        }
+        Certificate[] chain = keyStore.getCertificateChain(alias)
+        if (chain == null || chain.length == 0) {
+            throw new IllegalStateException("No certificate chain for key entry '${alias}' in keystore")
+        }
+        return chain.collect { it as X509Certificate } as X509Certificate[]
     }
 
     // Loads an X.509 certificate from a PEM file.
@@ -135,23 +173,6 @@ class Utils {
         String pem = content.substring(begin, end + "-----END CERTIFICATE-----".length())
         return CertificateFactory.getInstance("X.509")
                 .generateCertificate(new ByteArrayInputStream(pem.getBytes("UTF-8"))) as X509Certificate
-    }
-
-    // Finds CA certificate by issuer principal among the *.cer.pem files in a directory.
-    static X509Certificate getIssuerCertificate(String certsDir, X500Principal issuer) {
-        File dir = new File(certsDir)
-        File[] pems = dir.listFiles()
-        if (pems == null) {
-            throw new IllegalStateException("Issuer certificate directory not found: ${dir.absolutePath}")
-        }
-        for (File pem : pems.sort()) {
-            if (!pem.name.endsWith(".cer.pem")) continue
-            X509Certificate candidate = loadCertificate(pem.absolutePath)
-            if (candidate.subjectX500Principal == issuer && candidate.basicConstraints >= 0) {
-                return candidate
-            }
-        }
-        throw new IllegalStateException("Issuer certificate not found in ${dir.absolutePath} for ${issuer}")
     }
 }
 

@@ -100,7 +100,6 @@ Description of values:
 | test.sidDeviceLinkBase               | https://sid.demo.sk.ee/device-link                | Smart-ID device-link base URL (iOS Universal Link/Android App Link).     |
 | test.deviceLinkMockUrl               | https://sid.demo.sk.ee/mock/device-link           | Smart-ID device-link mock URL.                                           |
 | test.adminSetupPath                  | src/test/resources/admin-setup                    | Path to test clients configurations.                                     |
-| test.idCardIssuerCertsPath           | src/test/resources/certs                          | Path to ID-card issuer certificates.                                     |
 | test.ocspResponderCertPath           | src/test/resources/certs/ocsp.cer.pem             | Path to OCSP responder certificate.                                      |
 
 ## Executing tests
@@ -131,4 +130,18 @@ To generate the report execute:
 
 ```bash
 allure serve ./target/allure-results/
+```
+
+### Reading OCSP request/response
+
+Some tests include OCSP request/response body that is attached to Allure report. 
+In dev-local they are also printed to stdout. 
+For other environments the approach is to download the file and decode it using openssl:
+
+```
+# Decoding OCSP request
+openssl ocsp -reqin  <path to ocsp request file> -req_text  -noverify
+
+# Decoding OCSP response
+openssl ocsp -respin <path to ocsp response file> -resp_text -noverify
 ```

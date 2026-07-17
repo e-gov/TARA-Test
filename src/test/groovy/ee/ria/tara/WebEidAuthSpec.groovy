@@ -329,10 +329,10 @@ class WebEidAuthSpec extends TaraSpecification {
     }
 
     @Step("Authentication flow up to Web eID authentication token generation")
-    private static authenticationFlowToWebEidParams(Flow flow, String keyStore = "src/test/resources/joeorg_auth_EC.p12") {
+    private static authenticationFlowToWebEidParams(Flow flow, String keyStore = "src/test/resources/EE38001085718_auth_EC_TEST_of_ESTEID2018.p12") {
         Steps.startAuthenticationInTara(flow)
-        Response initWebEid = Requests.postRequest(flow, flow.loginService.fullWebEidInitUrl)
-        String signAuthValue = Utils.signAuthenticationValue(flow, flow.loginService.baseUrl, initWebEid.jsonPath().get("nonce"), keyStore)
+        String nonce = Requests.postRequest(flow, flow.loginService.fullWebEidInitUrl).jsonPath().get("nonce")
+        String signAuthValue = Utils.signAuthenticationValue(flow, flow.loginService.baseUrl, nonce, keyStore)
         JSONObject authToken = Utils.getWebEidAuthTokenParameters(flow, signAuthValue)
         return authToken
     }

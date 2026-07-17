@@ -1,15 +1,50 @@
 package ee.ria.tara.step
 
+import ee.ria.tara.Flow
+import ee.ria.tara.Requests
 import ee.ria.tara.configuration.ConfigHolder
+import ee.ria.tara.model.Issuer
 import io.qameta.allure.Allure
+import io.qameta.allure.Step
 import io.restassured.response.Response
 import org.apache.http.HttpStatus
 import org.bouncycastle.cert.ocsp.BasicOCSPResp
 import org.bouncycastle.cert.ocsp.OCSPResp
+import org.bouncycastle.cert.ocsp.SingleResp
+import spock.util.concurrent.PollingConditions
 
 import java.nio.file.Files
 
 class OcspCrlSteps {
+
+    @Step("Make OCSP request")
+    static Response ocspRequest(Flow flow, byte[] body, Issuer issuer) {
+        attachOcspRequest(body)
+        Response response = Requests.postOcspRequest(flow, body, issuer)
+        attachOcspResponse(response.body.asByteArray())
+        return response
+    }
+
+    @Step("Wait until fallback OCSP reports expected certificate status")
+    static SingleResp waitForCertStatus(Flow flow, byte[] ocspRequestBody, Issuer issuer,
+                                        Closure<Boolean> statusPredicate) {
+        SingleResp singleResp = null
+        byte[] lastResponseBody = null
+        try {
+            new PollingConditions(timeout: 90, delay: 5).eventually {
+                Response response = Requests.postOcspRequest(flow, ocspRequestBody, issuer)
+                lastResponseBody = response.body.asByteArray()
+                singleResp = extractBasicOCSPResp(response).responses[0]
+                assert statusPredicate.call(singleResp.certStatus)
+            }
+        } finally {
+            attachOcspRequest(ocspRequestBody)
+            if (lastResponseBody != null) {
+                attachOcspResponse(lastResponseBody)
+            }
+        }
+        return singleResp
+    }
 
     static BasicOCSPResp extractBasicOCSPResp(Response response) {
         response.then().statusCode(HttpStatus.SC_OK)

@@ -195,11 +195,13 @@ class InproxyService extends BaseService {
 }
 
 class OcspCrlService extends BaseService {
+    String responderSubjectCN
 
     @Lazy ocspUrl = "${fullBaseUrl}/ocsp"
 
     OcspCrlService(OcspCrlServiceConf conf) {
         super(conf)
+        this.responderSubjectCN = conf.responderSubjectCN()
     }
 
     @Override

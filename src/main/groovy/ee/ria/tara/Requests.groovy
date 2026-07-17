@@ -2,7 +2,6 @@ package ee.ria.tara
 
 import ee.ria.tara.configuration.ConfigHolder
 import ee.ria.tara.model.Issuer
-import ee.ria.tara.step.OcspCrlSteps
 import io.qameta.allure.Step
 import io.qameta.allure.restassured.AllureRestAssured
 import io.restassured.RestAssured
@@ -240,10 +239,8 @@ class Requests {
                 .post(ConfigHolder.testConf.deviceLinkMockUrl())
     }
 
-    @Step("Post OCSP request")
     static Response postOcspRequest(Flow flow, byte[] body, Issuer issuer) {
-        OcspCrlSteps.attachOcspRequest(body)
-        Response response = given()
+        return given()
                 .config(RestAssured.config()
                         .encoderConfig(encoderConfig()
                                 .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
@@ -251,7 +248,5 @@ class Requests {
                 .accept("application/ocsp-response")
                 .body(body)
                 .request(Method.POST, flow.ocspCrlService.ocspUrl + "/" + issuer.path)
-        OcspCrlSteps.attachOcspResponse(response.body.asByteArray())
-        return response
     }
 }

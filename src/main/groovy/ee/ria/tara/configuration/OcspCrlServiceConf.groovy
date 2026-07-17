@@ -18,4 +18,6 @@ interface OcspCrlServiceConf extends Config {
 
     @Key("node.port")
     String nodePort()
+
+    String responderSubjectCN()
 }

@@ -17,7 +17,5 @@ interface TestConf extends Config {
 
     String deviceLinkMockUrl()
 
-    String idCardIssuerCertsPath()
-
     String ocspResponderCertPath()
 }

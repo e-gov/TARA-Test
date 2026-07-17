@@ -14,6 +14,7 @@ class ConfigHolder {
     private static final AdminServiceConf adminService = readConf(AdminServiceConf, "adminservice")
     private static final InproxyServiceConf inproxyService = readConf(InproxyServiceConf, "inproxyservice")
     private static final OcspCrlServiceConf ocspCrlService = readConf(OcspCrlServiceConf, "ocspcrlservice")
+    private static final EidTestPkiServiceConf eidTestPkiService = readConf(EidTestPkiServiceConf, "eidtestpki")
     private static final DemoClientConf demoClientConf = readConf(DemoClientConf, "democlient")
     private static final TestConf testConf = readConf(TestConf, "test")
 
@@ -45,6 +46,8 @@ class ConfigHolder {
     static InproxyServiceConf getInproxyService() { inproxyService }
 
     static OcspCrlServiceConf getOcspCrlService() { ocspCrlService }
+
+    static EidTestPkiServiceConf getEidTestPkiService() { eidTestPkiService }
 
     static DemoClientConf getDemoClient() { demoClientConf }
 
