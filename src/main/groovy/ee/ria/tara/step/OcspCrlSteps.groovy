@@ -48,10 +48,12 @@ class OcspCrlSteps {
 
     static BasicOCSPResp extractBasicOCSPResp(Response response) {
         response.then().statusCode(HttpStatus.SC_OK)
-
-        OCSPResp ocspResponse = new OCSPResp(response.then().extract().asByteArray())
-        BasicOCSPResp basicResp = ocspResponse.responseObject as BasicOCSPResp
+        BasicOCSPResp basicResp = extractOcspResp(response).responseObject as BasicOCSPResp
         return basicResp
+    }
+
+    static OCSPResp extractOcspResp(Response response) {
+        return new OCSPResp(response.then().extract().asByteArray())
     }
 
     static void attachOcspRequest(byte[] der) {

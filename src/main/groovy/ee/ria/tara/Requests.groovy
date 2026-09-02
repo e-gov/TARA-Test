@@ -240,13 +240,17 @@ class Requests {
     }
 
     static Response postOcspRequest(Flow flow, byte[] body, Issuer issuer) {
+        return postOcspRequest(flow, Method.POST, issuer.path, "application/ocsp-request", body)
+    }
+
+    static Response postOcspRequest(Flow flow, Method method, String chainPath, String contentType, byte[] body) {
         return given()
                 .config(RestAssured.config()
                         .encoderConfig(encoderConfig()
                                 .appendDefaultContentCharsetToContentTypeIfUndefined(false)))
-                .contentType("application/ocsp-request")
+                .contentType(contentType)
                 .accept("application/ocsp-response")
                 .body(body)
-                .request(Method.POST, flow.ocspCrlService.ocspUrl + "/" + issuer.path)
+                .request(method, flow.ocspCrlService.ocspUrl + "/" + chainPath)
     }
 }

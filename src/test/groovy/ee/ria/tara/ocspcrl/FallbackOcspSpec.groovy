@@ -16,9 +16,12 @@ import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.asn1.x500.style.BCStyle
 import org.bouncycastle.asn1.x500.style.IETFUtils
 import org.bouncycastle.asn1.x509.CRLReason
+import org.bouncycastle.asn1.x509.ExtendedKeyUsage
+import org.bouncycastle.asn1.x509.KeyPurposeId
 import org.bouncycastle.cert.ocsp.*
 import org.bouncycastle.operator.ContentVerifierProvider
 import org.bouncycastle.operator.jcajce.JcaContentVerifierProviderBuilder
+import spock.lang.PendingFeature
 import spock.lang.Tag
 
 import java.security.SecureRandom
@@ -62,18 +65,32 @@ class FallbackOcspSpec extends TaraSpecification {
         then:
         BasicOCSPResp basicResp = OcspCrlSteps.extractBasicOCSPResp(response)
 
-        // Verify signature
         ContentVerifierProvider verifierProvider = new JcaContentVerifierProviderBuilder()
                 .build(ocspIssuerCert.publicKey)
         assertThat(basicResp.isSignatureValid(verifierProvider), is(true))
+    }
 
-        // exactly the signing certificate is embedded, and the responder is identified by its name
+    def "Fallback OCSP response is signed by a valid OCSP responder certificate"() {
+        given:
+        byte[] ocspRequestBody = RequestData.ocspRequestDefaultBody(true)
+
+        when:
+        Response response = OcspCrlSteps.ocspRequest(flow, ocspRequestBody, Issuer.TEST_OF_ESTEID2018)
+
+        then: "exactly the signing certificate is embedded, and the responder is identified by its name"
+        BasicOCSPResp basicResp = OcspCrlSteps.extractBasicOCSPResp(response)
         assertThat(basicResp.certs.length, is(1))
         assertThat(basicResp.responderId, is(new RespID(basicResp.certs[0].subject)))
 
+        and: "the responder CN matches the configured responder"
         X500Name responderName = basicResp.responderId.toASN1Primitive().name
         String cn = IETFUtils.valueToString(responderName.getRDNs(BCStyle.CN)[0].first.value)
         assertThat(cn, is(flow.ocspCrlService.responderSubjectCN))
+
+        and: "the responder certificate is authorised to sign OCSP responses"
+        ExtendedKeyUsage extendedKeyUsage = ExtendedKeyUsage.fromExtensions(basicResp.certs[0].extensions)
+        assertThat("Responder certificate has the OCSP signing extended key usage",
+                extendedKeyUsage?.hasKeyPurposeId(KeyPurposeId.id_kp_OCSPSigning), is(true))
     }
 
     def "Fallback OCSP response has valid nonce"() {
@@ -119,6 +136,22 @@ class FallbackOcspSpec extends TaraSpecification {
         assertThat(nextUpdate, lessThan(now + Duration.ofDays(8)))
     }
 
+    @PendingFeature(reason = "AUT-3063: tryLater response carries responseBytes, forbidden by RFC 6960 4.2.1")
+    def "Fallback OCSP request returns TRY_LATER when no CRL is loaded for the chain"() {
+        given: "an OCSP request for a chain whose CRL URL is unreachable"
+        byte[] ocspRequestBody = RequestData.ocspRequestDefaultBody(true)
+
+        when:
+        Response response = OcspCrlSteps.ocspRequest(flow, ocspRequestBody, Issuer.NEVER_AVAILABLE)
+
+        then: "the service must not answer GOOD when it holds no revocation data"
+        response.then().statusCode(HttpStatus.SC_OK)
+        OCSPResp ocspResponse = OcspCrlSteps.extractOcspResp(response)
+        assertThat(ocspResponse.status, is(OCSPResp.TRY_LATER))
+        // "RFC 6960 section 4.2.1 permits responseBytes only when the status is successful"
+        assertThat(ocspResponse.responseObject, is(nullValue()))
+    }
+
     def "Fallback OCSP request returns UNKNOWN for a certificate from a different issuer"() {
         given: "an OCSP request for cert issued by TEST of ESTEID2018"
         byte[] ocspRequestBody = RequestData.ocspRequestDefaultBody(true)
@@ -133,7 +166,7 @@ class FallbackOcspSpec extends TaraSpecification {
     }
 
     @Tag("ee-eid-test-pki")
-    def "Fallback OCSP request returns REVOKED after certificate is revoked"() {
+    def "Fallback OCSP request for certificate revoked with '#reasonName' returns REVOKED"() {
         given: "a freshly issued community ID-card certificate"
         String caId = "community-esteid2025"
         String code = PersonCodeGenerator.generateEstonianPersonCode()
@@ -153,12 +186,15 @@ class FallbackOcspSpec extends TaraSpecification {
                 flow, ocspRequestBody, Issuer.COMMUNITY_ESTEID2025, { it instanceof RevokedStatus })
         RevokedStatus revoked = singleResp.certStatus as RevokedStatus
         assertThat(revoked.revocationTime, notNullValue())
-        assertThat(revoked.hasRevocationReason(), is(true))
-        assertThat(revoked.revocationReason, is(expectedReason))
+        assertThat(revoked.hasRevocationReason(), is(hasReason))
+        if (hasReason) {
+            assertThat(revoked.revocationReason, is(expectedReason))
+        }
 
         where:
-        reasonName        | expectedReason
-        "keyCompromise"   | CRLReason.keyCompromise
-        "certificateHold" | CRLReason.certificateHold
+        reasonName        | hasReason | expectedReason
+        "keyCompromise"   | true      | CRLReason.keyCompromise
+        "certificateHold" | true      | CRLReason.certificateHold
+        null              | false     | _
     }
 }
