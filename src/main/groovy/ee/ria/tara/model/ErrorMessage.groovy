@@ -22,6 +22,9 @@ enum ErrorMessage {
     // ID-card errors
     IDC_CERT_EXPIRED(HttpStatus.SC_BAD_REQUEST, "ID-kaardi sertifikaadid ei kehti."),
     IDC_REVOKED(HttpStatus.SC_BAD_REQUEST, "ID-kaardi sertifikaadid on peatatud või tühistatud. Palun pöörduge Politsei- ja Piirivalveameti teenindusse."),
+    IDC_OCSP_NOT_AVAILABLE(HttpStatus.SC_BAD_REQUEST, "ID-kaardi sertifikaadi kehtivuse info küsimine ei õnnestunud. Palun proovige mõne aja pärast uuesti."),
+    // TARA-Login maps IDC_VALIDATION_ERROR_RESULT_GOOD, _REVOKED and _OTHER all to message.error.general.
+    IDC_VALIDATION_ERROR(HttpStatus.SC_BAD_REQUEST, "Autentimine ebaõnnestus teenuse tehnilise vea tõttu. Palun proovige mõne aja pärast uuesti."),
 
     // MID-REST errors
     MID_INTERNAL_ERROR(HttpStatus.SC_BAD_REQUEST, "Mobiil-ID teenuses esinevad tehnilised tõrked. Palun proovige mõne aja pärast uuesti."),

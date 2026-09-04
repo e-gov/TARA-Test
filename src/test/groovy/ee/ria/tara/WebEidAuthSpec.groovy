@@ -3,10 +3,10 @@ package ee.ria.tara
 import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jwt.JWTClaimsSet
 import ee.ria.tara.model.ErrorMessage
+import ee.ria.tara.step.WebEidSteps
 import ee.ria.tara.util.ErrorValidator
 import io.qameta.allure.Feature
 import io.qameta.allure.Issue
-import io.qameta.allure.Step
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.http.Method
 import io.restassured.response.Response
@@ -130,7 +130,7 @@ class WebEidAuthSpec extends TaraSpecification {
 
     def "Submit login request for Web eID authentication with valid authentication token"() {
         given:
-        JSONObject authToken = authenticationFlowToWebEidParams(flow)
+        JSONObject authToken = WebEidSteps.authenticationFlowToWebEidParams(flow)
 
         when:
         Response loginWebEid = Requests.postRequestWithJsonBody(flow, flow.loginService.fullWebEidLoginUrl, authToken)
@@ -143,7 +143,7 @@ class WebEidAuthSpec extends TaraSpecification {
 
     def "Submit login request for Web eID authentication with same valid authentication token twice"() {
         given:
-        JSONObject authToken = authenticationFlowToWebEidParams(flow)
+        JSONObject authToken = WebEidSteps.authenticationFlowToWebEidParams(flow)
         Requests.postRequestWithJsonBody(flow, flow.loginService.fullWebEidLoginUrl, authToken)
 
         when:
@@ -155,7 +155,7 @@ class WebEidAuthSpec extends TaraSpecification {
 
     def "Submit login request for Web eID authentication with invalid SESSION cookie"() {
         given:
-        JSONObject authToken = authenticationFlowToWebEidParams(flow)
+        JSONObject authToken = WebEidSteps.authenticationFlowToWebEidParams(flow)
         flow.setSessionId("00000000-0000-0000-0000-00000000")
 
         when:
@@ -167,7 +167,7 @@ class WebEidAuthSpec extends TaraSpecification {
 
     def "Submit login request for Web eID authentication with invalid _csrf code"() {
         given:
-        JSONObject authToken = authenticationFlowToWebEidParams(flow)
+        JSONObject authToken = WebEidSteps.authenticationFlowToWebEidParams(flow)
         flow.setCsrf("00000000-0000-0000-0000-00000000")
 
         when:
@@ -205,7 +205,7 @@ class WebEidAuthSpec extends TaraSpecification {
     @Ignore("AUT-2712")
     def "Submit login request for Web eID authentication with invalid authentication token: #reason"() {
         given:
-        JSONObject authToken = authenticationFlowToWebEidParams(flow)
+        JSONObject authToken = WebEidSteps.authenticationFlowToWebEidParams(flow)
         authToken.getJSONObject("authToken").put(key, value)
 
         when:
@@ -229,7 +229,7 @@ class WebEidAuthSpec extends TaraSpecification {
     @Ignore("AUT-2712")
     def "Submit login request for Web eID authentication with invalid authentication token: authToken missing #key"() {
         given:
-        JSONObject authToken = authenticationFlowToWebEidParams(flow)
+        JSONObject authToken = WebEidSteps.authenticationFlowToWebEidParams(flow)
         authToken.getJSONObject("authToken").remove(key)
 
         when:
@@ -250,7 +250,7 @@ class WebEidAuthSpec extends TaraSpecification {
     @Feature("REJECT_EXPIRED_CERTS")
     def "Submit login request for Web eID authentication with expired certificate"() {
         given:
-        JSONObject authToken = authenticationFlowToWebEidParams(flow)
+        JSONObject authToken = WebEidSteps.authenticationFlowToWebEidParams(flow)
         authToken.getJSONObject("authToken").put("unverifiedCertificate", Utils.getCertificateAsString("src/test/resources/expired-cert_base64.txt"))
 
         when:
@@ -261,28 +261,10 @@ class WebEidAuthSpec extends TaraSpecification {
         loginWebEid.then().body("reportable", is(false))
     }
 
-    @Ignore("AUT-2410/AUT-2512 - Error handling needs adjusting")
-    @Issue("AUT-2410")
-    @Issue("AUT-2512")
     @Feature("REJECT_REVOKED_CERTS")
-    def "Submit login request for Web eID authentication with revoked certificate"() {
+    def "Submit login request for Web eID authentication with revoked certificate - TEST of ESTEID2018"() {
         given:
-        JSONObject authToken = authenticationFlowToWebEidParams(flow, "src/test/resources/revoked_auth_EC.p12")
-
-        when:
-        Response loginWebEid = Requests.postRequestWithJsonBody(flow, flow.loginService.fullWebEidLoginUrl, authToken)
-
-        then:
-        ErrorValidator.validate(loginWebEid, ErrorMessage.IDC_REVOKED)
-        loginWebEid.then().body("reportable", is(false))
-    }
-
-    @Ignore("AUT-2410 - SK DEMO OCSP is returning incorrect result for unknown certificate")
-    @Issue("AUT-2410")
-    @Feature("REJECT_UNKNOWN_CERTS")
-    def "Submit login request for Web eID authentication with unknown certificate"() {
-        given:
-        JSONObject authToken = authenticationFlowToWebEidParams(flow, "src/test/resources/unknown_auth_EC.p12")
+        JSONObject authToken = WebEidSteps.authenticationFlowToWebEidParams(flow, "src/test/resources/revoked_auth_EC.p12")
 
         when:
         Response loginWebEid = Requests.postRequestWithJsonBody(flow, flow.loginService.fullWebEidLoginUrl, authToken)
@@ -319,7 +301,7 @@ class WebEidAuthSpec extends TaraSpecification {
     @Feature("XSS_DETECTION_FILTER_ENABLED")
     def "Submit login request for Web eID authentication, verify headers"() {
         given:
-        JSONObject authToken = authenticationFlowToWebEidParams(flow)
+        JSONObject authToken = WebEidSteps.authenticationFlowToWebEidParams(flow)
 
         when:
         Response loginWebEid = Requests.postRequestWithJsonBody(flow, flow.loginService.fullWebEidLoginUrl, authToken)
@@ -328,12 +310,4 @@ class WebEidAuthSpec extends TaraSpecification {
         Steps.verifyResponseHeaders(loginWebEid)
     }
 
-    @Step("Authentication flow up to Web eID authentication token generation")
-    private static authenticationFlowToWebEidParams(Flow flow, String keyStore = "src/test/resources/EE38001085718_auth_EC_TEST_of_ESTEID2018.p12") {
-        Steps.startAuthenticationInTara(flow)
-        String nonce = Requests.postRequest(flow, flow.loginService.fullWebEidInitUrl).jsonPath().get("nonce")
-        String signAuthValue = Utils.signAuthenticationValue(flow, flow.loginService.baseUrl, nonce, keyStore)
-        JSONObject authToken = Utils.getWebEidAuthTokenParameters(flow, signAuthValue)
-        return authToken
-    }
 }
