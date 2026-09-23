@@ -110,7 +110,11 @@ class ClientSpec extends TaraSpecification {
         TaraAdminSteps.createClientSetAssignedFields(flow, client)
 
         when:
-        client.clientShortName = new ClientShortName()
+        client.clientShortName = new ClientShortName(
+                en: "Tc (short name)",
+                et: "Tk (lühinimi)",
+                ru: "Тк (короткое имя)",
+        )
         client.redirectUris = ["https://example24.com/edasi?=1243"]
         client.tokenRequestAllowedIpAddresses = ["10.0.0.1"]
         client.scope = ["openid"]
@@ -455,7 +459,16 @@ class ClientSpec extends TaraSpecification {
     static clientWithMinimumRequiredFields(Institution institution, String clientId) {
         new Client(
                 clientId: clientId,
-                clientShortName: new ClientShortName(),
+                clientName: new ClientName(
+                        en: "Test client",
+                        et: "Test klient",
+                        ru: "тестовый клиент",
+                ),
+                clientShortName: new ClientShortName(
+                        en: "Tc (short name)",
+                        et: "Tk (lühinimi)",
+                        ru: "Тк (короткое имя)",
+                ),
                 institutionMetainfo: new InstitutionMetainfo(
                         name: institution.name,
                         registryCode: institution.registryCode,

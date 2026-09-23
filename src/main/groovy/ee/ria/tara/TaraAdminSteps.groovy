@@ -87,8 +87,13 @@ class TaraAdminSteps {
 
     @Step("Get institution")
     static Institution getInstitution(Flow flow, Institution institution) {
-        Institution foundInstitution = getAllInstitutions(flow).find { it == institution }
-        assertThat("Institution '${institution.registryCode}' not found in list.", foundInstitution, is(notNullValue()))
+        getInstitution(flow, institution.registryCode)
+    }
+
+    @Step("Get institution by registry code")
+    static Institution getInstitution(Flow flow, String registryCode) {
+        Institution foundInstitution = getAllInstitutions(flow).find { it.registryCode == registryCode }
+        assertThat("Institution '${registryCode}' not found in list.", foundInstitution, is(notNullValue()))
         return foundInstitution
     }
 
@@ -157,10 +162,15 @@ class TaraAdminSteps {
     }
 
     @Step("Get client")
-    static def getClient(Flow flow, Client client) {
-        Client foundIClient = getAllClients(flow).find { it == client }
-        assertThat("Client '${client.clientId}' not found in list.", foundIClient, is(notNullValue()))
-        return foundIClient
+    static Client getClient(Flow flow, Client client) {
+        getClient(flow, client.clientId)
+    }
+
+    @Step("Get client by client id")
+    static Client getClient(Flow flow, String clientId) {
+        Client foundClient = getAllClients(flow).find { it.clientId == clientId }
+        assertThat("Client '${clientId}' not found in list.", foundClient, is(notNullValue()))
+        return foundClient
     }
 
     @Step("Get all institutions")
@@ -208,13 +218,13 @@ class TaraAdminSteps {
         assertThat("Correct amount of registered clients", institutionClients.size(), is(client.institution.clientIds.size()))
 
         Client matchingClient = getClient(flow, client)
-        assertThat("Created client data matches registered client", matchingClient != null)
+        assertThat("Created client data matches registered client", matchingClient, is(client))
         assertThat(client.id, is(matchingClient.id))
         assertThat(client.createdAt, is(matchingClient.createdAt))
         assertThat(client.updatedAt, is(matchingClient.updatedAt))
 
         Institution matchingInstitution = getInstitution(flow, client.institution)
-        assertThat("Created institution data matches registered institution", matchingInstitution != null)
+        assertThat("Created institution data matches registered institution", matchingInstitution, is(client.institution))
         assertThat(client.institution.createdAt, is(matchingInstitution.createdAt))
         assertThat(client.institution.updatedAt, is(matchingInstitution.updatedAt))
         return true
