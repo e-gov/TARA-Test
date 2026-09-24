@@ -13,6 +13,10 @@ interface TestConf extends Config {
 
     String adminSetupPath()
 
+    String defaultClientFile()
+
+    String defaultClientSecret()
+
     String sidDeviceLinkBase()
 
     String deviceLinkMockUrl()

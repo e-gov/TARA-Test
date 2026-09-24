@@ -109,6 +109,8 @@ Description of values:
     * All tests: `mvn clean test`
     * Single specification (test class): `mvn clean test -Dtest=<testClass>`
     * Single test: `mvn clean test -Dtest=<testClass>#<testMethod>`
+    * Excluding tags: `mvn clean test -DexcludedGroups=<tag>[,<tag>...]`
+    * Excluding a preconfigured tag set via profile: `mvn clean test -P<profile>` (for example, `-Pk8s`)
 * Start tests in docker
 
 ```bash 
@@ -120,6 +122,26 @@ docker compose up
 # In the background
 docker compose up -d
 ```
+
+## Test tags
+
+Tests are tagged (Spock `@Tag`) by the external dependency or feature they require, so subsets can be
+excluded in environments where that dependency is not available. Tags are filtered at runtime with the
+JUnit Platform tag filter (`-DexcludedGroups` to exclude, `-Dgroups` to run only the listed tags).
+
+| Tag                    | Requires                                                             |
+|------------------------|---------------------------------------------------------------------|
+| `monitoring`           | Monitoring/management endpoints reachable by the test.              |
+| `eidas`                | eIDAS integration (foreign-country auth, eIDAS scopes/metadata).    |
+| `business-register`    | Business register integration (legal person authentication).       |
+| `ocspcrl`              | The OCSP/CRL service reachable.                                     |
+| `non-default-client`   | Test clients beyond the default client.                            |
+| `email-notification`   | The admin service's secret-notification feature.                   |
+| `sid-device-link-mock` | Smart-ID device-link mock service.                                  |
+| `ee-eid-test-pki`      | Estonian eID test PKI (OCSP/CRL revocation).                        |
+
+A Maven profile can group a preconfigured set of these tags to exclude, so a whole environment's
+subset can be selected with a single flag (for example, `-Pk8s`).
 
 ## Test reports
 

@@ -13,7 +13,7 @@ class ClientStore {
     static Client specificProxyService = readClientJson("client-ee-specificproxyservice")
 
     @Lazy
-    static Client mockPublic = readClientJson("client-mock-public")
+    static Client mockPublic = applyDefaultClientSecret(readClientJson(ConfigHolder.testConf.defaultClientFile() ?: "client-mock-public"))
 
     @Lazy
     static Client mockPrivate = readClientJson("client-mock-private")
@@ -35,6 +35,17 @@ class ClientStore {
 
     @Lazy
     static Client mockAcrHigh = readClientJson("client-mock-acr-high")
+
+    // Temporary (AUT-3054): until test clients are provisioned from this repo, generic tests may run
+    // against a per-environment default client. Where its secret differs from the json,
+    // test.defaultClientSecret overrides it.
+    static Client applyDefaultClientSecret(Client client) {
+        String secretOverride = ConfigHolder.testConf.defaultClientSecret()
+        if (secretOverride) {
+            client.secret = secretOverride
+        }
+        return client
+    }
 
     static Client readClientJson(String fileName) {
         Path basePath = Paths.get(ConfigHolder.testConf.adminSetupPath())

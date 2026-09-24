@@ -7,11 +7,13 @@ import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import org.apache.http.HttpStatus
 import spock.lang.Issue
+import spock.lang.Tag
 
 import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.equalTo
 import static org.hamcrest.Matchers.is
 
+@Tag("monitoring")
 class ActuatorSpec extends TaraSpecification {
 
     def setup() {

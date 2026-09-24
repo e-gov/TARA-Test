@@ -9,10 +9,12 @@ import org.apache.http.HttpStatus
 import org.bouncycastle.cert.ocsp.CertificateID
 import org.bouncycastle.cert.ocsp.OCSPResp
 import org.bouncycastle.operator.DefaultDigestAlgorithmIdentifierFinder
+import spock.lang.Tag
 
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.is
 
+@Tag("ocspcrl")
 class OcspRequestValidationSpec extends TaraSpecification {
 
     def "Fallback OCSP request without nonce returns MALFORMED_REQUEST"() {

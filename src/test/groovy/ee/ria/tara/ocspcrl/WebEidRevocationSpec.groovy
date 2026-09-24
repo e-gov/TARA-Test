@@ -21,6 +21,7 @@ import static org.hamcrest.Matchers.is
 
 @Isolated("Mutates CA-wide OCSP/CRL state in the eID test PKI")
 @Tag("ee-eid-test-pki")
+@Tag("ocspcrl")
 class WebEidRevocationSpec extends TaraSpecification {
 
     def setup() {

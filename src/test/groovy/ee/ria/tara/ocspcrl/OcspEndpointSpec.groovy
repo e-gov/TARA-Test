@@ -7,7 +7,9 @@ import ee.ria.tara.request.RequestData
 import io.restassured.http.Method
 import io.restassured.response.Response
 import org.apache.http.HttpStatus
+import spock.lang.Tag
 
+@Tag("ocspcrl")
 class OcspEndpointSpec extends TaraSpecification {
 
 

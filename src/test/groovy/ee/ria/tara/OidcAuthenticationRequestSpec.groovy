@@ -10,6 +10,7 @@ import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import org.apache.http.HttpStatus
+import spock.lang.Tag
 
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.*
@@ -45,6 +46,7 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
         [client_id: "my_client"]                  || 302        | OidcError.INVALID_CLIENT            | "Client authentication failed"                                | "The requested OAuth 2.0 Client does not exist."
     }
 
+    @Tag("non-default-client")
     @Feature("https://e-gov.github.io/TARA-Doku/TechnicalSpecification#41-authentication-request")
     def "Authentication request with disabled scope for OIDC client"() {
         given:
@@ -117,7 +119,6 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
     @Feature("OIDC_SCOPE_IDCARD")
     @Feature("OIDC_SCOPE_MID")
     @Feature("OIDC_SCOPE_SMARTID")
-    @Feature("OIDC_SCOPE_EIDAS")
     def "Authentication request with different scopes: #label"() {
         given:
         Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "openid " + scopes)
@@ -135,15 +136,37 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
                         path('smart-id'), smartID ? greaterThan(0) : equalTo(0),
                         path('id-card'), idCard ? greaterThan(0) : equalTo(0),
                         path('mobile-id'), mID ? greaterThan(0) : equalTo(0),
-                        path('eu-citizen'), eidas ? greaterThan(0) : equalTo(0)
+                        path('eu-citizen'), equalTo(0)
                 )
 
         where:
-        scopes    | label          || idCard | mID   | smartID | eidas
-        "idcard"  | "with idcard"  || true   | false | false   | false
-        "mid"     | "with mid"     || false  | true  | false   | false
-        "smartid" | "with smartid" || false  | false | true    | false
-        "eidas"   | "with eidas"   || false  | false | false   | true
+        scopes    | label          || idCard | mID   | smartID
+        "idcard"  | "with idcard"  || true   | false | false
+        "mid"     | "with mid"     || false  | true  | false
+        "smartid" | "with smartid" || false  | false | true
+    }
+
+    @Tag("eidas")
+    @Feature("OIDC_SCOPE_EIDAS")
+    def "Authentication request with eidas scope displays eu-citizen option"() {
+        given:
+        Map paramsMap = OpenIdUtils.getAuthorizationParameters(flow, "openid eidas")
+        Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
+
+        when:
+        Response response = Steps.followRedirect(flow, initOIDCServiceSession)
+
+        def path = { val -> "**.findAll { it.'@data-tab' == '${val}' }.size()" }
+
+        then:
+        response.then()
+                .statusCode(HttpStatus.SC_OK)
+                .body(
+                        path('eu-citizen'), greaterThan(0),
+                        path('smart-id'), equalTo(0),
+                        path('id-card'), equalTo(0),
+                        path('mobile-id'), equalTo(0)
+                )
     }
 
     @Feature("OIDC_SCOPE_EMAIL")

@@ -8,11 +8,13 @@ import io.qameta.allure.Issue
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.http.Method
 import io.restassured.response.Response
+import spock.lang.Tag
 
 import static io.restassured.RestAssured.given
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.is
 
+@Tag("non-default-client")
 class LegalPersonAutInitSpec extends TaraSpecification {
 
     def setup() {

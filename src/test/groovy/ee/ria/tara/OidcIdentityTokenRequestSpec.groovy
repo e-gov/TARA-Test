@@ -10,6 +10,7 @@ import io.restassured.http.Method
 import io.restassured.response.Response
 
 import java.time.Instant
+import spock.lang.Tag
 
 import static io.restassured.RestAssured.given
 import static org.hamcrest.MatcherAssert.assertThat
@@ -124,6 +125,7 @@ class OidcIdentityTokenRequestSpec extends TaraSpecification {
         "client_secret_post"  | false    | "incorrect"
     }
 
+    @Tag("non-default-client")
     @Feature("OIDC_ID_TOKEN")
     def "Verify #clientJWTMethod token response with client_secret_post configured client"() {
         given: "Start authentication"
@@ -175,6 +177,7 @@ class OidcIdentityTokenRequestSpec extends TaraSpecification {
         "RedirectUri"  || 400        | OidcError.INVALID_GRANT       | "The 'redirect_uri' from this request does not match the one from the authorize request."
     }
 
+    @Tag("non-default-client")
     @Feature("OIDC_ID_TOKEN")
     def "Request ID token with client_secret_post with incorrect request parameter: #parameter should fail"() {
         given: "Start authentication"
@@ -215,6 +218,7 @@ class OidcIdentityTokenRequestSpec extends TaraSpecification {
         assertThat("Correct error description", tokenResponse2.jsonPath().getString("error_description"), endsWith("The authorization code has already been used."))
     }
 
+    @Tag("non-default-client")
     @Feature("OPENID_CONNECT")
     def "Request an ID token twice with same authorization code with client_secret_post should fail"() {
         given: "Obtain ID token"

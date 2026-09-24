@@ -16,6 +16,7 @@ import static org.hamcrest.Matchers.hasSize
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.not
 
+@Tag("non-default-client")
 class LegalPersonAuthSpec extends TaraSpecification {
 
     def setup() {

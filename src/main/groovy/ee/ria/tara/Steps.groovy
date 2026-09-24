@@ -155,7 +155,10 @@ class Steps {
         Response acceptResponse = Requests.postRequest(flow, flow.loginService.fullAuthAcceptUrl)
         Response loginVerifier = loginVerifier(flow, acceptResponse)
         Response consentResponse = followRedirectWithSessionId(flow, loginVerifier)
-        Response consentVerifier = followRedirectWithCookies(flow, consentResponse, flow.oidcService.cookies)
+        // Temporary: submit consent if the client presented a consent page (default client may require it),
+        // otherwise the helper just follows the redirect. To be removed once the tests can provision their
+        // own clients (AUT-3054).
+        Response consentVerifier = submitConsentAndFollowRedirects(flow, true, consentResponse)
         String authorizationCode = Utils.getParamValueFromResponseHeader(consentVerifier, "code")
         flow.setCode(authorizationCode)
         if (clientSecretBasic) {

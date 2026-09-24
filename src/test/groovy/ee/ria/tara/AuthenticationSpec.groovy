@@ -78,6 +78,7 @@ class AuthenticationSpec extends TaraSpecification {
         "TEST of SK ID Solutions EID-Q 2024E" | "PNOEE-40404040009-MOCK-Q" || "EE40404040009"
     }
 
+    @Tag("non-default-client")
     @Feature("AUTHENTICATION")
     @Feature("MID_AUTH_INIT_REQUEST")
     def "Authenticate with Mobile-ID with custom relying party name and UUID"() {
@@ -113,6 +114,7 @@ class AuthenticationSpec extends TaraSpecification {
     }
 
     @Tag("sid-device-link-mock")
+    @Tag("non-default-client")
     @Feature("AUTHENTICATION")
     @Feature("SID_AUTH_INIT_REQUEST")
     def "Authenticate with Smart-ID with custom relying party name and UUID"() {
@@ -288,6 +290,7 @@ class AuthenticationSpec extends TaraSpecification {
         LoA.HIGH        | LoA.HIGH
     }
 
+    @Tag("non-default-client")
     @Feature("AUTHENTICATION")
     def "Authentication request with acr_values '#acrValues' not matching clients minimum_acr_value '#minimumAcrValue' returns error"() {
         given:
@@ -407,6 +410,7 @@ class AuthenticationSpec extends TaraSpecification {
         assertThat(claims.getJSONObjectClaim("profile_attributes")["date_of_birth"], is("1965-01-01"))
     }
 
+    @Tag("non-default-client")
     @Feature("AUTHENTICATION")
     def "Request authentication with mobile-ID with Specific Proxy Service as OIDC client"() {
         given:

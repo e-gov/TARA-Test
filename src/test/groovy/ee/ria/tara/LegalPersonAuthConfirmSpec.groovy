@@ -18,6 +18,7 @@ import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.is
 
 @Tag("business-register")
+@Tag("non-default-client")
 class LegalPersonAuthConfirmSpec extends TaraSpecification {
 
     def setup() {

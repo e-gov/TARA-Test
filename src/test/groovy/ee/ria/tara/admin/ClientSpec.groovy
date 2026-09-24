@@ -20,6 +20,7 @@ import org.apache.http.HttpStatus
 import spock.lang.Ignore
 import spock.lang.Issue
 import spock.lang.Shared
+import spock.lang.Tag
 
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.*
@@ -217,6 +218,7 @@ class ClientSpec extends TaraSpecification {
     }
 
     @Issue("Test does not work in local environment.")
+    @Tag("email-notification")
     @Feature("TARA_MGMT")
     def "Client registration succeeds when sending secret fails"() {
         given:
@@ -243,6 +245,7 @@ class ClientSpec extends TaraSpecification {
     }
 
     @Issue("Test does not work in local environment.")
+    @Tag("email-notification")
     @Feature("TARA_MGMT")
     def "Sending secret fails for already created client and does not affect client data"() {
         given:

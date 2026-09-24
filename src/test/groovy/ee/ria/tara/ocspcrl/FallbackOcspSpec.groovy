@@ -32,6 +32,7 @@ import java.time.Instant
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.*
 
+@Tag("ocspcrl")
 class FallbackOcspSpec extends TaraSpecification {
 
     def "Fallback OCSP request returns GOOD"() {

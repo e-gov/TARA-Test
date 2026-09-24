@@ -233,4 +233,14 @@
         </plugins>
     </build>
 
+    <profiles>
+        <!-- Convenience profile: excludes the tags for dependencies not available in some deployments. -->
+        <profile>
+            <id>k8s</id>
+            <properties>
+                <excludedGroups>eidas,monitoring,ocspcrl,non-default-client,email-notification</excludedGroups>
+            </properties>
+        </profile>
+    </profiles>
+
 </project>
