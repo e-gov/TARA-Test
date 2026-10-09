@@ -11,6 +11,7 @@ import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import org.apache.http.HttpStatus
 import spock.lang.Ignore
+import spock.lang.Issue
 import spock.lang.Tag
 
 import static io.restassured.RestAssured.given
@@ -25,7 +26,6 @@ class SidW2aAuthenticationSpec extends TaraSpecification {
         flow.jwkSet = JWKSet.load(Requests.getOpenidJwks(flow.oidcService.fullJwksUrl))
     }
 
-    @Ignore("AUT-2509")
     @Tag("sid-device-link-mock")
     def "Authenticate with Smart-id web2app flow"() {
         given:
@@ -41,33 +41,24 @@ class SidW2aAuthenticationSpec extends TaraSpecification {
         assertThat("Incorrect audience", claims.audience[0], is(ClientStore.mockPublic.clientId))
         assertThat("Incorrect subject", claims.subject, is("EE40404040009"))
         assertThat("Incorrect given name", claims.getJSONObjectClaim("profile_attributes")["given_name"], is("OK"))
-        assertThat("Incorrect family game", claims.getJSONObjectClaim("profile_attributes")["family_name"], is("TEST"))
+        assertThat("Incorrect family name", claims.getJSONObjectClaim("profile_attributes")["family_name"], is("TEST"))
         assertThat("Incorrect date of birth", claims.getJSONObjectClaim("profile_attributes")["date_of_birth"], is("1904-04-04"))
     }
 
-    @Ignore("AUT-2509")
+    @Issue("AUT-3178")
     @Tag("sid-device-link-mock")
     def "Authentication with Smart-ID web2app not allowed for non-EE account"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
         Response authInitResponse = SidSteps.initSidWeb2AppAuthSession(flow)
         String deviceLink = authInitResponse.jsonPath().getString("deviceLink")
-        SidSteps.initSidWeb2AppMockAuth(flow, documentNumber, deviceLink)
+        String callbackUrl = SidSteps.sidMockAuthAndCallback(flow, documentNumber, deviceLink)
 
         when:
-        // TODO: getting the right value for "value" in callbackPollParams - waiting for SK
-        Response callbackPoll = SidSteps.pollSidWeb2AppSessionStatusAfterCallback(flow, SidSteps.sidWeb2AppCallbackPollDefaultParams(flow))
+        Response callbackPoll = SidSteps.pollSidWeb2AppSessionStatusAfterCallback(flow, SidSteps.sidWeb2AppCallbackPollParams(flow, callbackUrl))
 
         then:
-        ErrorMessage error = ErrorMessage.SID_COUNTRY_NOT_ALLOWED
-        callbackPoll.then()
-                .statusCode(HttpStatus.SC_OK)
-                .contentType("application/json;charset=UTF-8")
-                .body(
-                        "status", equalTo("FAILED"),
-                        "error", equalTo(error.name()),
-                        "message", equalTo(error.message)
-                )
+        ErrorValidator.validate(callbackPoll, HttpStatus.SC_BAD_REQUEST, ErrorMessage.SID_COUNTRY_NOT_ALLOWED.message)
 
         where:
         documentNumber << [
@@ -104,7 +95,7 @@ class SidW2aAuthenticationSpec extends TaraSpecification {
         Steps.startAuthenticationInTara(flow, "openid smartid", "et")
         Response authInitResponse = SidSteps.initSidWeb2AppAuthSession(flow)
         String deviceLink = authInitResponse.jsonPath().getString("deviceLink")
-        SidSteps.initSidWeb2AppMockAuth(flow, documentNumber, deviceLink)
+        SidSteps.initSidDeviceLinkMockAuth(flow, documentNumber, deviceLink)
         Map pollQueryParams = [sessionToken: Utils.parseQueryParams(deviceLink).sessionToken]
 
         when:
@@ -121,13 +112,13 @@ class SidW2aAuthenticationSpec extends TaraSpecification {
         "TODO"         | "USER_REFUSED_CONFIRMATIONMESSAGE" || "Kasutaja katkestas autentimise<span translate=\"no\" lang=\"en\"> Smart-ID </span>rakenduses kinnitusekraanil."
     }
 
-
-    @Ignore("Slow without dedicated test account (takes over 2min)")
+    @Tag("sid-device-link-mock")
     def "Initialize Smart-ID web2app authentication with scenario: TIMEOUT"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
         Response authInitResponse = SidSteps.initSidWeb2AppAuthSession(flow)
         String deviceLink = authInitResponse.jsonPath().getString("deviceLink")
+        SidSteps.initSidDeviceLinkMockAuth(flow, "PNOEE-42701019973-DEMO-Q", deviceLink)
         Map pollQueryParams = [sessionToken: Utils.parseQueryParams(deviceLink).sessionToken]
 
         when:
@@ -160,7 +151,7 @@ class SidW2aAuthenticationSpec extends TaraSpecification {
         Steps.startAuthenticationInTara(flow, "openid smartid")
         Response authInitResponse = SidSteps.initSidWeb2AppAuthSession(flow)
         String deviceLink = authInitResponse.jsonPath().getString("deviceLink")
-        SidSteps.initSidWeb2AppMockAuth(flow, "PNOEE-40404040009-MOCK-Q", deviceLink)
+        SidSteps.initSidDeviceLinkMockAuth(flow, "PNOEE-40404040009-MOCK-Q", deviceLink)
         Map pollQueryParams = [sessionToken: Utils.parseQueryParams(deviceLink).sessionToken]
 
         when:
@@ -200,26 +191,35 @@ class SidW2aAuthenticationSpec extends TaraSpecification {
         Steps.verifyResponseHeaders(response)
     }
 
-    @Ignore("AUT-2509")
+    @Tag("sid-device-link-mock")
     def "Smart-ID web2app authentication callback"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
-        SidSteps.initSidWeb2AppAuthSession(flow)
+        Response authInitResponse = SidSteps.initSidWeb2AppAuthSession(flow)
+        String deviceLink = authInitResponse.jsonPath().getString("deviceLink")
+        SidSteps.initSidDeviceLinkMockAuth(flow, "PNOEE-40404040009-MOCK-Q", deviceLink)
+        Map mockResponse = SidSteps.pollSidMockForCallbackUrl(Utils.parseQueryParams(deviceLink).sessionToken)
 
         when:
-        Response response = given()
-                .cookies(["__Host-SESSION": flow.sessionId])
-                .get(flow.loginService.sidWeb2AppCallbackUrl + "?value=TODO") // TODO: acceptable value
+        Response response = Requests.performCallback(mockResponse)
 
         then:
         assertThat("Incorrect HTTP status code", response.statusCode, is(HttpStatus.SC_OK))
         assertThat("Incorrect Content-Type", response.contentType, is("text/html;charset=UTF-8"))
-        // TODO: improve validations (more specific locators)
-        String buttonLabel = response.htmlPath()
-                .getString("**.find { it.name() == 'button' && it.@class?.toString().contains('c-btn--cancel') }.text()")
-        assertThat("Incorrect cancel button label", buttonLabel, is("Tühista"))
-        String action = response.htmlPath().getString("**.find { it.name() == 'form' && it.@class == 'c-form' }.@action")
-        assertThat("Incorrect cancel action path", action, is("/auth/sid/web2app/callback/poll/cancel"))
+        Steps.verifyResponseHeaders(response)
+
+        and: "the wait message and cancel form are inside the callback container"
+        String container = "**.find { it.@id == 'sid-web2app-callback-container' }"
+        String cancelForm = "${container}.'**'.find { it.name() == 'form' }"
+        assertThat("Incorrect wait message",
+                response.htmlPath().getString("${container}.'**'.find { it.name() == 'p' }.text()"),
+                is("Smart-ID-ga sisselogimine toimub. Palun oodake."))
+        assertThat("Incorrect cancel action path",
+                response.htmlPath().getString("${cancelForm}.@action"),
+                is("/auth/sid/web2app/callback/poll/cancel"))
+        assertThat("Incorrect cancel button label",
+                response.htmlPath().getString("${cancelForm}.'**'.find { it.name() == 'button' }.text()"),
+                is("Tühista"))
     }
 
     def "Poll Smart-ID web2app authentication session post-callback"() {
@@ -239,7 +239,6 @@ class SidW2aAuthenticationSpec extends TaraSpecification {
         assertThat("Incorrect Smart-ID status", callbackPoll.jsonPath().getString("status"), is("PENDING"))
     }
 
-    @Ignore("AUT-2509")
     @Tag("sid-device-link-mock")
     def "Poll Smart-ID web2app authentication session post-callback with session complete"() {
         given:
@@ -247,11 +246,10 @@ class SidW2aAuthenticationSpec extends TaraSpecification {
         Response authInitResponse = SidSteps.initSidWeb2AppAuthSession(flow)
 
         String deviceLink = authInitResponse.jsonPath().getString("deviceLink")
-        SidSteps.initSidWeb2AppMockAuth(flow, "PNOEE-40404040009-MOCK-Q", deviceLink)
+        String callbackUrl = SidSteps.sidMockAuthAndCallback(flow, "PNOEE-40404040009-MOCK-Q", deviceLink)
 
         when:
-        // TODO: getting the right value for "value" in callbackPollParams - waiting for SK
-        Response callbackPoll = SidSteps.pollSidWeb2AppSessionStatusAfterCallback(flow, SidSteps.sidWeb2AppCallbackPollDefaultParams(flow))
+        Response callbackPoll = SidSteps.pollSidWeb2AppSessionStatusAfterCallback(flow, SidSteps.sidWeb2AppCallbackPollParams(flow, callbackUrl))
 
         then:
         assertThat("Incorrect HTTP status code", callbackPoll.statusCode, is(HttpStatus.SC_OK))
@@ -279,10 +277,10 @@ class SidW2aAuthenticationSpec extends TaraSpecification {
         Steps.startAuthenticationInTara(flow, "openid smartid")
         Response authInitResponse = SidSteps.initSidWeb2AppAuthSession(flow)
         String deviceLink = authInitResponse.jsonPath().getString("deviceLink")
-        SidSteps.initSidWeb2AppMockAuth(flow, "PNOEE-40404040009-MOCK-Q", deviceLink)
+        String callbackUrl = SidSteps.sidMockAuthAndCallback(flow, "PNOEE-40404040009-MOCK-Q", deviceLink)
 
         when:
-        Map params = SidSteps.sidWeb2AppCallbackPollDefaultParams(flow)
+        Map params = SidSteps.sidWeb2AppCallbackPollParams(flow, callbackUrl)
         paramsModification.call(params)
         Response pollResponse = Requests.getRequestWithParams(flow, flow.loginService.sidWeb2AppCallbackPollUrl, params)
 

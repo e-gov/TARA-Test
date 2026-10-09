@@ -318,8 +318,8 @@ class WebEidAuthSpec extends TaraSpecification {
         given: "a freshly issued community ID-card certificate"
         String caId = "community-esteid2018"
         String code = PersonCodeGenerator.generateEstonianPersonCode()
-        String givenName = "Long test given name that exceeds the length of sixty-four character"
-        String familyName = "Long test family name that exceeds the length of sixty-four character"
+        String givenName = "Long test given name that exceeds the length of sixty-four characters"
+        String familyName = "Long test family name that exceeds the length of sixty-four characters"
         EidTestPkiClient.issueAuthCert(caId, code, familyName, givenName)
         byte[] authCertP12 = EidTestPkiClient.getAuthCertP12(caId, code, "1234")
 

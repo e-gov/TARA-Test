@@ -11,6 +11,7 @@ import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import org.apache.http.HttpStatus
 import spock.lang.Ignore
+import spock.lang.Issue
 import spock.lang.Tag
 
 import static org.hamcrest.MatcherAssert.assertThat
@@ -39,17 +40,18 @@ class SidQrAuthenticationSpec extends TaraSpecification {
         assertThat("Incorrect audience", claims.audience[0], is(ClientStore.mockPublic.clientId))
         assertThat("Incorrect subject", claims.subject, is("EE40404040009"))
         assertThat("Incorrect given name", claims.getJSONObjectClaim("profile_attributes")["given_name"], is("OK"))
-        assertThat("Incorrect family game", claims.getJSONObjectClaim("profile_attributes")["family_name"], is("TEST"))
+        assertThat("Incorrect family name", claims.getJSONObjectClaim("profile_attributes")["family_name"], is("TEST"))
         assertThat("Incorrect date of birth", claims.getJSONObjectClaim("profile_attributes")["date_of_birth"], is("1904-04-04"))
     }
 
+    @Issue("AUT-3178")
     @Tag("sid-device-link-mock")
     def "Authentication with Smart-ID QR code not allowed for non-EE account"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
         SidSteps.initSidQrCodeAuthSession(flow)
         String deviceLink = SidSteps.getSidQrCodeDeviceLink(flow)
-        SidSteps.initSidQrCodeMockAuth(flow, documentNumber, deviceLink)
+        SidSteps.initSidDeviceLinkMockAuth(flow, documentNumber, deviceLink)
 
         when:
         Response pollResponse = SidSteps.pollSidQrCodeSessionStatus(flow)
@@ -115,7 +117,7 @@ class SidQrAuthenticationSpec extends TaraSpecification {
         Steps.startAuthenticationInTara(flow, "openid smartid", "et")
         SidSteps.initSidQrCodeAuthSession(flow)
         String deviceLink = SidSteps.getSidQrCodeDeviceLink(flow)
-        SidSteps.initSidQrCodeMockAuth(flow, documentNumber, deviceLink)
+        SidSteps.initSidDeviceLinkMockAuth(flow, documentNumber, deviceLink)
 
         when:
         Response pollResponse = SidSteps.pollSidQrCodeSessionStatus(flow, 3000L)
@@ -131,11 +133,13 @@ class SidQrAuthenticationSpec extends TaraSpecification {
         "TODO"         | "USER_REFUSED_CONFIRMATIONMESSAGE" || "Kasutaja katkestas autentimise<span translate=\"no\" lang=\"en\"> Smart-ID </span>rakenduses kinnitusekraanil."
     }
 
-    @Ignore("Slow without dedicated test account (takes over 2min)")
+    @Tag("sid-device-link-mock")
     def "Initialize Smart-ID QR code authentication with scenario: TIMEOUT"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
         SidSteps.initSidQrCodeAuthSession(flow)
+        String deviceLink = SidSteps.getSidQrCodeDeviceLink(flow)
+        SidSteps.initSidDeviceLinkMockAuth(flow, "PNOEE-42701019973-DEMO-Q", deviceLink)
 
         when:
         Response pollResponse = SidSteps.pollSidQrCodeSessionStatus(flow, 10000L)
@@ -172,7 +176,7 @@ class SidQrAuthenticationSpec extends TaraSpecification {
         Steps.startAuthenticationInTara(flow, "openid smartid")
         SidSteps.initSidQrCodeAuthSession(flow)
         String deviceLink = SidSteps.getSidQrCodeDeviceLink(flow)
-        SidSteps.initSidQrCodeMockAuth(flow, "PNOEE-40404040009-MOCK-Q", deviceLink)
+        SidSteps.initSidDeviceLinkMockAuth(flow, "PNOEE-40404040009-MOCK-Q", deviceLink)
 
         when:
         Response response = SidSteps.pollSidQrCodeSessionStatus(flow)
@@ -211,7 +215,7 @@ class SidQrAuthenticationSpec extends TaraSpecification {
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.jsonPath().get("id_token")).JWTClaimsSet
 
         then:
-        assertThat("Incorrect subject", claims.subject, is("47106280129"))
+        assertThat("Incorrect subject", claims.subject, is("EE47106280129"))
         assertThat("Incorrect given name", claims.getJSONObjectClaim("profile_attributes")["given_name"], is("ALEXANDRIA EVANGELINE ANASTASIA WILHELMINA"))
         assertThat("Incorrect family name", claims.getJSONObjectClaim("profile_attributes")["family_name"], is("MONTGOMERY FITZGERALD VANDERBILT-HART"))
     }
