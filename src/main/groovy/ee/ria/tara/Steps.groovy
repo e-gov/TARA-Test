@@ -146,10 +146,14 @@ class Steps {
 
     @Step("Authenticate with Web eID")
     static Response authenticateWithWebEid(Flow flow, boolean clientSecretBasic = true) {
-
         Response initWebEid = Requests.postRequest(flow, flow.loginService.fullWebEidInitUrl)
         String signAuthValue = Utils.signAuthenticationValue(flow, flow.loginService.baseUrl, initWebEid.jsonPath().get("nonce"))
         JSONObject authToken = Utils.getWebEidAuthTokenParameters(flow, signAuthValue)
+        return authenticateWithWebEid(flow, authToken, clientSecretBasic)
+    }
+
+    @Step("Authenticate with Web eID using the given authentication token")
+    static Response authenticateWithWebEid(Flow flow, JSONObject authToken, boolean clientSecretBasic = true) {
         Requests.postRequestWithJsonBody(flow, flow.loginService.fullWebEidLoginUrl, authToken)
 
         Response acceptResponse = Requests.postRequest(flow, flow.loginService.fullAuthAcceptUrl)

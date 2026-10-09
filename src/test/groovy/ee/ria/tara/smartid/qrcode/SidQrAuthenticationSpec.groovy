@@ -196,4 +196,23 @@ class SidQrAuthenticationSpec extends TaraSpecification {
         assertThat("Incorrect location header", response.header("location"), is(flow.loginService.initUrl + "?login_challenge=" + flow.loginChallenge + "&lang=et"))
         Steps.verifyResponseHeaders(response)
     }
+
+    @Ignore("AUT-3204")
+    @Issue("AUT-3204")
+    @Tag("sid-device-link-mock")
+    def "Smart-ID QR code authentication with long name"() {
+        given:
+        Steps.startAuthenticationInTara(flow, "openid smartid")
+        Response sidAuthResponse = SidSteps.authenticateWithSidQrFlow(flow, "PNOEE-47106280129-MOCK-Q")
+        Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, sidAuthResponse)
+
+        when:
+        Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
+        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.jsonPath().get("id_token")).JWTClaimsSet
+
+        then:
+        assertThat("Incorrect subject", claims.subject, is("47106280129"))
+        assertThat("Incorrect given name", claims.getJSONObjectClaim("profile_attributes")["given_name"], is("ALEXANDRIA EVANGELINE ANASTASIA WILHELMINA"))
+        assertThat("Incorrect family name", claims.getJSONObjectClaim("profile_attributes")["family_name"], is("MONTGOMERY FITZGERALD VANDERBILT-HART"))
+    }
 }

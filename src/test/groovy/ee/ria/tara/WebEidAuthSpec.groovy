@@ -3,8 +3,10 @@ package ee.ria.tara
 import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jwt.JWTClaimsSet
 import ee.ria.tara.model.ErrorMessage
+import ee.ria.tara.step.EidTestPkiClient
 import ee.ria.tara.step.WebEidSteps
 import ee.ria.tara.util.ErrorValidator
+import ee.ria.tara.util.PersonCodeGenerator
 import io.qameta.allure.Feature
 import io.qameta.allure.Issue
 import io.restassured.filter.cookie.CookieFilter
@@ -12,6 +14,7 @@ import io.restassured.http.Method
 import io.restassured.response.Response
 import org.json.JSONObject
 import spock.lang.Ignore
+import spock.lang.Tag
 
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.equalTo
@@ -310,4 +313,23 @@ class WebEidAuthSpec extends TaraSpecification {
         Steps.verifyResponseHeaders(loginWebEid)
     }
 
+    @Tag("ee-eid-test-pki")
+    def "Web eID authentication with long name"() {
+        given: "a freshly issued community ID-card certificate"
+        String caId = "community-esteid2018"
+        String code = PersonCodeGenerator.generateEstonianPersonCode()
+        String givenName = "Long test given name that exceeds the length of sixty-four character"
+        String familyName = "Long test family name that exceeds the length of sixty-four character"
+        EidTestPkiClient.issueAuthCert(caId, code, familyName, givenName)
+        byte[] authCertP12 = EidTestPkiClient.getAuthCertP12(caId, code, "1234")
+
+        when:
+        JSONObject authToken = WebEidSteps.authenticationFlowToWebEidParams(flow, authCertP12)
+        Response tokenResponse = Steps.authenticateWithWebEid(flow, authToken)
+        JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.jsonPath().get("id_token")).JWTClaimsSet
+
+        then:
+        assertThat("Correct given name", claims.getJSONObjectClaim("profile_attributes")["given_name"], is(givenName))
+        assertThat("Correct family name", claims.getJSONObjectClaim("profile_attributes")["family_name"], is(familyName))
+    }
 }
