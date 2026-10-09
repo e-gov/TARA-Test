@@ -5,9 +5,11 @@ import ee.ria.tara.TaraSpecification
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import org.apache.http.HttpStatus
+import spock.lang.Tag
 
 import static org.hamcrest.Matchers.is
 
+@Tag("admin")
 class AdminSpec extends TaraSpecification {
 
     def setup() {

@@ -25,6 +25,7 @@ import spock.lang.Tag
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.*
 
+@Tag("admin")
 class ClientSpec extends TaraSpecification {
 
     @Shared

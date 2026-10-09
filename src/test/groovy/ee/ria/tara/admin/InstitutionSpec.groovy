@@ -9,10 +9,12 @@ import io.restassured.response.Response
 import org.apache.commons.lang3.RandomStringUtils
 import org.apache.http.HttpStatus
 import spock.lang.Issue
+import spock.lang.Tag
 
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.*
 
+@Tag("admin")
 class InstitutionSpec extends TaraSpecification {
 
     def setup() {
