@@ -262,4 +262,12 @@ class Requests {
                 .body(body)
                 .post(flow.ocspCrlService.crlreloadUrl)
     }
+
+    @Step("Perform callback")
+    static Response performCallback(Map<String, String> params) {
+        given()
+                .header("Cookie", params.browserCookie)
+                .urlEncodingEnabled(false)
+                .get(params.callbackUrl)
+    }
 }

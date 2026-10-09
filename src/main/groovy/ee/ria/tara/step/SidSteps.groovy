@@ -3,6 +3,8 @@ package ee.ria.tara.step
 import ee.ria.tara.Flow
 import ee.ria.tara.Requests
 import ee.ria.tara.Steps
+import ee.ria.tara.Utils
+import ee.ria.tara.configuration.ConfigHolder
 import io.qameta.allure.Step
 import io.restassured.response.Response
 import org.apache.http.HttpStatus
@@ -20,7 +22,7 @@ class SidSteps {
     static Response authenticateWithSidQrFlow(Flow flow, String documentNumber) {
         initSidQrCodeAuthSession(flow)
         String deviceLink = getSidQrCodeDeviceLink(flow)
-        initSidQrCodeMockAuth(flow, documentNumber, deviceLink)
+        initSidDeviceLinkMockAuth(flow, documentNumber, deviceLink)
         pollSidQrCodeSessionStatus(flow)
                 .then()
                 .statusCode(HttpStatus.SC_OK)
@@ -32,18 +34,9 @@ class SidSteps {
     static Response authenticateWithSidWeb2AppFlow(Flow flow, String documentNumber) {
         Response authInitResponse = initSidWeb2AppAuthSession(flow)
         String deviceLink = authInitResponse.jsonPath().getString("deviceLink")
-        // TODO AUT-2509: currently fails, waiting mock adjustments
-        initSidWeb2AppMockAuth(flow, documentNumber, deviceLink)
-        // TODO AUT-2509: perform callback, waiting mock adjustments
-        //  Test if this call is required or can go straight to poll?
+        String callbackUrl = sidMockAuthAndCallback(flow, documentNumber, deviceLink)
 
-        // TODO AUT-2509: get parameters from wiremock
-        Map params = [_csrf                : flow.csrf,
-                      value                : "TODO: get value",
-                      sessionSecretDigest  : "TODO: get sessionSecretDigest",
-                      userChallengeVerifier: "TODO: get userChallengeVerifier"
-        ]
-        pollSidWeb2AppSessionStatusAfterCallback(flow, params)
+        pollSidWeb2AppSessionStatusAfterCallback(flow, sidWeb2AppCallbackPollParams(flow, callbackUrl))
                 .then()
                 .statusCode(HttpStatus.SC_OK)
                 .body("status", equalTo("COMPLETED"))
@@ -119,30 +112,51 @@ class SidSteps {
        DEVICE-LINK MOCK INTERACTIONS
        ============================================================ */
 
-    static Response initSidQrCodeMockAuth(Flow flow, String documentNumber, String deviceLink) {
-        return initSidDeviceLinkMockAuth(flow, documentNumber, deviceLink, "QR")
-    }
-
-    static Response initSidWeb2AppMockAuth(Flow flow, String documentNumber, String deviceLink) {
-        return initSidDeviceLinkMockAuth(flow, documentNumber, deviceLink, "Web2App")
-    }
-
-    static Response initSidDeviceLinkMockAuth(Flow flow, String documentNumber, String deviceLink, String flowType) {
-        String cookie = flow.cookieFilter.cookieStore.cookies
-                .find { it.name == "__Host-SESSION" }
-                ?.value
-                ?.with { "__Host-SESSION=$it" }
-
-        def mockRequest = [
+    @Step("Start authentication in device link mock")
+    static Response initSidDeviceLinkMockAuth(Flow flow, String documentNumber, String deviceLink, String altCallbackUrl = null) {
+        Map mockRequest = [
                 documentNumber: documentNumber,
-                deviceLink    : deviceLink,
-                flowType      : flowType,
-                browserCookie : cookie
+                deviceLink    : deviceLink
         ]
+        if (Utils.parseQueryParams(deviceLink).deviceLinkType == "Web2App") {
+            String cookie = flow.cookieFilter.cookieStore.cookies
+                    .find { it.name == "__Host-SESSION" }
+                    ?.value
+                    ?.with { "__Host-SESSION=$it" }
 
-        def response = Requests.postDeviceLinkToMock(mockRequest)
+            mockRequest.browserCookie = cookie
+            mockRequest.disableCallbackGetRequest = true
+
+            // without it the mock uses the callback URL TARA sent to Smart-ID at session init
+            // (by default flow.loginService.sidWeb2AppCallbackUrl)
+            if (altCallbackUrl) {
+                mockRequest.replacementInitialCallbackUrl = altCallbackUrl
+            }
+        }
+
+        Response response = Requests.postDeviceLinkToMock(mockRequest)
         response.then().statusCode(HttpStatus.SC_OK)
         return response
+    }
+
+    @Step("Polling Smart-ID mock for callback URL")
+    static Map<String, String> pollSidMockForCallbackUrl(String sessionToken) {
+        PollingConditions conditions = new PollingConditions(timeout: 3, delay: 0.1)
+        Response response = null
+
+        conditions.eventually {
+            response = Requests.get(ConfigHolder.testConf.deviceLinkMockUrl(), "/callback-url/" + sessionToken)
+            assert response.statusCode() == HttpStatus.SC_OK
+        }
+        return response.as(Map)
+    }
+
+    static String sidMockAuthAndCallback(Flow flow, String documentNumber, String deviceLink) {
+        initSidDeviceLinkMockAuth(flow, documentNumber, deviceLink)
+        Map deviceLinkParams = Utils.parseQueryParams(deviceLink)
+        Map mockResponse = pollSidMockForCallbackUrl(deviceLinkParams.sessionToken)
+        Requests.performCallback(mockResponse).then().statusCode(HttpStatus.SC_OK)
+        return mockResponse.callbackUrl
     }
 
     /* ============================================================
@@ -167,6 +181,15 @@ class SidSteps {
          value                : "test",
          sessionSecretDigest  : "test",
          userChallengeVerifier: "test"
+        ]
+    }
+
+    static Map sidWeb2AppCallbackPollParams(flow, String callbackUrl) {
+        Map callbackUrlParams = Utils.parseQueryParams(callbackUrl)
+        [_csrf                : flow.csrf,
+         value                : callbackUrlParams.value,
+         sessionSecretDigest  : callbackUrlParams.sessionSecretDigest,
+         userChallengeVerifier: callbackUrlParams.userChallengeVerifier
         ]
     }
 }
