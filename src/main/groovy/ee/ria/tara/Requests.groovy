@@ -1,7 +1,8 @@
 package ee.ria.tara
 
 import ee.ria.tara.configuration.ConfigHolder
-import ee.ria.tara.model.Issuer
+import groovy.transform.NamedParam
+import groovy.transform.NamedVariant
 import io.qameta.allure.Step
 import io.qameta.allure.restassured.AllureRestAssured
 import io.restassured.RestAssured
@@ -239,11 +240,11 @@ class Requests {
                 .post(ConfigHolder.testConf.deviceLinkMockUrl())
     }
 
-    static Response postOcspRequest(Flow flow, byte[] body, Issuer issuer) {
-        return postOcspRequest(flow, Method.POST, issuer.path, "application/ocsp-request", body)
-    }
-
-    static Response postOcspRequest(Flow flow, Method method, String chainPath, String contentType, byte[] body) {
+    @NamedVariant
+    static Response sendOcspRequest(Flow flow, byte[] body, String chainPath,
+                                    @NamedParam Method method = Method.POST,
+                                    @NamedParam String contentType = "application/ocsp-request",
+                                    @NamedParam String baseUrl = flow.ocspCrlService.ocspUrl) {
         return given()
                 .config(RestAssured.config()
                         .encoderConfig(encoderConfig()
@@ -251,6 +252,14 @@ class Requests {
                 .contentType(contentType)
                 .accept("application/ocsp-response")
                 .body(body)
-                .request(method, flow.ocspCrlService.ocspUrl + "/" + chainPath)
+                .request(method, baseUrl + "/" + chainPath)
+    }
+
+    @Step("Post CRL reload trigger")
+    static Response postCrlReload(Flow flow, Map body) {
+        given()
+                .contentType(ContentType.JSON)
+                .body(body)
+                .post(flow.ocspCrlService.crlreloadUrl)
     }
 }

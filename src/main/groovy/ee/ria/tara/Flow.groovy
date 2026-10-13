@@ -198,6 +198,8 @@ class OcspCrlService extends BaseService {
     String responderSubjectCN
 
     @Lazy ocspUrl = "${fullBaseUrl}/ocsp"
+    @Lazy ocspNodeUrl = "${fullNodeUrl}/ocsp"
+    @Lazy crlreloadUrl = "${fullNodeUrl}/actuator/crlreload"
 
     OcspCrlService(OcspCrlServiceConf conf) {
         super(conf)

@@ -178,18 +178,21 @@ class FallbackOcspSpec extends TaraSpecification {
                 EidTestPkiClient.getAuthCertP12(caId, code, "1234"), "1234")
         byte[] ocspRequestBody = RequestData.ocspRequestBody(chain, true)
 
-        when: "the certificate is revoked with the given reason"
+        when: "the certificate is revoked with the reason #reasonName"
         EidTestPkiClient.setAuthCertStatus(caId, code, "revoked", reasonName)
+        OcspCrlSteps.reloadCrl(flow, Issuer.COMMUNITY_ESTEID2025)
+        // The reload only refreshes a single node so the OCSP request is made to the same node.
+        Response response = OcspCrlSteps.ocspRequest(flow, ocspRequestBody, Issuer.COMMUNITY_ESTEID2025,
+                flow.ocspCrlService.ocspNodeUrl)
 
-        then: "the fallback OCSP eventually (after the CRL refresh) reports REVOKED with that reason"
-        // TODO: If possible, replace with triggering CRL loading, otherwise consider setting conf to smaller interval.
-        SingleResp singleResp = OcspCrlSteps.waitForCertStatus(
-                flow, ocspRequestBody, Issuer.COMMUNITY_ESTEID2025, { it instanceof RevokedStatus })
-        RevokedStatus revoked = singleResp.certStatus as RevokedStatus
-        assertThat(revoked.revocationTime, notNullValue())
-        assertThat(revoked.hasRevocationReason(), is(hasReason))
+        then: "the fallback OCSP reports REVOKED with that reason"
+        CertificateStatus certStatus = OcspCrlSteps.extractBasicOCSPResp(response).responses[0].certStatus
+        assertThat(certStatus, instanceOf(RevokedStatus))
+        RevokedStatus revokedStatus = certStatus as RevokedStatus
+        assertThat(revokedStatus.revocationTime, notNullValue())
+        assertThat(revokedStatus.hasRevocationReason(), is(hasReason))
         if (hasReason) {
-            assertThat(revoked.revocationReason, is(expectedReason))
+            assertThat(revokedStatus.revocationReason, is(expectedReason))
         }
 
         where:

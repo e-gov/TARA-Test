@@ -17,11 +17,29 @@ import java.nio.file.Files
 
 class OcspCrlSteps {
 
-    @Step("Make OCSP request")
     static Response ocspRequest(Flow flow, byte[] body, Issuer issuer) {
+        return ocspRequest(flow, body, issuer, flow.ocspCrlService.ocspUrl)
+    }
+
+    @Step("Make OCSP request to {3}")
+    static Response ocspRequest(Flow flow, byte[] body, Issuer issuer, String ocspBaseUrl) {
         attachOcspRequest(body)
-        Response response = Requests.postOcspRequest(flow, body, issuer)
+        Response response = Requests.sendOcspRequest(flow, body, issuer.path, baseUrl: ocspBaseUrl)
         attachOcspResponse(response.body.asByteArray())
+        return response
+    }
+
+    @Step("Force CRL reload (on node) for {1}")
+    static Response reloadCrl(Flow flow, Issuer issuer) {
+        PollingConditions conditions = new PollingConditions(timeout: 3, delay: 0.1)
+        Response response = null
+
+        conditions.eventually {
+            response = Requests.postCrlReload(flow, ["chain":issuer.path])
+            assert response.statusCode() != HttpStatus.SC_CONFLICT
+        }
+
+        assert response.jsonPath().getString("${issuer.path}.result") in ["UPDATED", "NOT_MODIFIED"]
         return response
     }
 
@@ -32,7 +50,7 @@ class OcspCrlSteps {
         byte[] lastResponseBody = null
         try {
             new PollingConditions(timeout: 90, delay: 5).eventually {
-                Response response = Requests.postOcspRequest(flow, ocspRequestBody, issuer)
+                Response response = Requests.sendOcspRequest(flow, ocspRequestBody, issuer.path)
                 lastResponseBody = response.body.asByteArray()
                 singleResp = extractBasicOCSPResp(response).responses[0]
                 assert statusPredicate.call(singleResp.certStatus)

@@ -18,8 +18,8 @@ class OcspEndpointSpec extends TaraSpecification {
         byte[] ocspRequestBody = RequestData.ocspRequestDefaultBody(true)
 
         when:
-        Response response = Requests.postOcspRequest(flow, requestType, Issuer.TEST_OF_ESTEID2018.path,
-                "application/ocsp-request", ocspRequestBody)
+        Response response = Requests.sendOcspRequest(flow, ocspRequestBody, Issuer.TEST_OF_ESTEID2018.path,
+                method: requestType)
 
         then:
         response.then().statusCode(HttpStatus.SC_METHOD_NOT_ALLOWED)
@@ -37,8 +37,7 @@ class OcspEndpointSpec extends TaraSpecification {
         byte[] ocspRequestBody = RequestData.ocspRequestDefaultBody(true)
 
         when: "the request is posted to a chain id that is not configured in the service"
-        Response response = Requests.postOcspRequest(flow, Method.POST, "not_configured_chain",
-                "application/ocsp-request", ocspRequestBody)
+        Response response = Requests.sendOcspRequest(flow, ocspRequestBody, "not_configured_chain")
 
         then:
         response.then().statusCode(HttpStatus.SC_NOT_FOUND)
@@ -49,8 +48,8 @@ class OcspEndpointSpec extends TaraSpecification {
         byte[] ocspRequestBody = RequestData.ocspRequestDefaultBody(true)
 
         when:
-        Response response = Requests.postOcspRequest(flow, Method.POST, Issuer.TEST_OF_ESTEID2018.path,
-                contentType, ocspRequestBody)
+        Response response = Requests.sendOcspRequest(flow, ocspRequestBody, Issuer.TEST_OF_ESTEID2018.path,
+                contentType: contentType)
 
         then:
         response.then().statusCode(HttpStatus.SC_UNSUPPORTED_MEDIA_TYPE)
@@ -64,8 +63,7 @@ class OcspEndpointSpec extends TaraSpecification {
         byte[] notAnOcspRequest = "this is not an OCSP request".bytes
 
         when:
-        Response response = Requests.postOcspRequest(flow, Method.POST, Issuer.TEST_OF_ESTEID2018.path,
-                "application/ocsp-request", notAnOcspRequest)
+        Response response = Requests.sendOcspRequest(flow, notAnOcspRequest, Issuer.TEST_OF_ESTEID2018.path)
 
         then:
         response.then().statusCode(HttpStatus.SC_BAD_REQUEST)
@@ -77,8 +75,7 @@ class OcspEndpointSpec extends TaraSpecification {
         assert oversizedBody.length > 10 * 1024
 
         when:
-        Response response = Requests.postOcspRequest(flow, Method.POST, Issuer.TEST_OF_ESTEID2018.path,
-                "application/ocsp-request", oversizedBody)
+        Response response = Requests.sendOcspRequest(flow, oversizedBody, Issuer.TEST_OF_ESTEID2018.path)
 
         then: "only the size check can reject it, since the request itself is well-formed"
         response.then().statusCode(HttpStatus.SC_BAD_REQUEST)

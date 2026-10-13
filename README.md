@@ -91,9 +91,17 @@ Description of values:
 | inproxyservice.protocol              | https                                             | Inproxy service protocol.                                                |
 | inproxyservice.host                  | inproxy-service                                   | Inproxy service URL.                                                     |
 | inproxyservice.port                  | 8444                                              | Inproxy service port.                                                    |
+| ocspcrlservice.protocol              | https                                             | OCSP-CRL-Fallback service protocol.                                      |
+| ocspcrlservice.host                  | ocspcrl                                           | OCSP-CRL-Fallback service URL.                                           |
+| ocspcrlservice.port                  | 14443                                             | OCSP-CRL-Fallback service port.                                          |
+| ocspcrlservice.node.protocol         | https                                             | OCSP-CRL-Fallback service node protocol.                                 |
+| ocspcrlservice.node.host             | ocspcrl                                           | OCSP-CRL-Fallback service node URL.                                      |
+| ocspcrlservice.node.port             | 14443                                             | OCSP-CRL-Fallback service node port.                                     |
+| ocspcrlservice.responderSubjectCN    | local-ocsp                                        | OCSP-CRL-Fallback responder subject CN.                                  |
 | democlient.protocol                  | https                                             | Demo client service protocol.                                            |
 | democlient.host                      | client                                            | Demo client service URL.                                                 |
 | democlient.port                      | 31443                                             | Demo client service port.                                                |
+| eidtestpki.managementApiUrl          | http://eid-test-pki:8082                          | ee-eid-test-pki management API URL                                       |
 | test.env                             | dev-local                                         | Allows enabling env specific behavior (like debug logging in local env). |
 | test.isLocal                         | true                                              | Allows enabling local-only adjustments.                                  |
 | test.restAssured.consoleLogging      | true                                              | Enables console logging for rest-assured.                                |
