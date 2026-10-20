@@ -2,11 +2,14 @@ package ee.ria.tara
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.nimbusds.jose.JOSEException
+import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
 import ee.ria.tara.configuration.ConfigHolder
 import ee.ria.tara.model.Actuator
 import ee.ria.tara.model.Client
 import ee.ria.tara.model.LoA
+import ee.ria.tara.testdata.MidAccount
+import ee.ria.tara.testdata.TestPerson
 import io.qameta.allure.Allure
 import io.qameta.allure.Step
 import io.restassured.http.Method
@@ -108,6 +111,10 @@ class Steps {
         return initLoginSession
     }
 
+    static Response initMidAuthSession(Flow flow, MidAccount account) {
+        initMidAuthSession(flow, account.idCode, account.phoneNumber)
+    }
+
     @Step("Initialize Mobile-ID authentication session")
     static Response initMidAuthSession(Flow flow, String idCode, String telephoneNumber) {
         Map formParamsMap = [_csrf          : flow.csrf,
@@ -132,8 +139,8 @@ class Steps {
     }
 
     @Step("Authenticate with Mobile-ID")
-    static Response authenticateWithMid(Flow flow, String idCode, String phoneNo) {
-        Requests.startMidAuthentication(flow, idCode, phoneNo).then().statusCode(HttpStatus.SC_OK)
+    static Response authenticateWithMid(Flow flow, MidAccount account) {
+        Requests.startMidAuthentication(flow, account).then().statusCode(HttpStatus.SC_OK)
         pollMidResponse(flow).then()
                 .statusCode(HttpStatus.SC_OK)
                 .body("status", is("COMPLETED"))
@@ -257,6 +264,15 @@ class Steps {
         return signedJWT
     }
 
+    @Step("Verify identity token person claims")
+    static void verifyPersonClaims(JWTClaimsSet claims, TestPerson person) {
+        Map profile = claims.getJSONObjectClaim("profile_attributes")
+        assertThat("Correct subject", claims.subject, is(person.subject))
+        assertThat("Correct given name", profile["given_name"], is(person.givenName))
+        assertThat("Correct family name", profile["family_name"], is(person.familyName))
+        assertThat("Correct date of birth", profile["date_of_birth"], is(person.dateOfBirth))
+    }
+
     @Step("verify response headers")
     static void verifyResponseHeaders(Response response) {
         assertThat(response.header("X-Frame-Options"), is("DENY"))
@@ -292,7 +308,7 @@ class Steps {
 
     @Step("Autheticate with mID and init legal person authorization")
     static Response authInitAsLegalPerson(Flow flow) {
-        Response initMidAuthenticationSession = initMidAuthSession(flow, "60001019906", "00000766")
+        Response initMidAuthenticationSession = initMidAuthSession(flow, MidAccount.LEGAL_PERSON_REPRESENTATIVE)
         assertThat("Correct HTTP status code", initMidAuthenticationSession.statusCode, is(200))
         Response pollResponse = pollMidResponse(flow)
         assertThat("Correct HTTP status code", pollResponse.statusCode, is(200))

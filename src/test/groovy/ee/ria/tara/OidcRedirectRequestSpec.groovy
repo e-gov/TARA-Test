@@ -3,6 +3,7 @@ package ee.ria.tara
 import com.nimbusds.jose.jwk.JWKSet
 import ee.ria.tara.model.OidcError
 import ee.ria.tara.util.ErrorValidator
+import ee.ria.tara.testdata.MidAccount
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
@@ -25,7 +26,7 @@ class OidcRedirectRequestSpec extends TaraSpecification {
     def "Verify redirection url parameters"() {
         given:
         Steps.startAuthenticationInTara(flow)
-        Response midAuthResponse = Steps.authenticateWithMid(flow, "60001017716", "59100366")
+        Response midAuthResponse = Steps.authenticateWithMid(flow, MidAccount.OK)
 
         when:
         Response response = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)

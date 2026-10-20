@@ -3,6 +3,7 @@ package ee.ria.tara
 import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jwt.JWTClaimsSet
 import ee.ria.tara.model.ErrorMessage
+import ee.ria.tara.testdata.MidAccount
 import ee.ria.tara.util.ErrorValidator
 import io.qameta.allure.Feature
 import io.qameta.allure.Issue
@@ -47,8 +48,8 @@ class LegalPersonAuthConfirmSpec extends TaraSpecification {
 
         then:
         assertThat("Correct audience", claims.audience[0], is(ClientStore.mockLegal.clientId))
-        assertThat("Correct subject", claims.subject, is("EE60001019906"))
-        assertThat("Correct given name", claims.getJSONObjectClaim("profile_attributes")["given_name"], is("MARY ÄNN"))
+        assertThat("Correct subject", claims.subject, is(MidAccount.LEGAL_PERSON_REPRESENTATIVE.subject))
+        assertThat("Correct given name", claims.getJSONObjectClaim("profile_attributes")["given_name"], is(MidAccount.LEGAL_PERSON_REPRESENTATIVE.givenName))
         assertThat("Correct registry code", claims.getJSONObjectClaim("profile_attributes")["represents_legal_person"]["registry_code"], is(legalPersonIdentifier))
         assertThat("Correct legal name", claims.getJSONObjectClaim("profile_attributes")["represents_legal_person"]["name"], is(legalName))
     }

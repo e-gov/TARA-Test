@@ -4,6 +4,7 @@ import com.nimbusds.jwt.JWTClaimsSet
 import ee.ria.tara.model.ErrorMessage
 import ee.ria.tara.model.OidcError
 import ee.ria.tara.util.ErrorValidator
+import ee.ria.tara.testdata.MidAccount
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
@@ -27,7 +28,7 @@ class OpenIdConnectSpec extends TaraSpecification {
     def "Metadata and token key ID matches"() {
         given:
         Steps.startAuthenticationInTara(flow)
-        Response midAuthResponse = Steps.authenticateWithMid(flow, "60001017727", "59200366")
+        Response midAuthResponse = Steps.authenticateWithMid(flow, MidAccount.OK)
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
 
         when:
@@ -59,7 +60,7 @@ class OpenIdConnectSpec extends TaraSpecification {
         given:
         Response initOIDCServiceSession = Steps.startAuthenticationInOidc(flow)
         Steps.createLoginSession(flow, initOIDCServiceSession)
-        Response midAuthResponse = Steps.authenticateWithMid(flow, "60001017727", "59200366")
+        Response midAuthResponse = Steps.authenticateWithMid(flow, MidAccount.OK)
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
         String authorizationCode = Utils.getParamValueFromResponseHeader(authenticationFinishedResponse, "code")
 
@@ -132,7 +133,7 @@ class OpenIdConnectSpec extends TaraSpecification {
         paramsMap << [state: flow.state, nonce: flow.nonce]
         Response initOIDCServiceSession = Steps.startAuthenticationInOidcWithParams(flow, paramsMap)
         Steps.createLoginSession(flow, initOIDCServiceSession)
-        Response midAuthResponse = Steps.authenticateWithMid(flow, "60001017716", "59100366")
+        Response midAuthResponse = Steps.authenticateWithMid(flow, MidAccount.OK)
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
 
         when:

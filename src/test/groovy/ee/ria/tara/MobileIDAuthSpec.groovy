@@ -2,6 +2,7 @@ package ee.ria.tara
 
 import ee.ria.tara.model.ErrorMessage
 import ee.ria.tara.util.ErrorValidator
+import ee.ria.tara.testdata.MidAccount
 import io.qameta.allure.Feature
 import io.qameta.allure.Issue
 import io.restassured.filter.cookie.CookieFilter
@@ -26,7 +27,7 @@ class MobileIDAuthSpec extends TaraSpecification {
         Steps.startAuthenticationInTara(flow)
 
         when:
-        Response response = Steps.initMidAuthSession(flow, "60001017716", "59100366")
+        Response response = Steps.initMidAuthSession(flow, MidAccount.OK)
 
         then:
         assertThat("Correct HTTP status code", response.statusCode, is(200))
@@ -42,8 +43,8 @@ class MobileIDAuthSpec extends TaraSpecification {
 
         when: "initialize Mobile-ID authentication with invalid session cookie"
         Response response = given()
-                .params([idCode         : "60001017716",
-                         telephoneNumber: "59100366",
+                .params([idCode         : MidAccount.OK.idCode,
+                         telephoneNumber: MidAccount.OK.phoneNumber,
                          _csrf          : flow.csrf])
                 .cookies(cookie)
                 .post(flow.loginService.fullMidInitUrl)
@@ -66,8 +67,8 @@ class MobileIDAuthSpec extends TaraSpecification {
 
         when: "initialize mobile-ID authentication with invalid method"
         Response response = given()
-                .params([idCode         : "60001017716",
-                         telephoneNumber: "59100366",
+                .params([idCode         : MidAccount.OK.idCode,
+                         telephoneNumber: MidAccount.OK.phoneNumber,
                          _csrf          : flow.csrf])
                 .cookies(["__Host-SESSION": flow.sessionId])
                 .request(requestType, flow.loginService.fullMidInitUrl)
@@ -126,7 +127,7 @@ class MobileIDAuthSpec extends TaraSpecification {
     def "Initialize mobile-ID authentication with scenario: #label et"() {
         given:
         Steps.startAuthenticationInTara(flow)
-        Steps.initMidAuthSession(flow, idCode, phoneNo)
+        Steps.initMidAuthSession(flow, account.idCode, phoneNo)
 
         when:
         Response response = Steps.pollMidResponse(flow, 3000L)
@@ -136,20 +137,20 @@ class MobileIDAuthSpec extends TaraSpecification {
         response.then().body("reportable", is(reportable))
 
         where:
-        phoneNo                                   | idCode        | reportable | label                                            || errorMessage
-        "00000266"                                | "60001019939" | false      | "Mobile-ID user has no active certificates"      || ErrorMessage.MID_NOT_MID_CLIENT
-        "07110066"                                | "60001019947" | false      | "Sending authentication request to phone failed" || ErrorMessage.MID_DELIVERY_ERROR
-        "01100266"                                | "60001019950" | false      | "User cancelled authentication"                  || ErrorMessage.MID_USER_CANCEL
-        "00000666"                                | "60001019961" | true       | "Created signature is not valid"                 || ErrorMessage.MID_SIGNATURE_HASH_MISMATCH
-        "01200266"                                | "60001019972" | false      | "Phone cannot receive Mobile-ID auth messages"   || ErrorMessage.MID_DELIVERY_ERROR
-        "13100266"                                | "60001019983" | false      | "Phone is not in coverage area"                  || ErrorMessage.MID_PHONE_ABSENT
-        "66000266"                                | "50001018908" | false      | "User timeout"                                   || ErrorMessage.MID_EXPIRED_TRANSACTION
+        account                            | phoneNo                                   | reportable | label                                            || errorMessage
+        MidAccount.NOT_MID_CLIENT          | account.phoneNumber                       | false      | "Mobile-ID user has no active certificates"      || ErrorMessage.MID_NOT_MID_CLIENT
+        MidAccount.DELIVERY_ERROR          | account.phoneNumber                       | false      | "Sending authentication request to phone failed" || ErrorMessage.MID_DELIVERY_ERROR
+        MidAccount.USER_CANCELLED          | account.phoneNumber                       | false      | "User cancelled authentication"                  || ErrorMessage.MID_USER_CANCEL
+        MidAccount.SIGNATURE_HASH_MISMATCH | account.phoneNumber                       | true       | "Created signature is not valid"                 || ErrorMessage.MID_SIGNATURE_HASH_MISMATCH
+        MidAccount.SIM_ERROR               | account.phoneNumber                       | false      | "Phone cannot receive Mobile-ID auth messages"   || ErrorMessage.MID_DELIVERY_ERROR
+        MidAccount.PHONE_ABSENT            | account.phoneNumber                       | false      | "Phone is not in coverage area"                  || ErrorMessage.MID_PHONE_ABSENT
+        MidAccount.TIMEOUT                 | account.phoneNumber                       | false      | "User timeout"                                   || ErrorMessage.MID_EXPIRED_TRANSACTION
 // Boundary value Issue - AUT-2341
-//        RandomStringUtils.random(27, false, true) | "60001019939" | false      | "Telephone number max length check"              || ErrorMessage.MID_NOT_MID_CLIENT
+//        MidAccount.NOT_MID_CLIENT          | RandomStringUtils.random(27, false, true) | false      | "Telephone number max length check"              || ErrorMessage.MID_NOT_MID_CLIENT
 // Due to boundary value issue AUT-2341, temporarily adding 26 number check instead of 27
-        RandomStringUtils.random(26, false, true) | "60001019939" | false      | "Telephone number max length check"              || ErrorMessage.MID_NOT_MID_CLIENT
+        MidAccount.NOT_MID_CLIENT          | RandomStringUtils.random(26, false, true) | false      | "Telephone number max length check"              || ErrorMessage.MID_NOT_MID_CLIENT
         // SK requires tel number with min length of 8 digits and max length of 30 digits (including prefix). TARA adds 3 digits (prefix). Positive boundary values to check is 5 and 27 digits
-        RandomStringUtils.random(5, false, true)  | "60001019939" | false      | "Telephone number min length check"              || ErrorMessage.MID_NOT_MID_CLIENT
+        MidAccount.NOT_MID_CLIENT          | RandomStringUtils.random(5, false, true)  | false      | "Telephone number min length check"              || ErrorMessage.MID_NOT_MID_CLIENT
     }
 
     @Feature("MID_AUTH_POLL_RESPONSE_COMPLETE")
@@ -158,7 +159,7 @@ class MobileIDAuthSpec extends TaraSpecification {
         Map localeMap = ["lang": "ru"]
         Response initOIDCServiceSession = Steps.startAuthenticationInOidc(flow)
         Steps.initLoginSession(flow, initOIDCServiceSession, localeMap)
-        Steps.initMidAuthSession(flow, idCode, phoneNo)
+        Steps.initMidAuthSession(flow, account)
 
         when:
         Response response = Steps.pollMidResponse(flow, 3000L)
@@ -168,14 +169,14 @@ class MobileIDAuthSpec extends TaraSpecification {
         response.then().body("reportable", is(reportable))
 
         where:
-        phoneNo    | idCode        | reportable | label                                            || errorMessage
-        "00000266" | "60001019939" | false      | "Mobile-ID user has no active certificates"      || '''У пользователя отсутствует договор об услуге<span lang="et"> Mobiil-ID </span>для номера.'''
-        "07110066" | "60001019947" | false      | "Sending authentication request to phone failed" || "На телефон пользователя нельзя отправить сообщение аутентификации<span lang=\"et\"> Mobiil-ID</span>."
-        "01100266" | "60001019950" | false      | "User cancelled authentication"                  || "Пользователь отменил аутентификацию с<span lang=\"et\"> Mobiil-ID </span>на своем телефоне."
-        "00000666" | "60001019961" | true       | "Created signature is not valid"                 || '''Аутентификация с помощью Вашего<span lang="et"> Mobiil-ID </span>не удалась. Проверьте работу своего<span lang="et"> Mobiil-ID </span>в<span translate=\"no\"> DigiDoc4 </span>клиент <a target="_blank" href="https://www.id.ee/ru/artikkel/vy-hotite-postavit-czifrovuyu-podpis-s-pomoshhyu-kompyutera-5/">здесь!</a>'''
-        "01200266" | "60001019972" | false      | "Phone cannot receive Mobile-ID auth messages"   || "На телефон пользователя нельзя отправить сообщение аутентификации<span lang=\"et\"> Mobiil-ID</span>."
-        "13100266" | "60001019983" | false      | "Phone is not in coverage area"                  || "Телефон пользователя находится вне зоны доступа."
-        "66000266" | "50001018908" | false      | "User timeout"                                   || "Пользователь не прошел аутентификацию на телефоне в течение требуемого времени. Пожалуйста, попробуйте еще раз."
+        account                            | reportable | label                                            || errorMessage
+        MidAccount.NOT_MID_CLIENT          | false      | "Mobile-ID user has no active certificates"      || '''У пользователя отсутствует договор об услуге<span lang="et"> Mobiil-ID </span>для номера.'''
+        MidAccount.DELIVERY_ERROR          | false      | "Sending authentication request to phone failed" || "На телефон пользователя нельзя отправить сообщение аутентификации<span lang=\"et\"> Mobiil-ID</span>."
+        MidAccount.USER_CANCELLED          | false      | "User cancelled authentication"                  || "Пользователь отменил аутентификацию с<span lang=\"et\"> Mobiil-ID </span>на своем телефоне."
+        MidAccount.SIGNATURE_HASH_MISMATCH | true       | "Created signature is not valid"                 || '''Аутентификация с помощью Вашего<span lang="et"> Mobiil-ID </span>не удалась. Проверьте работу своего<span lang="et"> Mobiil-ID </span>в<span translate=\"no\"> DigiDoc4 </span>клиент <a target="_blank" href="https://www.id.ee/ru/artikkel/vy-hotite-postavit-czifrovuyu-podpis-s-pomoshhyu-kompyutera-5/">здесь!</a>'''
+        MidAccount.SIM_ERROR               | false      | "Phone cannot receive Mobile-ID auth messages"   || "На телефон пользователя нельзя отправить сообщение аутентификации<span lang=\"et\"> Mobiil-ID</span>."
+        MidAccount.PHONE_ABSENT            | false      | "Phone is not in coverage area"                  || "Телефон пользователя находится вне зоны доступа."
+        MidAccount.TIMEOUT                 | false      | "User timeout"                                   || "Пользователь не прошел аутентификацию на телефоне в течение требуемого времени. Пожалуйста, попробуйте еще раз."
     }
 
     @Feature("MID_AUTH_POLL_RESPONSE_COMPLETE")
@@ -184,7 +185,7 @@ class MobileIDAuthSpec extends TaraSpecification {
         Map localeMap = ["lang": "en"]
         Response initOIDCServiceSession = Steps.startAuthenticationInOidc(flow)
         Steps.initLoginSession(flow, initOIDCServiceSession, localeMap)
-        Steps.initMidAuthSession(flow, idCode, phoneNo)
+        Steps.initMidAuthSession(flow, account)
 
         when:
         Response response = Steps.pollMidResponse(flow, 3000L)
@@ -194,14 +195,14 @@ class MobileIDAuthSpec extends TaraSpecification {
         response.then().body("reportable", is(reportable))
 
         where:
-        phoneNo    | idCode        | reportable | label                                            || errorMessage
-        "00000266" | "60001019939" | false      | "Mobile-ID user has no active certificates"      || "User has no Mobile-ID contract with this phone number."
-        "07110066" | "60001019947" | false      | "Sending authentication request to phone failed" || "User's mobile phone cannot receive Mobile-ID authentication messages."
-        "01100266" | "60001019950" | false      | "User cancelled authentication"                  || "User cancelled Mobile-ID authentication on mobile phone."
-        "00000666" | "60001019961" | true       | "Created signature is not valid"                 || '''Authentication with Mobile-ID failed. Test your Mobile-ID with the<span translate="no"> DigiDoc4 </span>client <a target="_blank" href="https://www.id.ee/en/article/you-wish-to-add-a-digital-signature-using-a-computer-5/">here!</a>'''
-        "01200266" | "60001019972" | false      | "Phone cannot receive Mobile-ID auth messages"   || "User's mobile phone cannot receive Mobile-ID authentication messages."
-        "13100266" | "60001019983" | false      | "Phone is not in coverage area"                  || "User's mobile phone is out of the coverage area."
-        "66000266" | "50001018908" | false      | "User timeout"                                   || "User did not authenticate on mobile phone during the required time. Please try again."
+        account                            | reportable | label                                            || errorMessage
+        MidAccount.NOT_MID_CLIENT          | false      | "Mobile-ID user has no active certificates"      || "User has no Mobile-ID contract with this phone number."
+        MidAccount.DELIVERY_ERROR          | false      | "Sending authentication request to phone failed" || "User's mobile phone cannot receive Mobile-ID authentication messages."
+        MidAccount.USER_CANCELLED          | false      | "User cancelled authentication"                  || "User cancelled Mobile-ID authentication on mobile phone."
+        MidAccount.SIGNATURE_HASH_MISMATCH | true       | "Created signature is not valid"                 || '''Authentication with Mobile-ID failed. Test your Mobile-ID with the<span translate="no"> DigiDoc4 </span>client <a target="_blank" href="https://www.id.ee/en/article/you-wish-to-add-a-digital-signature-using-a-computer-5/">here!</a>'''
+        MidAccount.SIM_ERROR               | false      | "Phone cannot receive Mobile-ID auth messages"   || "User's mobile phone cannot receive Mobile-ID authentication messages."
+        MidAccount.PHONE_ABSENT            | false      | "Phone is not in coverage area"                  || "User's mobile phone is out of the coverage area."
+        MidAccount.TIMEOUT                 | false      | "User timeout"                                   || "User did not authenticate on mobile phone during the required time. Please try again."
     }
 
     @Feature("MID_AUTH_STATUS_CHECK_ENDPOINT")
@@ -209,7 +210,7 @@ class MobileIDAuthSpec extends TaraSpecification {
     def "Poll mobile-ID authentication session"() {
         given:
         Steps.startAuthenticationInTara(flow)
-        Steps.initMidAuthSession(flow, "60001017716", "59100366")
+        Steps.initMidAuthSession(flow, MidAccount.OK)
 
         when:
         Response response = Requests.pollMid(flow)
@@ -225,7 +226,7 @@ class MobileIDAuthSpec extends TaraSpecification {
     def "Poll mobile-ID authentication with session complete"() {
         given:
         Steps.startAuthenticationInTara(flow)
-        Steps.initMidAuthSession(flow, "60001017716", "59100366")
+        Steps.initMidAuthSession(flow, MidAccount.OK)
         sleep 10000
 
         when:
@@ -241,7 +242,7 @@ class MobileIDAuthSpec extends TaraSpecification {
     def "Poll mobile-ID authentication session with invalid session cookie: #reason"() {
         given:
         Steps.startAuthenticationInTara(flow)
-        Steps.initMidAuthSession(flow, "60001017716", "59100366")
+        Steps.initMidAuthSession(flow, MidAccount.OK)
 
         when: "request polling with invalid session cookie"
         Response response = given()
@@ -263,7 +264,7 @@ class MobileIDAuthSpec extends TaraSpecification {
     def "Poll mobile-ID authentication with invalid method: #requestType"() {
         given:
         Steps.startAuthenticationInTara(flow)
-        Steps.initMidAuthSession(flow, "60001017716", "59100366")
+        Steps.initMidAuthSession(flow, MidAccount.OK)
 
         when: "request MID polling with invalid request type"
         Response response = given()
@@ -287,7 +288,7 @@ class MobileIDAuthSpec extends TaraSpecification {
     def "Cancel mobile-ID authentication"() {
         given:
         Steps.startAuthenticationInTara(flow)
-        Steps.initMidAuthSession(flow, "60001017716", "59100366")
+        Steps.initMidAuthSession(flow, MidAccount.OK)
 
         when:
         Response response = Requests.postRequest(flow, flow.loginService.fullMidCancelUrl)
@@ -306,7 +307,7 @@ class MobileIDAuthSpec extends TaraSpecification {
     def "Verify cancel mobile-ID authentication response headers"() {
         given:
         Steps.startAuthenticationInTara(flow)
-        Steps.initMidAuthSession(flow, "60001017716", "59100366")
+        Steps.initMidAuthSession(flow, MidAccount.OK)
 
         when:
         Response response = Requests.postRequest(flow, flow.loginService.fullMidCancelUrl)
@@ -320,7 +321,7 @@ class MobileIDAuthSpec extends TaraSpecification {
     def "Cancel mobile-ID authentication with invalid session cookie: #reason"() {
         given:
         Steps.startAuthenticationInTara(flow)
-        Steps.initMidAuthSession(flow, "60001017716", "59100366")
+        Steps.initMidAuthSession(flow, MidAccount.OK)
 
         when: "Cancel MID authentication with invalid session cookie"
         Response response = given()
@@ -342,7 +343,7 @@ class MobileIDAuthSpec extends TaraSpecification {
     def "Cancel mobile-ID authentication with invalid method get"() {
         given:
         Steps.startAuthenticationInTara(flow)
-        Steps.initMidAuthSession(flow, "60001017716", "59100366")
+        Steps.initMidAuthSession(flow, MidAccount.OK)
 
         when: "Cancel authentication with invalid method"
         Response response = given()

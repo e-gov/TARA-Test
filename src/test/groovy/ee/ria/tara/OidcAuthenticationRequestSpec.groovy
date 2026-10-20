@@ -6,6 +6,7 @@ import ee.ria.tara.model.ErrorMessage
 import ee.ria.tara.model.LoA
 import ee.ria.tara.model.OidcError
 import ee.ria.tara.util.ErrorValidator
+import ee.ria.tara.testdata.MidAccount
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
@@ -190,7 +191,7 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
     def "Authentication request with phone scope"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid phone")
-        Response midAuthResponse = Steps.authenticateWithMid(flow, "60001017716", "59100366")
+        Response midAuthResponse = Steps.authenticateWithMid(flow, MidAccount.OK)
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
 
         when:
@@ -199,7 +200,7 @@ class OidcAuthenticationRequestSpec extends TaraSpecification {
 
         then:
         assertThat("Correct authentication method", claims.getStringArrayClaim("amr")[0], is("mID"))
-        assertThat("Correct phone number", claims.getClaim("phone_number"), is('+37259100366'))
+        assertThat("Correct phone number", claims.getClaim("phone_number"), is("+372" + MidAccount.OK.phoneNumber))
         assertThat("Phone number is verified", claims.getClaim("phone_number_verified"), is(true))
     }
 

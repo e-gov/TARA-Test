@@ -5,6 +5,7 @@ import ee.ria.tara.Requests
 import ee.ria.tara.Steps
 import ee.ria.tara.Utils
 import ee.ria.tara.configuration.ConfigHolder
+import ee.ria.tara.testdata.SidAccount
 import io.qameta.allure.Step
 import io.restassured.response.Response
 import org.apache.http.HttpStatus
@@ -19,10 +20,10 @@ class SidSteps {
        ============================================================ */
 
     @Step("Authenticate with Smart-ID QR code flow")
-    static Response authenticateWithSidQrFlow(Flow flow, String documentNumber) {
+    static Response authenticateWithSidQrFlow(Flow flow, SidAccount account) {
         initSidQrCodeAuthSession(flow)
         String deviceLink = getSidQrCodeDeviceLink(flow)
-        initSidDeviceLinkMockAuth(flow, documentNumber, deviceLink)
+        initSidDeviceLinkMockAuth(flow, account, deviceLink)
         pollSidQrCodeSessionStatus(flow)
                 .then()
                 .statusCode(HttpStatus.SC_OK)
@@ -31,10 +32,10 @@ class SidSteps {
     }
 
     @Step("Authenticate with Smart-ID Web2App flow")
-    static Response authenticateWithSidWeb2AppFlow(Flow flow, String documentNumber) {
+    static Response authenticateWithSidWeb2AppFlow(Flow flow, SidAccount account) {
         Response authInitResponse = initSidWeb2AppAuthSession(flow)
         String deviceLink = authInitResponse.jsonPath().getString("deviceLink")
-        String callbackUrl = sidMockAuthAndCallback(flow, documentNumber, deviceLink)
+        String callbackUrl = sidMockAuthAndCallback(flow, account, deviceLink)
 
         pollSidWeb2AppSessionStatusAfterCallback(flow, sidWeb2AppCallbackPollParams(flow, callbackUrl))
                 .then()
@@ -112,14 +113,14 @@ class SidSteps {
        DEVICE-LINK MOCK INTERACTIONS
        ============================================================ */
 
-    static Response initSidDeviceLinkMockAuth(Flow flow, String documentNumber, String deviceLink) {
-        initSidDeviceLinkMockAuth(flow, documentNumber, deviceLink, null)
+    static Response initSidDeviceLinkMockAuth(Flow flow, SidAccount account, String deviceLink) {
+        initSidDeviceLinkMockAuth(flow, account, deviceLink, null)
     }
 
     @Step("Start authentication in device link mock")
-    static Response initSidDeviceLinkMockAuth(Flow flow, String documentNumber, String deviceLink, String altCallbackUrl) {
+    static Response initSidDeviceLinkMockAuth(Flow flow, SidAccount account, String deviceLink, String altCallbackUrl) {
         Map mockRequest = [
-                documentNumber: documentNumber,
+                documentNumber: account.documentNumber,
                 deviceLink    : deviceLink
         ]
         if (Utils.parseQueryParams(deviceLink).deviceLinkType == "Web2App") {
@@ -156,8 +157,8 @@ class SidSteps {
     }
 
     @Step("Perform device-link mock flow until callback")
-    static String sidMockAuthAndCallback(Flow flow, String documentNumber, String deviceLink) {
-        initSidDeviceLinkMockAuth(flow, documentNumber, deviceLink)
+    static String sidMockAuthAndCallback(Flow flow, SidAccount account, String deviceLink) {
+        initSidDeviceLinkMockAuth(flow, account, deviceLink)
         Map deviceLinkParams = Utils.parseQueryParams(deviceLink)
         Map mockResponse = pollSidMockForCallbackUrl(deviceLinkParams.sessionToken)
         Requests.performCallback(mockResponse).then().statusCode(HttpStatus.SC_OK)

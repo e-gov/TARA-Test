@@ -4,6 +4,7 @@ import com.nimbusds.jose.jwk.JWKSet
 import com.nimbusds.jwt.JWTClaimsSet
 import ee.ria.tara.model.LoA
 import ee.ria.tara.model.OidcError
+import ee.ria.tara.testdata.MidAccount
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.http.Method
@@ -66,7 +67,7 @@ class OidcIdentityTokenRequestSpec extends TaraSpecification {
     def "Verify ID token claims with optional elements by phone scope"() {
         given: "Start authentication"
         Steps.startAuthenticationInTara(flow, "openid phone")
-        Response midAuthResponse = Steps.authenticateWithMid(flow, "60001017716", "59100366")
+        Response midAuthResponse = Steps.authenticateWithMid(flow, MidAccount.OK)
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
 
         when: "Obtain claims from token"
@@ -75,8 +76,8 @@ class OidcIdentityTokenRequestSpec extends TaraSpecification {
 
         then: "Verify optional claims"
         assertThat("Correct scope value", tokenResponse.jsonPath().getString("scope"), is("openid phone"))
-        assertThat("Correct subject claim", claims.subject, is("EE60001017716"))
-        assertThat("Phone_number claim exists", claims.getStringClaim("phone_number"), is("+37259100366"))
+        assertThat("Correct subject claim", claims.subject, is(MidAccount.OK.subject))
+        assertThat("Phone_number claim exists", claims.getStringClaim("phone_number"), is("+372" + MidAccount.OK.phoneNumber))
         assertThat("Phone_number_verified claim exists", claims.getBooleanClaim("phone_number_verified"), is(true))
     }
 
@@ -241,7 +242,7 @@ class OidcIdentityTokenRequestSpec extends TaraSpecification {
     def "Request token from a non-whitelisted address should fail"() {
         given: "Authenticate in TARA"
         Steps.startAuthenticationInTara(flow)
-        Response midAuthResponse = Steps.authenticateWithMid(flow, "60001017716", "59100366")
+        Response midAuthResponse = Steps.authenticateWithMid(flow, MidAccount.OK)
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
         String authorizationCode = Utils.getParamValueFromResponseHeader(authenticationFinishedResponse, "code")
 
@@ -265,7 +266,7 @@ class OidcIdentityTokenRequestSpec extends TaraSpecification {
     def "Request token with not allowed HTTP method: #method should fail"() {
         given: "Authenticate in TARA"
         Steps.startAuthenticationInTara(flow)
-        Response midAuthResponse = Steps.authenticateWithMid(flow, "60001017716", "59100366")
+        Response midAuthResponse = Steps.authenticateWithMid(flow, MidAccount.OK)
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
         String authorizationCode = Utils.getParamValueFromResponseHeader(authenticationFinishedResponse, "code")
 

@@ -2,6 +2,7 @@ package ee.ria.tara
 
 import com.nimbusds.jose.jwk.JWKSet
 import ee.ria.tara.model.ErrorMessage
+import ee.ria.tara.testdata.MidAccount
 import ee.ria.tara.util.ErrorValidator
 import io.qameta.allure.Feature
 import io.qameta.allure.Issue
@@ -89,7 +90,7 @@ class LegalPersonAuthSpec extends TaraSpecification {
     def "Legal persons authentication request with invalid method should fail: #requestType"() {
         given:
         Steps.startAuthenticationInTaraWithLegalPerson(flow)
-        Steps.initMidAuthSession(flow, "60001019906", "00000766")
+        Steps.initMidAuthSession(flow, MidAccount.LEGAL_PERSON_REPRESENTATIVE)
         Steps.pollMidResponse(flow)
         Response acceptResponse = Requests.postRequest(flow, flow.loginService.fullAuthAcceptUrl)
         Steps.followRedirectWithSessionId(flow, acceptResponse)

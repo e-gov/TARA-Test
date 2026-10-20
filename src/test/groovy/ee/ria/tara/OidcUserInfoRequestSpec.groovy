@@ -4,6 +4,9 @@ import com.nimbusds.jose.jwk.JWKSet
 import ee.ria.tara.model.LoA
 import ee.ria.tara.model.OidcError
 import ee.ria.tara.step.SidSteps
+import ee.ria.tara.testdata.MidAccount
+import ee.ria.tara.testdata.SidAccount
+import ee.ria.tara.testdata.TestPerson
 import io.qameta.allure.Feature
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.http.Method
@@ -31,7 +34,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
     def "Verify user info response with query parameter"() {
         given:
         Steps.startAuthenticationInTara(flow)
-        Response midAuthResponse = Steps.authenticateWithMid(flow, "60001017716", "59100366")
+        Response midAuthResponse = Steps.authenticateWithMid(flow, MidAccount.OK)
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
         String accessToken = tokenResponse.jsonPath().getString("access_token")
@@ -45,10 +48,10 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
                 .contentType("application/json; charset=utf-8")
                 .body("acr", is(LoA.HIGH.toString()),
                         "amr[0]", is("mID"),
-                        "sub", is("EE60001017716"),
-                        "date_of_birth", is("2000-01-01"),
-                        "family_name", is("O'CONNEŽ-ŠUSLIK TESTNUMBER"),
-                        "given_name", is("MARY ÄNN"))
+                        "sub", is(MidAccount.OK.subject),
+                        "date_of_birth", is(MidAccount.OK.dateOfBirth),
+                        "family_name", is(MidAccount.OK.familyName),
+                        "given_name", is(MidAccount.OK.givenName))
 
         and: "auth_time is fresh"
         Instant now = Instant.now()
@@ -147,7 +150,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
     def "Verify user info response: auth mID, phone scope"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid phone")
-        Response midAuthResponse = Steps.authenticateWithMid(flow, "60001017716", "59100366")
+        Response midAuthResponse = Steps.authenticateWithMid(flow, MidAccount.OK)
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
         String accessToken = tokenResponse.jsonPath().getString("access_token")
@@ -158,11 +161,8 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         then:
         assertThat("Correct HTTP status code", userInfoResponse.statusCode, is(200))
         assertThat("Correct Content-Type", userInfoResponse.contentType, is("application/json; charset=utf-8"))
-        assertThat("Correct given name", userInfoResponse.jsonPath().getString("given_name"), is("MARY ÄNN"))
-        assertThat("Correct subject", userInfoResponse.jsonPath().getString("sub"), is("EE60001017716"))
-        assertThat("Correct date of birth", userInfoResponse.jsonPath().getString("date_of_birth"), is("2000-01-01"))
-        assertThat("Correct family name", userInfoResponse.jsonPath().getString("family_name"), is("O'CONNEŽ-ŠUSLIK TESTNUMBER"))
-        assertThat("Correct phone number", userInfoResponse.jsonPath().getString("phone_number"), is("+37259100366"))
+        verifyUserInfoPersonClaims(userInfoResponse, MidAccount.OK)
+        assertThat("Correct phone number", userInfoResponse.jsonPath().getString("phone_number"), is("+372" + MidAccount.OK.phoneNumber))
         assertThat("Phone number is verified", userInfoResponse.jsonPath().getBoolean("phone_number_verified"), is(true))
         assertThat("No email_verified", userInfoResponse.jsonPath().getString("email_verified"), is(null))
     }
@@ -173,7 +173,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
     def "Verify user info response: auth mID, openid scope"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid")
-        Response midAuthResponse = Steps.authenticateWithMid(flow, "60001017716", "59100366")
+        Response midAuthResponse = Steps.authenticateWithMid(flow, MidAccount.OK)
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
         String accessToken = tokenResponse.jsonPath().getString("access_token")
@@ -184,10 +184,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         then:
         assertThat("Correct HTTP status code", userInfoResponse.statusCode, is(200))
         assertThat("Correct Content-Type", userInfoResponse.contentType, is("application/json; charset=utf-8"))
-        assertThat("Correct given name", userInfoResponse.jsonPath().getString("given_name"), is("MARY ÄNN"))
-        assertThat("Correct subject", userInfoResponse.jsonPath().getString("sub"), is("EE60001017716"))
-        assertThat("Correct date of birth", userInfoResponse.jsonPath().getString("date_of_birth"), is("2000-01-01"))
-        assertThat("Correct family name", userInfoResponse.jsonPath().getString("family_name"), is("O'CONNEŽ-ŠUSLIK TESTNUMBER"))
+        verifyUserInfoPersonClaims(userInfoResponse, MidAccount.OK)
         assertThat("No email", userInfoResponse.jsonPath().getString("email"), is(null))
         assertThat("No email_verified", userInfoResponse.jsonPath().getString("email_verified"), is(null))
         assertThat("No phone number", userInfoResponse.jsonPath().getString("phone_number"), is(null))
@@ -201,7 +198,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
     def "Verify user info response: auth mID, email scope"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid email")
-        Response midAuthResponse = Steps.authenticateWithMid(flow, "60001017716", "59100366")
+        Response midAuthResponse = Steps.authenticateWithMid(flow, MidAccount.OK)
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
         String accessToken = tokenResponse.jsonPath().getString("access_token")
@@ -212,10 +209,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         then:
         assertThat("Correct HTTP status code", userInfoResponse.statusCode, is(200))
         assertThat("Correct Content-Type", userInfoResponse.contentType, is("application/json; charset=utf-8"))
-        assertThat("Correct given name", userInfoResponse.jsonPath().getString("given_name"), is("MARY ÄNN"))
-        assertThat("Correct subject", userInfoResponse.jsonPath().getString("sub"), is("EE60001017716"))
-        assertThat("Correct date of birth", userInfoResponse.jsonPath().getString("date_of_birth"), is("2000-01-01"))
-        assertThat("Correct family name", userInfoResponse.jsonPath().getString("family_name"), is("O'CONNEŽ-ŠUSLIK TESTNUMBER"))
+        verifyUserInfoPersonClaims(userInfoResponse, MidAccount.OK)
         assertThat("No email", userInfoResponse.jsonPath().getString("email"), is(null))
         assertThat("No email_verified", userInfoResponse.jsonPath().getString("email_verified"), is(null))
     }
@@ -228,7 +222,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
     def "Verify user info response: auth Smart-ID, email scope"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid email")
-        Response sidAuthResponse = SidSteps.authenticateWithSidQrFlow(flow, "PNOEE-40404040009-MOCK-Q")
+        Response sidAuthResponse = SidSteps.authenticateWithSidQrFlow(flow, SidAccount.OK)
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, sidAuthResponse)
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
         String accessToken = tokenResponse.jsonPath().getString("access_token")
@@ -240,10 +234,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         assertThat("Correct HTTP status code", userInfoResponse.statusCode, is(200))
         assertThat("Correct Content-Type", userInfoResponse.contentType, is("application/json; charset=utf-8"))
         assertThat("Correct amr", userInfoResponse.jsonPath().getList("amr")[0].toString(), is("smartid"))
-        assertThat("Correct given name", userInfoResponse.jsonPath().getString("given_name"), is("OK"))
-        assertThat("Correct subject", userInfoResponse.jsonPath().getString("sub"), is("EE40404040009"))
-        assertThat("Correct date of birth", userInfoResponse.jsonPath().getString("date_of_birth"), is("1904-04-04"))
-        assertThat("Correct family name", userInfoResponse.jsonPath().getString("family_name"), is("TEST"))
+        verifyUserInfoPersonClaims(userInfoResponse, SidAccount.OK)
         assertThat("No email", userInfoResponse.jsonPath().getString("email"), is(null))
         assertThat("No email_verified", userInfoResponse.jsonPath().getString("email_verified"), is(null))
         assertThat("No phone number", userInfoResponse.jsonPath().getString("phone_number"), is(null))
@@ -257,7 +248,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
     def "Verify user info response: auth Smart-ID, phone scope"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid phone")
-        Response sidAuthResponse = SidSteps.authenticateWithSidQrFlow(flow, "PNOEE-40404040009-MOCK-Q")
+        Response sidAuthResponse = SidSteps.authenticateWithSidQrFlow(flow, SidAccount.OK)
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, sidAuthResponse)
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
         String accessToken = tokenResponse.jsonPath().getString("access_token")
@@ -268,10 +259,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         then:
         assertThat("Correct HTTP status code", userInfoResponse.statusCode, is(200))
         assertThat("Correct Content-Type", userInfoResponse.contentType, is("application/json; charset=utf-8"))
-        assertThat("Correct given name", userInfoResponse.jsonPath().getString("given_name"), is("OK"))
-        assertThat("Correct subject", userInfoResponse.jsonPath().getString("sub"), is("EE40404040009"))
-        assertThat("Correct date of birth", userInfoResponse.jsonPath().getString("date_of_birth"), is("1904-04-04"))
-        assertThat("Correct family name", userInfoResponse.jsonPath().getString("family_name"), is("TEST"))
+        verifyUserInfoPersonClaims(userInfoResponse, SidAccount.OK)
         assertThat("No email", userInfoResponse.jsonPath().getString("email"), is(null))
         assertThat("No email_verified", userInfoResponse.jsonPath().getString("email_verified"), is(null))
         assertThat("No phone number", userInfoResponse.jsonPath().getString("phone_number"), is(null))
@@ -285,7 +273,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
     def "Verify user info response: auth Smart-ID, openid scope"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid")
-        Response sidAuthResponse = SidSteps.authenticateWithSidQrFlow(flow, "PNOEE-40404040009-MOCK-Q")
+        Response sidAuthResponse = SidSteps.authenticateWithSidQrFlow(flow, SidAccount.OK)
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, sidAuthResponse)
         Response tokenResponse = Steps.getIdentityTokenResponse(flow, authenticationFinishedResponse)
         String accessToken = tokenResponse.jsonPath().getString("access_token")
@@ -296,10 +284,7 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         then:
         assertThat("Correct HTTP status code", userInfoResponse.statusCode, is(200))
         assertThat("Correct Content-Type", userInfoResponse.contentType, is("application/json; charset=utf-8"))
-        assertThat("Correct given name", userInfoResponse.jsonPath().getString("given_name"), is("OK"))
-        assertThat("Correct subject", userInfoResponse.jsonPath().getString("sub"), is("EE40404040009"))
-        assertThat("Correct date of birth", userInfoResponse.jsonPath().getString("date_of_birth"), is("1904-04-04"))
-        assertThat("Correct family name", userInfoResponse.jsonPath().getString("family_name"), is("TEST"))
+        verifyUserInfoPersonClaims(userInfoResponse, SidAccount.OK)
         assertThat("No email", userInfoResponse.jsonPath().getString("email"), is(null))
         assertThat("No phone number", userInfoResponse.jsonPath().getString("phone_number"), is(null))
         assertThat("No email_verified", userInfoResponse.jsonPath().getString("email_verified"), is(null))
@@ -368,5 +353,12 @@ class OidcUserInfoRequestSpec extends TaraSpecification {
         assertThat("Correct Content-Type", response.contentType, is("application/json"))
         assertThat("Correct error", response.jsonPath().getString("error"), is(OidcError.REQUEST_UNAUTHORIZED.code))
         assertThat("Correct error description", response.jsonPath().getString("error_description"), is("The request could not be authorized. Check that you provided valid credentials in the right format."))
+    }
+
+    private static void verifyUserInfoPersonClaims(Response userInfoResponse, TestPerson person) {
+        assertThat("Correct subject", userInfoResponse.jsonPath().getString("sub"), is(person.subject))
+        assertThat("Correct given name", userInfoResponse.jsonPath().getString("given_name"), is(person.givenName))
+        assertThat("Correct family name", userInfoResponse.jsonPath().getString("family_name"), is(person.familyName))
+        assertThat("Correct date of birth", userInfoResponse.jsonPath().getString("date_of_birth"), is(person.dateOfBirth))
     }
 }

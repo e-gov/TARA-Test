@@ -3,15 +3,20 @@ package ee.ria.tara
 import ee.ria.tara.model.ErrorMessage
 import ee.ria.tara.model.OidcError
 import ee.ria.tara.util.ErrorValidator
+import ee.ria.tara.testdata.MidAccount
 import io.qameta.allure.Feature
 import io.qameta.allure.Issue
 import io.qameta.allure.Step
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.http.Method
+import io.restassured.path.xml.XmlPath
 import io.restassured.response.Response
 import org.apache.commons.lang3.RandomStringUtils
 import org.apache.http.HttpStatus
 import spock.lang.Tag
+
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 import static io.restassured.RestAssured.given
 import static org.hamcrest.MatcherAssert.assertThat
@@ -34,18 +39,27 @@ class AuthConsentConfirmSpec extends TaraSpecification {
         Steps.startAuthenticationInTaraWithSpecificProxyService(flow)
 
         when:
-        Response response = Steps.authenticateWithMid(flow, "60001017716", "59100366")
+        Response response = Steps.authenticateWithMid(flow, MidAccount.OK)
 
         then: "Correct status code and info in HTML"
         assertThat("Correct HTTP status code", response.statusCode, is(200))
-        List<String> identityFields = response.htmlPath().getList("**.findAll { div -> div.@class == 'personal-info-label'}")
-        List<String> buttons = response.htmlPath().getList("**.findAll { it.@method == \'POST\'}.button")
+        XmlPath html = response.htmlPath()
+        List<String> identityFields = html.getList("**.findAll { div -> div.@class == 'personal-info-label'}")
+        List<String> buttons = html.getList("**.findAll { it.@method == \'POST\'}.button")
         assertThat("Correct buttons", buttons, hasItems("Nõustu", "Keeldu"))
         assertThat("Correct fields", identityFields, hasItems("Isikukood", "Perenimi", "Eesnimi", "Sünniaeg"))
-        assertThat("Correct ID code", response.htmlPath().getString("**.find { it.@id == 'natural-person-id-code'}"), is("EE60001017716"))
-        assertThat("Correct surname", response.htmlPath().getString("**.find { it.@id == 'natural-person-surname'}"), is("O'CONNEŽ-ŠUSLIK TESTNUMBER"))
-        assertThat("Correct given name", response.htmlPath().getString("**.find { it.@id == 'natural-person-given-name'}"), is("MARY ÄNN"))
-        assertThat("Correct date of birth", response.htmlPath().getString("**.find { it.@id == 'natural-person-date-of-birth'}"), is("01.01.2000"))
+        assertThat("Correct ID code",
+                html.getString("**.find { it.@id == 'natural-person-id-code'}"),
+                is(MidAccount.OK.subject))
+        assertThat("Correct surname",
+                html.getString("**.find { it.@id == 'natural-person-surname'}"),
+                is(MidAccount.OK.familyName))
+        assertThat("Correct given name",
+                html.getString("**.find { it.@id == 'natural-person-given-name'}"),
+                is(MidAccount.OK.givenName))
+        assertThat("Correct date of birth",
+                html.getString("**.find { it.@id == 'natural-person-date-of-birth'}"),
+                is(LocalDate.parse(MidAccount.OK.dateOfBirth).format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))))
     }
 
     @Feature("USER_CONSENT_ENDPOINT")
@@ -227,7 +241,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
     @Step("Authentication flow up to OIDC login verifier request")
     private static authenticateToLoginVerifier(Flow flow) {
         Steps.startAuthenticationInTaraWithSpecificProxyService(flow)
-        Requests.startMidAuthentication(flow, "60001017869", "68000769")
+        Requests.startMidAuthentication(flow, MidAccount.OK)
         Steps.pollMidResponse(flow)
         Response acceptResponse = Requests.postRequest(flow, flow.loginService.fullAuthAcceptUrl)
         Response loginVerifier = Steps.loginVerifier(flow, acceptResponse)
@@ -237,7 +251,7 @@ class AuthConsentConfirmSpec extends TaraSpecification {
     @Step("Authentication flow up to consent request")
     private static authenticateToConsent(Flow flow) {
         Steps.startAuthenticationInTaraWithSpecificProxyService(flow)
-        Steps.authenticateWithMid(flow, "60001017869", "68000769")
+        Steps.authenticateWithMid(flow, MidAccount.OK)
     }
 
 }

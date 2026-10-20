@@ -6,6 +6,7 @@ import ee.ria.tara.*
 import ee.ria.tara.configuration.ConfigHolder
 import ee.ria.tara.model.ErrorMessage
 import ee.ria.tara.step.SidSteps
+import ee.ria.tara.testdata.SidAccount
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import org.apache.http.HttpStatus
@@ -28,7 +29,7 @@ class SidQrAuthenticationSpec extends TaraSpecification {
     def "Authenticate with Smart-ID QR code flow"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
-        Response sidAuthResponse = SidSteps.authenticateWithSidQrFlow(flow, "PNOEE-40404040009-MOCK-Q")
+        Response sidAuthResponse = SidSteps.authenticateWithSidQrFlow(flow, SidAccount.OK)
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, sidAuthResponse)
 
         when:
@@ -37,10 +38,7 @@ class SidQrAuthenticationSpec extends TaraSpecification {
 
         then:
         assertThat("Incorrect audience", claims.audience[0], is(ClientStore.mockPublic.clientId))
-        assertThat("Incorrect subject", claims.subject, is("EE40404040009"))
-        assertThat("Incorrect given name", claims.getJSONObjectClaim("profile_attributes")["given_name"], is("OK"))
-        assertThat("Incorrect family name", claims.getJSONObjectClaim("profile_attributes")["family_name"], is("TEST"))
-        assertThat("Incorrect date of birth", claims.getJSONObjectClaim("profile_attributes")["date_of_birth"], is("1904-04-04"))
+        Steps.verifyPersonClaims(claims, SidAccount.OK)
     }
 
     @Issue("AUT-3178")
@@ -50,7 +48,7 @@ class SidQrAuthenticationSpec extends TaraSpecification {
         Steps.startAuthenticationInTara(flow, "openid smartid")
         SidSteps.initSidQrCodeAuthSession(flow)
         String deviceLink = SidSteps.getSidQrCodeDeviceLink(flow)
-        SidSteps.initSidDeviceLinkMockAuth(flow, documentNumber, deviceLink)
+        SidSteps.initSidDeviceLinkMockAuth(flow, account, deviceLink)
 
         when:
         Response pollResponse = SidSteps.pollSidQrCodeSessionStatus(flow)
@@ -67,11 +65,7 @@ class SidQrAuthenticationSpec extends TaraSpecification {
                 )
 
         where:
-        documentNumber << [
-                "PNOLT-40404040009-MOCK-Q",
-                "PNOLV-040404-10003-DEMO-Q",
-                "PNOBE-04040400287-MOCK-Q"
-        ]
+        account << [SidAccount.OK_LT, SidAccount.OK_LV, SidAccount.OK_BE]
     }
 
     def "Initialize Smart-ID QR code authentication"() {
@@ -111,12 +105,12 @@ class SidQrAuthenticationSpec extends TaraSpecification {
 
     @Issue("AUT-3178")
     @Tag("sid-device-link-mock")
-    def "Initialize Smart-ID QR code authentication with scenario: #label et"() {
+    def "Initialize Smart-ID QR code authentication with scenario: #account et"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid", "et")
         SidSteps.initSidQrCodeAuthSession(flow)
         String deviceLink = SidSteps.getSidQrCodeDeviceLink(flow)
-        SidSteps.initSidDeviceLinkMockAuth(flow, documentNumber, deviceLink)
+        SidSteps.initSidDeviceLinkMockAuth(flow, account, deviceLink)
 
         when:
         Response pollResponse = SidSteps.pollSidQrCodeSessionStatus(flow, 3000L)
@@ -132,9 +126,9 @@ class SidQrAuthenticationSpec extends TaraSpecification {
                 )
 
         where:
-        documentNumber             | label                              || errorMessage
-        "PNOEE-30403039917-MOCK-Q" | "USER_REFUSED"                     || ErrorMessage.SID_USER_REFUSED
-        "PNOEE-30403039946-MOCK-Q" | "USER_REFUSED_CONFIRMATIONMESSAGE" || ErrorMessage.SID_USER_REFUSED_CONFIRMATIONMESSAGE
+        account                                      || errorMessage
+        SidAccount.USER_REFUSED                      || ErrorMessage.SID_USER_REFUSED
+        SidAccount.USER_REFUSED_CONFIRMATIONMESSAGE  || ErrorMessage.SID_USER_REFUSED_CONFIRMATIONMESSAGE
     }
 
     @Issue("AUT-3178")
@@ -144,7 +138,7 @@ class SidQrAuthenticationSpec extends TaraSpecification {
         Steps.startAuthenticationInTara(flow, "openid smartid")
         SidSteps.initSidQrCodeAuthSession(flow)
         String deviceLink = SidSteps.getSidQrCodeDeviceLink(flow)
-        SidSteps.initSidDeviceLinkMockAuth(flow, "PNOEE-42701019973-DEMO-Q", deviceLink)
+        SidSteps.initSidDeviceLinkMockAuth(flow, SidAccount.TIMEOUT, deviceLink)
 
         when:
         Response pollResponse = SidSteps.pollSidQrCodeSessionStatus(flow, 10000L)
@@ -181,7 +175,7 @@ class SidQrAuthenticationSpec extends TaraSpecification {
         Steps.startAuthenticationInTara(flow, "openid smartid")
         SidSteps.initSidQrCodeAuthSession(flow)
         String deviceLink = SidSteps.getSidQrCodeDeviceLink(flow)
-        SidSteps.initSidDeviceLinkMockAuth(flow, "PNOEE-40404040009-MOCK-Q", deviceLink)
+        SidSteps.initSidDeviceLinkMockAuth(flow, SidAccount.OK, deviceLink)
 
         when:
         Response response = SidSteps.pollSidQrCodeSessionStatus(flow)
@@ -212,7 +206,7 @@ class SidQrAuthenticationSpec extends TaraSpecification {
     def "Smart-ID QR code authentication with long name"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
-        Response sidAuthResponse = SidSteps.authenticateWithSidQrFlow(flow, "PNOEE-47106280129-MOCK-Q")
+        Response sidAuthResponse = SidSteps.authenticateWithSidQrFlow(flow, SidAccount.LONG_NAME)
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, sidAuthResponse)
 
         when:
@@ -220,8 +214,6 @@ class SidQrAuthenticationSpec extends TaraSpecification {
         JWTClaimsSet claims = Steps.verifyTokenAndReturnSignedJwtObject(flow, tokenResponse.jsonPath().get("id_token")).JWTClaimsSet
 
         then:
-        assertThat("Incorrect subject", claims.subject, is("EE47106280129"))
-        assertThat("Incorrect given name", claims.getJSONObjectClaim("profile_attributes")["given_name"], is("ALEXANDRIA EVANGELINE ANASTASIA WILHELMINA"))
-        assertThat("Incorrect family name", claims.getJSONObjectClaim("profile_attributes")["family_name"], is("MONTGOMERY FITZGERALD VANDERBILT-HART"))
+        Steps.verifyPersonClaims(claims, SidAccount.LONG_NAME)
     }
 }

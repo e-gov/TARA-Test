@@ -8,6 +8,8 @@ import ee.ria.tara.model.LoA
 import ee.ria.tara.model.OidcError
 import ee.ria.tara.step.SidSteps
 import ee.ria.tara.util.ErrorValidator
+import ee.ria.tara.testdata.MidAccount
+import ee.ria.tara.testdata.SidAccount
 import io.qameta.allure.Feature
 import io.qameta.allure.Issue
 import io.qameta.allure.Step
@@ -39,7 +41,7 @@ class AuthenticationSpec extends TaraSpecification {
     def "Request authentication with Mobile-ID: #certificate certificate chain"() {
         given:
         Steps.startAuthenticationInTara(flow)
-        Response midAuthResponse = Steps.authenticateWithMid(flow, idCode, phoneNumber)
+        Response midAuthResponse = Steps.authenticateWithMid(flow, account)
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
 
         when:
@@ -48,13 +50,13 @@ class AuthenticationSpec extends TaraSpecification {
 
         then:
         assertThat("Correct audience", claims.audience[0], is(ClientStore.mockPublic.clientId))
-        assertThat("Correct subject", claims.subject, is(subject))
+        assertThat("Correct subject", claims.subject, is(account.subject))
 
         where:
-        certificate                           | idCode        | phoneNumber || subject
-        "TEST of ESTEID-SK 2015"              | "60001017716" | "59100366"  || "EE" + idCode
-        "TEST of EID-SK 2016"                 | "60001017869" | "68000769"  || "EE" + idCode
-        "TEST of SK ID Solutions EID-Q 2021E" | "51307149560" | "69930366"  || "EE" + idCode
+        certificate                           | account
+        "TEST of ESTEID-SK 2015"              | MidAccount.ESTEID_SK_2015
+        "TEST of EID-SK 2016"                 | MidAccount.EID_SK_2016
+        "TEST of SK ID Solutions EID-Q 2021E" | MidAccount.EID_Q_2021E
     }
 
     @Tag("sid-device-link-mock")
@@ -62,7 +64,7 @@ class AuthenticationSpec extends TaraSpecification {
     def "Request authentication with Smart-ID: #certificate certificate chain"() {
         given:
         Steps.startAuthenticationInTara(flow)
-        Response sidAuthResponse = SidSteps.authenticateWithSidQrFlow(flow, documentNumber)
+        Response sidAuthResponse = SidSteps.authenticateWithSidQrFlow(flow, account)
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, sidAuthResponse)
 
         when:
@@ -71,11 +73,11 @@ class AuthenticationSpec extends TaraSpecification {
 
         then:
         assertThat("Correct audience", claims.audience[0], is(ClientStore.mockPublic.clientId))
-        assertThat("Correct subject", claims.subject, is(subject))
+        assertThat("Correct subject", claims.subject, is(account.subject))
 
         where:
-        certificate                           | documentNumber             || subject
-        "TEST of SK ID Solutions EID-Q 2024E" | "PNOEE-40404040009-MOCK-Q" || "EE40404040009"
+        certificate                           | account
+        "TEST of SK ID Solutions EID-Q 2024E" | SidAccount.OK
     }
 
     @Tag("non-default-client")
@@ -84,7 +86,7 @@ class AuthenticationSpec extends TaraSpecification {
     def "Authenticate with Mobile-ID with custom relying party name and UUID"() {
         given:
         Steps.startAuthenticationInTaraWithClient(flow, ClientStore.mockRelyingParty)
-        Response sidAuthResponse = Steps.authenticateWithMid(flow, "60001017869", "68000769")
+        Response sidAuthResponse = Steps.authenticateWithMid(flow, MidAccount.OK)
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, sidAuthResponse)
 
         when:
@@ -93,7 +95,7 @@ class AuthenticationSpec extends TaraSpecification {
 
         then:
         assertThat("Correct audience", claims.audience[0], is(ClientStore.mockRelyingParty.clientId))
-        assertThat("Correct subject", claims.subject, is("EE60001017869"))
+        assertThat("Correct subject", claims.subject, is(MidAccount.OK.subject))
     }
 
     @Tag("sid-device-link-mock")
@@ -101,7 +103,7 @@ class AuthenticationSpec extends TaraSpecification {
     def "Request authentication with Smart-ID"() {
         given:
         Steps.startAuthenticationInTara(flow, "openid smartid")
-        Response sidAuthResponse = SidSteps.authenticateWithSidQrFlow(flow, "PNOEE-40404040009-MOCK-Q")
+        Response sidAuthResponse = SidSteps.authenticateWithSidQrFlow(flow, SidAccount.OK)
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, sidAuthResponse)
 
         when:
@@ -110,7 +112,7 @@ class AuthenticationSpec extends TaraSpecification {
 
         then:
         assertThat("Correct audience", claims.audience[0], is(ClientStore.mockPublic.clientId))
-        assertThat("Correct subject", claims.subject, is("EE40404040009"))
+        assertThat("Correct subject", claims.subject, is(SidAccount.OK.subject))
     }
 
     @Tag("sid-device-link-mock")
@@ -120,7 +122,7 @@ class AuthenticationSpec extends TaraSpecification {
     def "Authenticate with Smart-ID with custom relying party name and UUID"() {
         given:
         Steps.startAuthenticationInTaraWithClient(flow, ClientStore.mockRelyingParty)
-        Response sidAuthResponse = SidSteps.authenticateWithSidQrFlow(flow, "PNOEE-40404040009-MOCK-Q")
+        Response sidAuthResponse = SidSteps.authenticateWithSidQrFlow(flow, SidAccount.OK)
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, sidAuthResponse)
 
         when:
@@ -129,7 +131,7 @@ class AuthenticationSpec extends TaraSpecification {
 
         then:
         assertThat("Correct audience", claims.audience[0], is(ClientStore.mockRelyingParty.clientId))
-        assertThat("Correct subject", claims.subject, is("EE40404040009"))
+        assertThat("Correct subject", claims.subject, is(SidAccount.OK.subject))
     }
 
     @Feature("https://e-gov.github.io/TARA-Doku/TechnicalSpecification#41-authentication-request")
@@ -415,7 +417,7 @@ class AuthenticationSpec extends TaraSpecification {
     def "Request authentication with mobile-ID with Specific Proxy Service as OIDC client"() {
         given:
         Steps.startAuthenticationInTaraWithSpecificProxyService(flow)
-        Response midAuthResponse = Steps.authenticateWithMid(flow, "60001017716", "59100366")
+        Response midAuthResponse = Steps.authenticateWithMid(flow, MidAccount.OK)
         Response authenticationFinishedResponse = Steps.submitConsentAndFollowRedirects(flow, true, midAuthResponse)
 
         when:
@@ -424,8 +426,8 @@ class AuthenticationSpec extends TaraSpecification {
 
         then:
         assertThat(claims.audience[0], is(ClientStore.specificProxyService.clientId))
-        assertThat(claims.subject, is("EE60001017716"))
-        assertThat(claims.getJSONObjectClaim("profile_attributes")["given_name"], is("MARY ÄNN"))
+        assertThat(claims.subject, is(MidAccount.OK.subject))
+        assertThat(claims.getJSONObjectClaim("profile_attributes")["given_name"], is(MidAccount.OK.givenName))
     }
 
     @Tag("eidas")
@@ -457,7 +459,7 @@ class AuthenticationSpec extends TaraSpecification {
         Steps.verifyResponseHeaders(initLoginSession)
         assertThat(initLoginSession.getDetailedCookie("__Host-SESSION").toString(), containsString("HttpOnly"))
         assertThat(initLoginSession.getDetailedCookie("__Host-SESSION").toString(), containsString("SameSite=Lax"))
-        Response midInit = Requests.startMidAuthentication(flow, "60001017716", "59100366")
+        Response midInit = Requests.startMidAuthentication(flow, MidAccount.OK)
         Steps.verifyResponseHeaders(midInit)
         Response midPollResult = Steps.pollMidResponse(flow)
         assertThat(midPollResult.jsonPath().getString("status"), not(equalTo("PENDING")))
@@ -483,8 +485,8 @@ class AuthenticationSpec extends TaraSpecification {
 
         then:
         assertThat(claims.audience[0], is(ClientStore.mockPublic.clientId))
-        assertThat(claims.subject, is("EE60001017716"))
-        assertThat(claims.getJSONObjectClaim("profile_attributes")["given_name"], is("MARY ÄNN"))
+        assertThat(claims.subject, is(MidAccount.OK.subject))
+        assertThat(claims.getJSONObjectClaim("profile_attributes")["given_name"], is(MidAccount.OK.givenName))
     }
 
     @Feature("AUTH_ACCEPT_LOGIN_ENDPOINT")
@@ -649,7 +651,7 @@ class AuthenticationSpec extends TaraSpecification {
     @Step("Authentication flow up to Mobile-ID polling")
     private static authenticateToPolling(Flow flow) {
         Steps.startAuthenticationInTara(flow)
-        Steps.initMidAuthSession(flow, "60001017869", "68000769")
+        Steps.initMidAuthSession(flow, MidAccount.OK)
         Steps.pollMidResponse(flow)
     }
 

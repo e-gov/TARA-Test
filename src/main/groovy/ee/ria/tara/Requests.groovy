@@ -1,6 +1,7 @@
 package ee.ria.tara
 
 import ee.ria.tara.configuration.ConfigHolder
+import ee.ria.tara.testdata.MidAccount
 import groovy.transform.NamedParam
 import groovy.transform.NamedVariant
 import io.qameta.allure.Step
@@ -27,11 +28,11 @@ class Requests {
     }
 
     @Step("Mobile-ID authentication init request")
-    static Response startMidAuthentication(Flow flow, String idCode, String phoneNo) {
+    static Response startMidAuthentication(Flow flow, MidAccount account) {
         return given()
                 .filter(flow.cookieFilter)
-                .params([idCode         : idCode,
-                         telephoneNumber: phoneNo,
+                .params([idCode         : account.idCode,
+                         telephoneNumber: account.phoneNumber,
                          _csrf          : flow.csrf])
                 .cookie("__Host-SESSION", flow.sessionId)
                 .log().cookies()
