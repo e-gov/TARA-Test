@@ -6,7 +6,6 @@ import ee.ria.tara.*
 import ee.ria.tara.configuration.ConfigHolder
 import ee.ria.tara.model.ErrorMessage
 import ee.ria.tara.step.SidSteps
-import ee.ria.tara.util.ErrorValidator
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import org.apache.http.HttpStatus
@@ -110,7 +109,7 @@ class SidQrAuthenticationSpec extends TaraSpecification {
         assertThat("Missing auth code", deviceLinkParams.authCode, notNullValue())
     }
 
-    @Ignore("Testing not supported by current device-link mock.")
+    @Issue("AUT-3178")
     @Tag("sid-device-link-mock")
     def "Initialize Smart-ID QR code authentication with scenario: #label et"() {
         given:
@@ -123,16 +122,22 @@ class SidQrAuthenticationSpec extends TaraSpecification {
         Response pollResponse = SidSteps.pollSidQrCodeSessionStatus(flow, 3000L)
 
         then:
-        ErrorValidator.validate(pollResponse, HttpStatus.SC_BAD_REQUEST, errorMessage)
-        pollResponse.then().body("reportable", is(false))
+        pollResponse.then()
+                .statusCode(HttpStatus.SC_OK)
+                .contentType("application/json;charset=UTF-8")
+                .body(
+                        "status", equalTo("FAILED"),
+                        "error", equalTo(errorMessage.name()),
+                        "message", equalTo(errorMessage.message)
+                )
 
         where:
-        documentNumber | label                              || errorMessage
-        "TODO"         | "USER_REFUSED"                     || "Kasutaja katkestas autentimise<span translate=\"no\" lang=\"en\"> Smart-ID </span>rakenduses."
-        "TODO"         | "USER_REFUSED_DISPLAYTEXTANDPIN"   || "Kasutaja katkestas<span translate=\"no\" lang=\"en\"> Smart-ID </span>rakenduses PIN koodi sisestamise."
-        "TODO"         | "USER_REFUSED_CONFIRMATIONMESSAGE" || "Kasutaja katkestas autentimise<span translate=\"no\" lang=\"en\"> Smart-ID </span>rakenduses kinnitusekraanil."
+        documentNumber             | label                              || errorMessage
+        "PNOEE-30403039917-MOCK-Q" | "USER_REFUSED"                     || ErrorMessage.SID_USER_REFUSED
+        "PNOEE-30403039946-MOCK-Q" | "USER_REFUSED_CONFIRMATIONMESSAGE" || ErrorMessage.SID_USER_REFUSED_CONFIRMATIONMESSAGE
     }
 
+    @Issue("AUT-3178")
     @Tag("sid-device-link-mock")
     def "Initialize Smart-ID QR code authentication with scenario: TIMEOUT"() {
         given:

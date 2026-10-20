@@ -10,7 +10,6 @@ import ee.ria.tara.util.ErrorValidator
 import io.restassured.filter.cookie.CookieFilter
 import io.restassured.response.Response
 import org.apache.http.HttpStatus
-import spock.lang.Ignore
 import spock.lang.Issue
 import spock.lang.Tag
 
@@ -88,7 +87,7 @@ class SidW2aAuthenticationSpec extends TaraSpecification {
         assertThat("Missing auth code", deviceLinkParams.authCode, notNullValue())
     }
 
-    @Ignore("AUT-2509")
+    @Issue("AUT-3178")
     @Tag("sid-device-link-mock")
     def "Initialize Smart-ID web2app authentication with scenario: #label et"() {
         given:
@@ -102,16 +101,16 @@ class SidW2aAuthenticationSpec extends TaraSpecification {
         Response pollResponse = SidSteps.pollSidWeb2AppSessionStatus(flow, pollQueryParams, 3000L)
 
         then:
-        ErrorValidator.validate(pollResponse, HttpStatus.SC_BAD_REQUEST, errorMessage)
+        ErrorValidator.validate(pollResponse, errorMessage)
         pollResponse.then().body("reportable", is(false))
 
         where:
-        documentNumber | label                              || errorMessage
-        "TODO"         | "USER_REFUSED"                     || "Kasutaja katkestas autentimise<span translate=\"no\" lang=\"en\"> Smart-ID </span>rakenduses."
-        "TODO"         | "USER_REFUSED_DISPLAYTEXTANDPIN"   || "Kasutaja katkestas<span translate=\"no\" lang=\"en\"> Smart-ID </span>rakenduses PIN koodi sisestamise."
-        "TODO"         | "USER_REFUSED_CONFIRMATIONMESSAGE" || "Kasutaja katkestas autentimise<span translate=\"no\" lang=\"en\"> Smart-ID </span>rakenduses kinnitusekraanil."
+        documentNumber             | label                            || errorMessage
+        "PNOEE-30403039917-MOCK-Q" | "USER_REFUSED"                   || ErrorMessage.SID_USER_REFUSED
+        "PNOEE-30403039928-MOCK-Q" | "USER_REFUSED_DISPLAYTEXTANDPIN" || ErrorMessage.SID_USER_REFUSED_DISPLAYTEXTANDPIN
     }
 
+    @Issue("AUT-3178")
     @Tag("sid-device-link-mock")
     def "Initialize Smart-ID web2app authentication with scenario: TIMEOUT"() {
         given:
