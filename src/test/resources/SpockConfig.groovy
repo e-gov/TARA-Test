@@ -5,8 +5,8 @@ runner {
     optimizeRunOrder true
     parallel {
         enabled true
-        defaultSpecificationExecutionMode = ExecutionMode.CONCURRENT
-        defaultExecutionMode = ExecutionMode.SAME_THREAD
+        defaultSpecificationExecutionMode ExecutionMode.CONCURRENT
+        defaultExecutionMode ExecutionMode.SAME_THREAD
         fixed(4)
     }
 }
