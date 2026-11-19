@@ -7,6 +7,7 @@ import groovy.transform.NamedVariant
 import io.qameta.allure.Step
 import io.qameta.allure.restassured.AllureRestAssured
 import io.restassured.RestAssured
+import io.restassured.config.LogConfig
 import io.restassured.http.ContentType
 import io.restassured.http.Method
 import io.restassured.path.json.JsonPath
@@ -18,6 +19,16 @@ import static io.restassured.RestAssured.given
 import static io.restassured.config.EncoderConfig.encoderConfig
 
 class Requests {
+
+    /**
+     * Request with client credentials in a Basic auth header. The header is redacted in the allure report and
+     * console logs to keep the client secret out of them.
+     */
+    static RequestSpecification givenClientBasicAuth(String clientId, String clientSecret) {
+        return given()
+                .config(RestAssured.config().logConfig(LogConfig.logConfig().blacklistHeader("Authorization")))
+                .auth().preemptive().basic(clientId, clientSecret)
+    }
 
     @Step("GET {endpoint}")
     static Response get(String baseUri, String endpoint) {
@@ -171,11 +182,10 @@ class Requests {
                                          String clientId = ClientStore.mockPublic.clientId,
                                          String clientSecret = ClientStore.mockPublic.secret,
                                          String redirectUri = ClientStore.mockPublic.redirectUri) {
-        return given()
+        return givenClientBasicAuth(clientId, clientSecret)
                 .params([grant_type  : "authorization_code",
                          code        : authorizationCode,
                          redirect_uri: redirectUri])
-                .auth().preemptive().basic(clientId, clientSecret)
                 .urlEncodingEnabled(true)
                 .post(flow.openIdServiceConfiguration.getString("token_endpoint"))
     }
@@ -183,20 +193,22 @@ class Requests {
     @Step("Get token client_secret_post")
     static Response webTokenPostRequest(Flow flow, String authorizationCode) {
         return given()
-                .params([grant_type   : "authorization_code",
-                         redirect_uri : flow.redirectUri,
-                         code         : authorizationCode,
-                         client_id    : flow.clientId,
-                         client_secret: flow.clientSecret])
+                // Client secret in form params is redacted by a custom allure template
+                .noFiltersOfType(AllureRestAssured)
+                .filter(new AllureRestAssured().setRequestTemplate("http-request-client-secret-redacted.ftl"))
+                .formParams([grant_type   : "authorization_code",
+                             redirect_uri : flow.redirectUri,
+                             code         : authorizationCode,
+                             client_id    : flow.clientId,
+                             client_secret: flow.clientSecret])
                 .urlEncodingEnabled(true)
                 .post(flow.openIdServiceConfiguration.getString("token_endpoint"))
     }
 
     @Step("Get token response body")
     static Response getWebTokenResponseBody(Flow flow, Map formParams) {
-        return given()
+        return givenClientBasicAuth(ClientStore.mockPublic.clientId, ClientStore.mockPublic.secret)
                 .params(formParams)
-                .auth().preemptive().basic(ClientStore.mockPublic.clientId, ClientStore.mockPublic.secret)
                 .urlEncodingEnabled(true)
                 .post(flow.openIdServiceConfiguration.getString("token_endpoint"))
     }

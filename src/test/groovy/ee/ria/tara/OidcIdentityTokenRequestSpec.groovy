@@ -13,7 +13,6 @@ import io.restassured.response.Response
 import java.time.Instant
 import spock.lang.Tag
 
-import static io.restassured.RestAssured.given
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.containsString
 import static org.hamcrest.Matchers.endsWith
@@ -247,11 +246,10 @@ class OidcIdentityTokenRequestSpec extends TaraSpecification {
         String authorizationCode = Utils.getParamValueFromResponseHeader(authenticationFinishedResponse, "code")
 
         when: "Request token"
-        Response tokenResponse = given()
+        Response tokenResponse = Requests.givenClientBasicAuth("tara-client", "secret")
                 .params([grant_type  : "authorization_code",
                          code        : authorizationCode,
                          redirect_uri: flow.redirectUri])
-                .auth().preemptive().basic("tara-client", "secret")
                 .post(flow.openIdServiceConfiguration.getString("token_endpoint"))
 
         then:
@@ -271,11 +269,10 @@ class OidcIdentityTokenRequestSpec extends TaraSpecification {
         String authorizationCode = Utils.getParamValueFromResponseHeader(authenticationFinishedResponse, "code")
 
         when: "Request token with incorrect HTTP method: #method"
-        Response tokenResponse = given()
+        Response tokenResponse = Requests.givenClientBasicAuth(flow.clientId, flow.clientSecret)
                 .params([grant_type  : "authorization_code",
                          code        : authorizationCode,
                          redirect_uri: flow.redirectUri])
-                .auth().preemptive().basic(flow.clientId, flow.clientSecret)
                 .urlEncodingEnabled(true)
                 .request(method, flow.openIdServiceConfiguration.getString("token_endpoint"))
 
