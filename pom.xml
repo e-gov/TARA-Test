@@ -238,7 +238,7 @@
         <profile>
             <id>k8s</id>
             <properties>
-                <excludedGroups>eidas,monitoring,ocspcrl,non-default-client,email-notification</excludedGroups>
+                <excludedGroups>eidas,monitoring,ocspcrl,non-default-client,email-notification,ee-eid-test-pki</excludedGroups>
             </properties>
         </profile>
     </profiles>
